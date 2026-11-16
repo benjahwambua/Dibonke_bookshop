@@ -48,9 +48,6 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
     <nav aria-label="Main navigation">
         <div class="menu-title">Workspace</div>
         <a href="<?= BASE_URL ?>/index.php" class="<?= $currentPath === BASE_URL . '/index.php' ? 'active' : '' ?>"><i class="fas fa-th-large icon-main"></i>Dashboard</a>
-        <?php if (!isSuperUser() && count(roleModules()[currentUserRole()] ?? []) === 0): ?>
-        <div class="sidebar-access-note"><i class="fas fa-lock"></i><span>No modules are assigned to your current role. Contact an administrator for access.</span></div>
-        <?php endif; ?>
 
         <?php if (canAccessModule('products') || canAccessModule('categories') || canAccessModule('brands') || canAccessModule('price_lists')): ?>
         <div class="menu-title">Catalogue &amp; Inventory</div>
