@@ -175,7 +175,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 
         <div class="table-card">
             <div class="table-wrap">
-                <table>
+                <table class="table">
                     <thead><tr><th>Category</th><th>Description</th><th>Products</th><th>Status</th><th>Actions</th></tr></thead>
                     <tbody>
                     <?php if (!$categories): ?>
