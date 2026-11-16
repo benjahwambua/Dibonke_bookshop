@@ -189,3 +189,23 @@ main.content .pos-wrap .product:hover{border-color:#9eb0c1;box-shadow:0 3px 12px
 @media(max-width:420px){
   main.content .pos-wrap .products{grid-template-columns:1fr}
 }
+
+/* Additional shared patterns used by payment, staff, settings and reporting pages */
+main.content > h1{margin:0 0 5px;color:var(--db-navy);font-size:clamp(1.45rem,2.4vw,1.9rem)}
+main.content > h1 + p{margin:0 0 21px;color:var(--db-muted);font-size:13px}
+main.content .head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:0 0 20px}
+main.content .head h1{margin:0;color:var(--db-navy)}
+main.content .head p{margin:6px 0 0;color:var(--db-muted);font-size:13px}
+main.content .panel{min-width:0;padding:18px;border:1px solid var(--db-border);border-radius:var(--db-radius);background:#fff;box-shadow:var(--db-shadow)}
+main.content .panel h3{margin:0 0 14px;color:var(--db-navy);font-size:14px}
+main.content table.table{width:100%;border-collapse:separate;border-spacing:0}
+main.content table.table thead th{padding:12px 13px;background:#eef2f6;color:#42566b;text-align:left;font-size:10px;font-weight:800;letter-spacing:.055em;text-transform:uppercase;border-bottom:1px solid #dfe6ed;white-space:nowrap}
+main.content table.table tbody td{padding:12px 13px;border-bottom:1px solid #edf1f5;color:#425268;font-size:12px;vertical-align:middle}
+main.content table.table tbody tr:last-child td{border-bottom:0}
+main.content .btn.primary,main.content .btn-primary,main.content button.primary{background:var(--db-navy);border-color:var(--db-navy);color:#fff}
+main.content .btn.primary:hover,main.content .btn-primary:hover,main.content button.primary:hover{background:var(--db-navy-deep);border-color:var(--db-navy-deep);color:#fff}
+main.content .btn.light,main.content .btn-secondary,main.content .btn-light,main.content button.light{background:#f1f5f9;border:1px solid #e2e8f0;color:#405268}
+main.content .btn.success,main.content .btn-success,main.content button.success{background:#147d5a;border-color:#147d5a;color:#fff}
+main.content .field input,main.content .field select,main.content .field textarea,main.content .form input,main.content .form select,main.content .form textarea,main.content .staff-form input,main.content .staff-form select,main.content .staff-form textarea{width:100%;min-height:39px;box-sizing:border-box;padding:9px 11px;border:1px solid #d9e1e9;border-radius:8px;background:#fff;color:var(--db-ink);font:inherit;font-size:12px}
+main.content .field label,main.content .form label,main.content .staff-form label{display:block;margin-bottom:5px;color:#526277;font-size:11px;font-weight:750}
+main.content .role-layout .panel{height:100%}
