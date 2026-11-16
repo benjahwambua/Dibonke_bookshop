@@ -1,5 +1,5 @@
--- Stalk & Stable: Supply Chain + M-PESA integration
--- Run this once in phpMyAdmin against stalk_stable_db.
+-- Dibonke Bookshop: Supply Chain + M-PESA integration
+-- Run this once in phpMyAdmin against dibonke_bookshop_db.
 
 CREATE TABLE IF NOT EXISTS purchase_orders (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
@@ -129,4 +129,4 @@ SELECT 'mpesa_consumer_secret','' WHERE NOT EXISTS (SELECT 1 FROM settings WHERE
 INSERT INTO settings (setting_key, setting_value)
 SELECT 'mpesa_callback_url','' WHERE NOT EXISTS (SELECT 1 FROM settings WHERE setting_key='mpesa_callback_url');
 INSERT INTO settings (setting_key, setting_value)
-SELECT 'mpesa_account_reference','STALKSTABLE' WHERE NOT EXISTS (SELECT 1 FROM settings WHERE setting_key='mpesa_account_reference');
+SELECT 'mpesa_account_reference','DIBONKE' WHERE NOT EXISTS (SELECT 1 FROM settings WHERE setting_key='mpesa_account_reference');
