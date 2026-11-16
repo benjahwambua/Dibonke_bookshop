@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__.'/../../includes/auth.php';require_once __DIR__.'/../../config/db.php';
 if($_SERVER['REQUEST_METHOD']!=='POST'){header('Location:index.php');exit;}verify_csrf();
+requireModulePermission('supplier_payments','create');
 try{$sid=(int)($_POST['supplier_id']??0);$amount=(float)($_POST['amount']??0);$method=(string)($_POST['payment_method']??'Cash');$ref=trim((string)($_POST['transaction_reference']??''));$notes=trim((string)($_POST['notes']??''));
 if(!in_array($method,['Cash','M-Pesa','Bank','Cheque','Other'],true))throw new RuntimeException('Invalid payment method.');
 if($method==='M-Pesa'&&$ref==='')throw new RuntimeException('Enter the M-PESA transaction reference after making the payment.');
