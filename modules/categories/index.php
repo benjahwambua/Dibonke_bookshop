@@ -212,7 +212,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
             <input type="hidden" name="action" value="<?= $editCategory ? 'update' : 'create' ?>">
             <?php if ($editCategory): ?><input type="hidden" name="id" value="<?= (int)$editCategory['id'] ?>"><?php endif; ?>
             <label>Category Name *</label>
-            <input type="text" name="category_name" required value="<?= e($editCategory['category_name'] ?? '') ?>" placeholder="e.g. Beer & Malt">
+            <input type="text" name="category_name" required value="<?= e($editCategory['category_name'] ?? '') ?>" placeholder="e.g. Fiction & Literature">
             <label>Description</label>
             <textarea name="description" rows="3" placeholder="Optional description"><?= e($editCategory['description'] ?? '') ?></textarea>
             <label>Status</label>
