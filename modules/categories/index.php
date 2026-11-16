@@ -149,6 +149,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 ?>
 <main class="content">
     <div class="master-page">
+        <nav class="breadcrumbs" aria-label="Breadcrumb"><span class="current">Catalogue</span><span aria-hidden="true">/</span><span class="current">Categories</span></nav>
         <div class="page-heading">
             <div>
                 <h1>Categories</h1>
