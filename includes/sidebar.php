@@ -13,7 +13,7 @@ $role = (string)($_SESSION['role'] ?? 'Staff');
 $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
 ?>
 <style>
-.sidebar{position:fixed;left:0;top:var(--app-topbar-height,72px);bottom:0;width:var(--app-sidebar-width,264px);display:flex;flex-direction:column;background:linear-gradient(180deg,#17324d 0%,#10263b 100%);color:#dce6ef;z-index:1000;overflow-y:auto;overflow-x:hidden;box-shadow:4px 0 18px rgba(16,38,59,.10);transition:transform .25s ease}
+.sidebar{position:fixed;left:0;top:var(--app-topbar-height,72px);bottom:0;width:var(--app-sidebar-width,264px);height:auto;display:flex;flex-direction:column;gap:0;padding:0;background:linear-gradient(180deg,#17324d 0%,#10263b 100%);color:#dce6ef;z-index:1000;overflow-y:auto;overflow-x:hidden;box-shadow:4px 0 18px rgba(16,38,59,.10);transition:transform .25s ease}
 .sidebar::-webkit-scrollbar{width:5px}.sidebar::-webkit-scrollbar-thumb{background:rgba(255,255,255,.2);border-radius:10px}
 .sidebar-brand{display:flex;align-items:center;gap:12px;padding:23px 22px 20px;border-bottom:1px solid rgba(255,255,255,.1)}
 .sidebar-brand-mark{width:38px;height:38px;display:grid;place-items:center;flex:0 0 38px;border-radius:11px;background:rgba(214,168,79,.16);color:#e9c477;font-size:18px}
@@ -21,14 +21,14 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
 .user-profile{display:flex;align-items:center;gap:11px;margin:16px 14px 10px;padding:12px;border:1px solid rgba(255,255,255,.09);border-radius:12px;background:rgba(255,255,255,.055)}
 .user-avatar{width:36px;height:36px;display:grid;place-items:center;flex:0 0 36px;border-radius:50%;background:#e9c477;color:#17324d;font-size:13px;font-weight:800}
 .user-info{min-width:0}.user-info .name{display:block;overflow:hidden;color:#fff;font-size:12px;font-weight:700;text-overflow:ellipsis;white-space:nowrap}.user-info .role{display:block;margin-top:3px;color:#a9bac9;font-size:10px}
-.sidebar nav{flex:1;padding:10px 12px 22px}.menu-title{padding:17px 12px 7px;color:#d6b66f;font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase}
+.sidebar nav{display:block;flex:1;min-width:0;overflow:visible;padding:10px 12px 22px}.sidebar nav a:before{display:none}.menu-title{padding:17px 12px 7px;color:#d6b66f;font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase}
 .sidebar nav a{display:flex;align-items:center;gap:12px;margin:3px 0;padding:10px 12px;border-radius:9px;color:#c7d4df;text-decoration:none;font-size:12px;font-weight:600;transition:background .18s,color .18s}
 .sidebar nav a .icon-main{width:17px;flex:0 0 17px;color:#9fb4c7;text-align:center;font-size:13px}
 .sidebar nav a:hover{background:rgba(255,255,255,.09);color:#fff}.sidebar nav a:hover .icon-main{color:#e9c477}
 .sidebar nav a.active{background:#fff;color:#17324d;box-shadow:0 3px 12px rgba(0,0,0,.12)}.sidebar nav a.active .icon-main{color:#a87924}
 .sidebar nav a.logout-link{margin-top:18px;border:1px solid rgba(248,113,113,.18);background:rgba(248,113,113,.08);color:#fecaca}
 .sidebar nav a.logout-link .icon-main{color:#fca5a5}
-@media(max-width:700px){.sidebar{width:min(290px,86vw);transform:translateX(-105%);box-shadow:12px 0 30px rgba(0,0,0,.2)}.sidebar.is-open{transform:translateX(0)}}
+@media(max-width:768px){.sidebar{position:fixed;left:0;top:var(--app-topbar-height,72px);right:auto;bottom:0;width:min(290px,86vw);height:auto;display:flex;flex-direction:column;gap:0;padding:0;border:0;transform:translateX(-105%);box-shadow:12px 0 30px rgba(0,0,0,.2)}.sidebar.is-open{transform:translateX(0)}.sidebar nav{display:block;flex-direction:column;overflow-y:auto;overflow-x:hidden}.sidebar nav a{width:auto;white-space:normal;flex-shrink:initial}}
 </style>
 
 <aside class="sidebar" id="appSidebar">
