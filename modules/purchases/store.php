@@ -10,6 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 verify_csrf();
+requireModulePermission('purchases','create');
 
 try {
     $supplierId = (int)($_POST['supplier_id'] ?? 0);
