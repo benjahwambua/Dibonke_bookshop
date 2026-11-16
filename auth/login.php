@@ -59,13 +59,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Login | <?= e(APP_NAME) ?></title>
     <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css">
     <style>
-        body{margin:0;min-height:100vh;background:linear-gradient(135deg,#002d5c,#004a99);font-family:Inter,Segoe UI,Arial,sans-serif;display:flex;align-items:center;justify-content:center;padding:20px}
+        body{margin:0;min-height:100vh;background:linear-gradient(135deg,#173a5e,#174a7e);font-family:Inter,Segoe UI,Arial,sans-serif;display:flex;align-items:center;justify-content:center;padding:20px}
         .login-card{width:100%;max-width:430px;background:#fff;border-radius:22px;padding:42px;box-shadow:0 25px 70px rgba(0,0,0,.25)}
-        .login-brand{text-align:center;margin-bottom:30px}.login-logo{font-size:48px}.login-brand h1{margin:8px 0 4px;color:#004a99}.login-brand p{margin:0;color:#64748b}
+        .login-brand{text-align:center;margin-bottom:30px}.login-logo{font-size:48px}.login-brand h1{margin:8px 0 4px;color:#174a7e}.login-brand p{margin:0;color:#64748b}
         .login-card label{display:block;font-size:13px;font-weight:700;color:#334155;margin:18px 0 7px}
         .login-card input{width:100%;padding:14px 15px;border:1px solid #dbe3ec;border-radius:10px;box-sizing:border-box;font-size:15px}
-        .login-card input:focus{outline:none;border-color:#004a99;box-shadow:0 0 0 3px rgba(0,74,153,.12)}
-        .login-btn{width:100%;margin-top:24px;border:0;border-radius:10px;padding:15px;background:#004a99;color:#fff;font-weight:700;font-size:15px;cursor:pointer}
+        .login-card input:focus{outline:none;border-color:#174a7e;box-shadow:0 0 0 3px rgba(0,74,153,.12)}
+        .login-btn{width:100%;margin-top:24px;border:0;border-radius:10px;padding:15px;background:#174a7e;color:#fff;font-weight:700;font-size:15px;cursor:pointer}
         .login-btn:hover{background:#003b7a}.alert{padding:13px 15px;border-radius:10px;background:#fef2f2;color:#991b1b;border:1px solid #fecaca;margin-bottom:20px;font-size:14px}
         .login-footer{text-align:center;color:#94a3b8;font-size:12px;margin-top:25px}
     </style>
@@ -73,9 +73,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
 <div class="login-card">
     <div class="login-brand">
-        <div class="login-logo">🍾</div>
-        <h1>Stalk &amp; Stable</h1>
-        <p>Alcohol Distribution Management System</p>
+        <div class="login-logo">📚</div>
+        <h1>Dibonke Bookshop</h1>
+        <p>Bookshop &amp; General Retail Management System</p>
     </div>
 
     <?php if ($error !== ''): ?>
@@ -94,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </button>
     </form>
 
-    <div class="login-footer">&copy; <?= date('Y') ?> Stalk &amp; Stable. All rights reserved.</div>
+    <div class="login-footer">&copy; <?= date('Y') ?> Dibonke Bookshop. All rights reserved.</div>
 </div>
 </body>
 </html>
