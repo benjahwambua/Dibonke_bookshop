@@ -82,13 +82,16 @@ try {
     $stockStmt = $conn->prepare("UPDATE products SET stock_quantity=stock_quantity+?, buying_price=? WHERE id=?");
     $movementStmt = $conn->prepare("INSERT INTO stock_movements (product_id,user_id,movement_type,quantity,stock_before,stock_after,reference_type,reference_id,notes,movement_date) VALUES (?,?,?,?,?,?,?,?,?,?)");
 
+    $runningStock = [];
     foreach ($cleanItems as $item) {
-        $stockAfter = $item['stock_before'] + $item['quantity'];
+        $stockBefore = $runningStock[$item['product_id']] ?? $item['stock_before'];
+        $stockAfter = $stockBefore + $item['quantity'];
+        $runningStock[$item['product_id']] = $stockAfter;
         $itemStmt->execute([$purchaseId,$item['product_id'],$item['quantity'],$item['buying_price'],$item['line_total']]);
         $stockStmt->execute([$item['quantity'],$item['buying_price'],$item['product_id']]);
         $movementStmt->execute([
             $item['product_id'],(int)$_SESSION['user_id'],'Purchase',$item['quantity'],
-            $item['stock_before'],$stockAfter,'purchase',$purchaseId,
+            $stockBefore,$stockAfter,'purchase',$purchaseId,
             'Purchase '.$purchaseNumber.' - '.$item['product_name'],$purchaseDate
         ]);
     }
