@@ -39,7 +39,9 @@ try{
       $saleId=(int)$tx['reference_id'];
       $conn->beginTransaction();
       $saleQ=$conn->prepare("SELECT * FROM sales WHERE id=? FOR UPDATE");$saleQ->execute([$saleId]);$sale=$saleQ->fetch();
-      if($sale && (float)$sale['paid_amount'] < (float)$sale['total_amount']){
+      $already=$conn->prepare("SELECT COUNT(*) FROM customer_payments WHERE sale_id=? AND transaction_reference=?");
+      $already->execute([$saleId,$receipt]);
+      if($sale && (int)$already->fetchColumn()===0 && (float)$sale['paid_amount'] < (float)$sale['total_amount']){
          $payAmount=min($amount,(float)$sale['total_amount']-(float)$sale['paid_amount']);
          $upd=$conn->prepare("UPDATE sales SET paid_amount=paid_amount+?, balance=GREATEST(0,total_amount-paid_amount-?) WHERE id=?");
          $upd->execute([$payAmount,$payAmount,$saleId]);
