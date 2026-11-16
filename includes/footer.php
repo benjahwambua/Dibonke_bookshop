@@ -14,7 +14,7 @@ declare(strict_types=1);
 .footer-brand{display:flex;align-items:center;gap:10px}.footer-mark{width:30px;height:30px;display:grid;place-items:center;border-radius:9px;background:#edf2f7;color:#17324d}
 .footer-brand strong{display:block;color:#34465a;font-size:11px}.footer-brand small{display:block;margin-top:2px;color:#8a97a5;font-size:10px}
 .footer-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.footer-separator{color:#d6a84f}
-@media(max-width:700px){.app-footer{margin-left:0;padding:15px 18px;flex-direction:column;align-items:flex-start;gap:10px}.footer-meta{gap:7px}}
+@media(max-width:768px){.app-footer{margin-left:0;padding:15px 18px;flex-direction:column;align-items:flex-start;gap:10px}.footer-meta{gap:7px}}
 </style>
 <script>
 (function(){
