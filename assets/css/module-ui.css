@@ -209,3 +209,17 @@ main.content .btn.success,main.content .btn-success,main.content button.success{
 main.content .field input,main.content .field select,main.content .field textarea,main.content .form input,main.content .form select,main.content .form textarea,main.content .staff-form input,main.content .staff-form select,main.content .staff-form textarea{width:100%;min-height:39px;box-sizing:border-box;padding:9px 11px;border:1px solid #d9e1e9;border-radius:8px;background:#fff;color:var(--db-ink);font:inherit;font-size:12px}
 main.content .field label,main.content .form label,main.content .staff-form label{display:block;margin-bottom:5px;color:#526277;font-size:11px;font-weight:750}
 main.content .role-layout .panel{height:100%}
+
+
+/* Catalogue and inventory page refinements */
+main.content .breadcrumbs{display:flex;align-items:center;gap:8px;margin:0 0 12px;color:#9aa6b2;font-size:11px;font-weight:650}
+main.content .breadcrumbs a{color:#718096}
+main.content .breadcrumbs a:hover{color:var(--db-navy)}
+main.content .breadcrumbs .current{color:#526277}
+main.content .page-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin:0 0 22px}
+main.content .page-heading h1{color:var(--db-navy)}
+main.content .page-heading p{margin:6px 0 0;color:var(--db-muted);font-size:13px}
+main.content .status.active{background:#e8f7ef;color:#16734d}
+main.content .status.inactive{background:#fff0f0;color:#b42318}
+main.content .flash-error{border-color:#fecaca;background:#fff1f2;color:#9f1239}
+main.content .empty-state{padding:42px 20px;text-align:center;color:var(--db-muted)}
