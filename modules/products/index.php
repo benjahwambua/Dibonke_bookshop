@@ -74,7 +74,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <table class="products-table">
 <thead><tr><th>Product</th><th>Type / ISBN</th><th>Category</th><th>Brand</th><th>Supplier</th><th>Buy Price</th><th>Normal Price</th><th>Wholesale Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead>
 <tbody>
-<?php if(!$products): ?><tr><td colspan="9" style="text-align:center;padding:45px;color:#64748b">No products found.</td></tr>
+<?php if(!$products): ?><tr><td colspan="11" style="text-align:center;padding:45px;color:#64748b">No products found.</td></tr>
 <?php else: foreach($products as $p): $stock=(int)$p['stock_quantity']; ?>
 <tr>
 <td><div class="product-name"><span class="icon"><?=e($p['icon']?:'📦')?></span><div><strong><?=e($p['product_name'])?></strong><br><small class="muted"><?=e($p['sku']?:'No SKU')?></small></div></div></td>
