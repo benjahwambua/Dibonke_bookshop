@@ -20,7 +20,7 @@ if ($search !== '') {
     $sql .= " AND (pu.purchase_number LIKE :q OR s.supplier_name LIKE :q)";
     $params[':q'] = "%{$search}%";
 }
-if (in_array($status, ['Draft','Completed','Cancelled'], true)) {
+if (in_array($status, ['Received','Pending','Cancelled'], true)) {
     $sql .= " AND pu.status = :status";
     $params[':status'] = $status;
 }
@@ -31,7 +31,7 @@ $stmt->execute($params);
 $purchases = $stmt->fetchAll();
 
 $stats = [
-    'count' => (int)$conn->query("SELECT COUNT(*) FROM purchases WHERE status='Completed'")->fetchColumn(),
+    'count' => (int)$conn->query("SELECT COUNT(*) FROM purchases WHERE status='Received'")->fetchColumn(),
     'value' => (float)$conn->query("SELECT COALESCE(SUM(total_amount),0) FROM purchases WHERE status='Completed'")->fetchColumn(),
     'credit' => (float)$conn->query("SELECT COALESCE(SUM(balance),0) FROM purchases WHERE status='Completed'")->fetchColumn(),
     'suppliers' => (int)$conn->query("SELECT COUNT(*) FROM suppliers WHERE status='Active'")->fetchColumn()
@@ -51,7 +51,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 .page-head{display:flex;justify-content:space-between;align-items:center;gap:15px;margin-bottom:22px;flex-wrap:wrap}.page-head h1{margin:0}.muted{color:#64748b}
 .btn{display:inline-flex;align-items:center;gap:7px;padding:10px 15px;border-radius:8px;text-decoration:none;border:0;cursor:pointer;font-weight:700;font-size:13px}.btn-primary{background:#004a99;color:#fff}.btn-light{background:#eef2f7;color:#334155}.btn-danger{background:#fee2e2;color:#b91c1c}.btn-success{background:#047857;color:#fff}
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-bottom:20px}.stat{background:#fff;border-radius:12px;padding:18px;box-shadow:0 1px 4px #00000012}.stat strong{display:block;font-size:24px}.stat span{color:#64748b;font-size:13px}
-.toolbar,.table-card{background:#fff;padding:15px;border-radius:12px;margin-bottom:15px;box-shadow:0 1px 4px #00000012}.toolbar{display:flex;gap:10px;flex-wrap:wrap}.toolbar input,.toolbar select{padding:10px 12px;border:1px solid #dbe3ec;border-radius:8px}.toolbar input{min-width:280px}.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:1050px}.table th{background:#004a99;color:#fff;text-align:left;padding:12px;font-size:12px}.table td{padding:12px;border-bottom:1px solid #e5e7eb;font-size:13px}.status{padding:5px 9px;border-radius:20px;font-size:11px;font-weight:700}.status.completed{background:#dcfce7;color:#166534}.status.draft{background:#fef3c7;color:#92400e}.status.cancelled{background:#fee2e2;color:#991b1b}.flash{padding:12px 15px;border-radius:9px;margin-bottom:18px;background:#ecfdf5;color:#166534;border:1px solid #bbf7d0}
+.toolbar,.table-card{background:#fff;padding:15px;border-radius:12px;margin-bottom:15px;box-shadow:0 1px 4px #00000012}.toolbar{display:flex;gap:10px;flex-wrap:wrap}.toolbar input,.toolbar select{padding:10px 12px;border:1px solid #dbe3ec;border-radius:8px}.toolbar input{min-width:280px}.table-wrap{overflow:auto}.table{width:100%;border-collapse:collapse;min-width:1050px}.table th{background:#004a99;color:#fff;text-align:left;padding:12px;font-size:12px}.table td{padding:12px;border-bottom:1px solid #e5e7eb;font-size:13px}.status{padding:5px 9px;border-radius:20px;font-size:11px;font-weight:700}.status.received{background:#dcfce7;color:#166534}.status.pending{background:#fef3c7;color:#92400e}.status.draft{background:#fef3c7;color:#92400e}.status.cancelled{background:#fee2e2;color:#991b1b}.flash{padding:12px 15px;border-radius:9px;margin-bottom:18px;background:#ecfdf5;color:#166534;border:1px solid #bbf7d0}
 .modal{display:none;position:fixed;inset:0;background:#0008;z-index:2000;align-items:center;justify-content:center;padding:20px}.modal.show{display:flex}.modal-box{background:#fff;border-radius:15px;padding:24px;width:min(1100px,100%);max-height:92vh;overflow:auto;position:relative}.modal-close{position:absolute;right:18px;top:12px;border:0;background:none;font-size:28px;cursor:pointer}.form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.form-grid label{font-size:12px;font-weight:700;color:#475569}.form-grid input,.form-grid select{display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:10px;border:1px solid #dbe3ec;border-radius:8px}.purchase-items{margin-top:20px}.purchase-items h3{margin-bottom:10px}.items-table{width:100%;border-collapse:collapse;min-width:850px}.items-table th,.items-table td{padding:9px;border-bottom:1px solid #e5e7eb;text-align:left}.items-table th{font-size:11px;background:#f8fafc}.items-table input,.items-table select{width:100%;box-sizing:border-box;padding:8px;border:1px solid #dbe3ec;border-radius:6px}.items-table .qty{width:90px}.items-table .price{width:120px}.items-table .line-total{font-weight:700;white-space:nowrap}.remove-row{border:0;background:#fee2e2;color:#b91c1c;border-radius:6px;padding:7px;cursor:pointer}.purchase-footer{display:flex;justify-content:space-between;gap:20px;align-items:flex-end;margin-top:18px}.totals{min-width:280px}.totals div{display:flex;justify-content:space-between;padding:6px 0}.totals .grand{font-size:18px;font-weight:800;border-top:1px solid #ddd;margin-top:5px;padding-top:10px}.form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
 @media(max-width:900px){.stats-grid{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:1fr 1fr}}@media(max-width:600px){.stats-grid{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.purchase-footer{flex-direction:column}.totals{width:100%}}
 </style>
@@ -64,7 +64,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <?php if ($flash): ?><div class="flash"><?= e($flash) ?></div><?php endif; ?>
 
 <div class="stats-grid">
-    <div class="stat"><strong><?= number_format($stats['count']) ?></strong><span>Completed Purchases</span></div>
+    <div class="stat"><strong><?= number_format($stats['count']) ?></strong><span>Received Purchases</span></div>
     <div class="stat"><strong>KES <?= number_format($stats['value'], 2) ?></strong><span>Purchase Value</span></div>
     <div class="stat"><strong>KES <?= number_format($stats['credit'], 2) ?></strong><span>Supplier Credit</span></div>
     <div class="stat"><strong><?= number_format($stats['suppliers']) ?></strong><span>Active Suppliers</span></div>
@@ -74,8 +74,8 @@ require_once __DIR__ . '/../../includes/sidebar.php';
     <input name="q" value="<?= e($search) ?>" placeholder="Search purchase number or supplier...">
     <select name="status">
         <option value="">All statuses</option>
-        <option value="Completed" <?= $status === 'Completed' ? 'selected' : '' ?>>Completed</option>
-        <option value="Draft" <?= $status === 'Draft' ? 'selected' : '' ?>>Draft</option>
+        <option value="Received" <?= $status === 'Received' ? 'selected' : '' ?>>Received</option>
+        <option value="Pending" <?= $status === 'Pending' ? 'selected' : '' ?>>Pending</option>
         <option value="Cancelled" <?= $status === 'Cancelled' ? 'selected' : '' ?>>Cancelled</option>
     </select>
     <button class="btn btn-light"><i class="fas fa-search"></i> Filter</button>
