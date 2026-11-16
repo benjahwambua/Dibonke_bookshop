@@ -42,7 +42,7 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
     </div>
     <nav aria-label="Main navigation">
         <div class="menu-title">Workspace</div>
-        <a href="<?= BASE_URL ?>/index.php" class="<?= navActive('/index.php') ?>"><i class="fas fa-th-large icon-main"></i>Dashboard</a>
+        <a href="<?= BASE_URL ?>/index.php" class="<?= $currentPath === BASE_URL . '/index.php' ? 'active' : '' ?>"><i class="fas fa-th-large icon-main"></i>Dashboard</a>
 
         <?php if (canAccessModule('products') || canAccessModule('categories') || canAccessModule('brands') || canAccessModule('price_lists')): ?>
         <div class="menu-title">Catalogue &amp; Inventory</div>
