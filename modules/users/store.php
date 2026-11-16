@@ -37,10 +37,12 @@ try {
             $n++;
         }
 
+        $conn->beginTransaction();
         $stmt = $conn->prepare("INSERT INTO users (full_name, username, email, phone, password, role, role_id, is_super, status) VALUES (?, ?, NULL, NULL, ?, ?, ?, 0, 'Active')");
         $stmt->execute([$name, $username, password_hash($password, PASSWORD_DEFAULT), $role, $roleId]);
         $newUserId=(int)$conn->lastInsertId();
         if($staffId>0){$link=$conn->prepare("UPDATE staff SET user_id=? WHERE id=? AND user_id IS NULL AND status='Active'");$link->execute([$newUserId,$staffId]);if($link->rowCount()!==1)throw new RuntimeException('Selected staff profile is already linked or inactive.');}
+        $conn->commit();
 
         userFlash('success', "User created successfully. Username: {$username}");
     }
