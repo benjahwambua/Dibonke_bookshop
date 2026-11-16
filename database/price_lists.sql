@@ -1,4 +1,4 @@
--- Stalk & Stable price lists
+-- Dibonke Bookshop standard and wholesale retail price lists
 CREATE TABLE IF NOT EXISTS price_lists (
  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
  name VARCHAR(100) NOT NULL UNIQUE,
