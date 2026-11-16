@@ -8,6 +8,8 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
  try{
   verify_csrf();
   $action=(string)($_POST['action']??'');
+  $permissionAction=$action==='create'?'create':($action==='delete'?'delete':'edit');
+  requireModulePermission('price_lists',$permissionAction);
   if($action==='create'){
    $name=trim((string)($_POST['name']??''));$code=strtolower(trim((string)($_POST['code']??'')));$description=trim((string)($_POST['description']??''));
    if($name===''||$code==='')throw new RuntimeException('Name and code are required.');
