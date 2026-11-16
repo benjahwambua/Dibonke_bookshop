@@ -6,9 +6,12 @@ require_once __DIR__.'/../../config/db.php';
 if (!isSuperUser()) { http_response_code(403); exit('Access denied.'); }
 
 $id = (int)($_GET['id'] ?? 0);
-$stmt = $conn->prepare("SELECT id, full_name, username, role, status, is_super FROM users WHERE id=?");
+$stmt = $conn->prepare("SELECT id,full_name,username,role,role_id,status,is_super FROM users WHERE id=?");
 $stmt->execute([$id]);
 $user = $stmt->fetch();
+$roles=$conn->query("SELECT id,role_name FROM roles WHERE status='Active' ORDER BY role_name")->fetchAll();
+$link=$conn->prepare("SELECT id FROM staff WHERE user_id=? LIMIT 1");$link->execute([$id]);$linkedStaffId=(int)($link->fetchColumn()?:0);
+$staffQ=$conn->prepare("SELECT id,employee_number,full_name FROM staff WHERE status='Active' AND (user_id IS NULL OR user_id=?) ORDER BY full_name");$staffQ->execute([$id]);$staffOptions=$staffQ->fetchAll();
 
 if (!$user || (int)$user['is_super'] === 1) {
     header('Location: index.php');
@@ -34,7 +37,8 @@ require_once __DIR__.'/../../includes/sidebar.php';
 <input type="hidden" name="id" value="<?=e($user['id'])?>">
 <div class="field"><label>Full Name</label><input name="full_name" value="<?=e($user['full_name'])?>" required></div>
 <div class="field"><label>Username</label><input value="<?=e($user['username'])?>" readonly></div>
-<div class="field"><label>Role</label><select name="role"><?php foreach(['Admin','Manager','Sales','Cashier','Storekeeper','Driver','Staff'] as $r):?><option value="<?=e($r)?>" <?=$user['role']===$r?'selected':''?>><?=e($r)?></option><?php endforeach;?></select></div>
+<div class="field"><label>Role</label><select name="role_id" required><?php foreach($roles as $r):?><option value="<?=$r['id']?>" <?=(int)$user['role_id']===(int)$r['id']?'selected':''?>><?=e($r['role_name'])?></option><?php endforeach;?></select></div>
+<div class="field"><label>Linked Staff Profile</label><select name="staff_id"><option value="">No staff profile</option><?php foreach($staffOptions as $s):?><option value="<?=$s['id']?>" <?=(int)$s['id']===$linkedStaffId?'selected':''?>><?=e($s['employee_number'].' — '.$s['full_name'])?></option><?php endforeach;?></select></div>
 <div class="field"><label>Status</label><select name="status"><option value="Active" <?=$user['status']==='Active'?'selected':''?>>Active</option><option value="Inactive" <?=$user['status']==='Inactive'?'selected':''?>>Inactive</option></select></div>
 <div class="field"><label>New Password <small>(leave blank to keep current password)</small></label><input type="password" name="password" minlength="8" autocomplete="new-password"></div>
 <button class="btn">Save Changes</button>
