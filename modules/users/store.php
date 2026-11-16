@@ -17,12 +17,10 @@ try {
     $action = (string)($_POST['action'] ?? 'create');
     $name = trim((string)($_POST['full_name'] ?? ''));
     $password = (string)($_POST['password'] ?? '');
-    $role = (string)($_POST['role'] ?? 'Staff');
+    $roleId=(int)($_POST['role_id']??0);$staffId=(int)($_POST['staff_id']??0);$roleStmt=$conn->prepare("SELECT role_name FROM roles WHERE id=? AND status='Active'");$roleStmt->execute([$roleId]);$role=$roleStmt->fetchColumn();
 
     if ($name === '') throw new RuntimeException('Full name is required.');
-    if (!in_array($role, ['Admin','Manager','Sales','Cashier','Storekeeper','Driver','Staff'], true)) {
-        throw new RuntimeException('Invalid role.');
-    }
+    if (!$role) throw new RuntimeException('Select an active role.');
 
     if ($action === 'create') {
         if (strlen($password) < 8) throw new RuntimeException('Password must be at least 8 characters.');
@@ -39,8 +37,10 @@ try {
             $n++;
         }
 
-        $stmt = $conn->prepare("INSERT INTO users (full_name, username, email, phone, password, role, is_super, status) VALUES (?, ?, NULL, NULL, ?, ?, 0, 'Active')");
-        $stmt->execute([$name, $username, password_hash($password, PASSWORD_DEFAULT), $role]);
+        $stmt = $conn->prepare("INSERT INTO users (full_name, username, email, phone, password, role, role_id, is_super, status) VALUES (?, ?, NULL, NULL, ?, ?, ?, 0, 'Active')");
+        $stmt->execute([$name, $username, password_hash($password, PASSWORD_DEFAULT), $role, $roleId]);
+        $newUserId=(int)$conn->lastInsertId();
+        if($staffId>0){$link=$conn->prepare("UPDATE staff SET user_id=? WHERE id=? AND user_id IS NULL AND status='Active'");$link->execute([$newUserId,$staffId]);if($link->rowCount()!==1)throw new RuntimeException('Selected staff profile is already linked or inactive.');}
 
         userFlash('success', "User created successfully. Username: {$username}");
     }
@@ -58,19 +58,25 @@ try {
         $status = (string)($_POST['status'] ?? 'Active');
         if (!in_array($status, ['Active','Inactive'], true)) throw new RuntimeException('Invalid status.');
 
+        if($staffId>0){$linkCheck=$conn->prepare("SELECT id FROM staff WHERE id=? AND status='Active' AND (user_id IS NULL OR user_id=?)");$linkCheck->execute([$staffId,$id]);if(!$linkCheck->fetch())throw new RuntimeException('Selected staff profile is already linked or inactive.');}
+        $conn->beginTransaction();
+        $conn->prepare("UPDATE staff SET user_id=NULL WHERE user_id=?")->execute([$id]);
+        if($staffId>0){$link=$conn->prepare("UPDATE staff SET user_id=? WHERE id=?");$link->execute([$id,$staffId]);}
         if ($password !== '') {
             if (strlen($password) < 8) throw new RuntimeException('Password must be at least 8 characters.');
-            $stmt = $conn->prepare("UPDATE users SET full_name=?, role=?, status=?, password=? WHERE id=?");
-            $stmt->execute([$name, $role, $status, password_hash($password, PASSWORD_DEFAULT), $id]);
+            $stmt = $conn->prepare("UPDATE users SET full_name=?, role=?, role_id=?, status=?, password=? WHERE id=?");
+            $stmt->execute([$name, $role, $roleId, $status, password_hash($password, PASSWORD_DEFAULT), $id]);
         } else {
-            $stmt = $conn->prepare("UPDATE users SET full_name=?, role=?, status=? WHERE id=?");
-            $stmt->execute([$name, $role, $status, $id]);
+            $stmt = $conn->prepare("UPDATE users SET full_name=?, role=?, role_id=?, status=? WHERE id=?");
+            $stmt->execute([$name, $role, $roleId, $status, $id]);
         }
 
+        $conn->commit();
         userFlash('success', 'User details updated successfully.');
     }
 
     userFlash('error', 'Invalid action.');
 } catch (Throwable $e) {
+    if($conn->inTransaction())$conn->rollBack();
     userFlash('error', 'User management failed: ' . $e->getMessage());
 }
