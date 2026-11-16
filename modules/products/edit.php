@@ -84,27 +84,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $categoryName = null;
         if ($categoryId > 0) {
-            $lookup = $conn->prepare("SELECT category_name FROM categories WHERE id = ? AND status = 'Active' LIMIT 1");
+            $lookup = $conn->prepare("SELECT category_name, status FROM categories WHERE id = ? LIMIT 1");
             $lookup->execute([$categoryId]);
-            $categoryName = $lookup->fetchColumn();
-            if ($categoryName === false) {
-                throw new RuntimeException('The selected category is unavailable. Refresh the page and choose an active category.');
+            $category = $lookup->fetch();
+            if (!$category || ($category['status'] !== 'Active' && $categoryId !== (int)$p['category_id'])) {
+                throw new RuntimeException('Choose an active category. An existing inactive category may be retained until you select another.');
             }
+            $categoryName = $category['category_name'];
         }
 
         if ($brandId > 0) {
-            $lookup = $conn->prepare("SELECT id FROM brands WHERE id = ? AND status = 'Active' LIMIT 1");
+            $lookup = $conn->prepare("SELECT status FROM brands WHERE id = ? LIMIT 1");
             $lookup->execute([$brandId]);
-            if (!$lookup->fetchColumn()) {
-                throw new RuntimeException('The selected brand or publisher is unavailable.');
+            $brandStatus = $lookup->fetchColumn();
+            if ($brandStatus === false || ($brandStatus !== 'Active' && $brandId !== (int)$p['brand_id'])) {
+                throw new RuntimeException('Choose an active brand or publisher.');
             }
         }
 
         if ($supplierId > 0) {
-            $lookup = $conn->prepare("SELECT id FROM suppliers WHERE id = ? AND status = 'Active' LIMIT 1");
+            $lookup = $conn->prepare("SELECT status FROM suppliers WHERE id = ? LIMIT 1");
             $lookup->execute([$supplierId]);
-            if (!$lookup->fetchColumn()) {
-                throw new RuntimeException('The selected supplier is unavailable.');
+            $supplierStatus = $lookup->fetchColumn();
+            if ($supplierStatus === false || ($supplierStatus !== 'Active' && $supplierId !== (int)$p['supplier_id'])) {
+                throw new RuntimeException('Choose an active supplier.');
             }
         }
 
@@ -178,9 +181,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$categories = $conn->query("SELECT id, category_name FROM categories WHERE status = 'Active' ORDER BY category_name")->fetchAll();
-$brands = $conn->query("SELECT id, brand_name FROM brands WHERE status = 'Active' ORDER BY brand_name")->fetchAll();
-$suppliers = $conn->query("SELECT id, supplier_name FROM suppliers WHERE status = 'Active' ORDER BY supplier_name")->fetchAll();
+$categoryStmt = $conn->prepare("SELECT id, category_name FROM categories WHERE status = 'Active' OR id = ? ORDER BY category_name");
+$categoryStmt->execute([(int)$p['category_id']]);
+$categories = $categoryStmt->fetchAll();
+
+$brandStmt = $conn->prepare("SELECT id, brand_name FROM brands WHERE status = 'Active' OR id = ? ORDER BY brand_name");
+$brandStmt->execute([(int)$p['brand_id']]);
+$brands = $brandStmt->fetchAll();
+
+$supplierStmt = $conn->prepare("SELECT id, supplier_name FROM suppliers WHERE status = 'Active' OR id = ? ORDER BY supplier_name");
+$supplierStmt->execute([(int)$p['supplier_id']]);
+$suppliers = $supplierStmt->fetchAll();
 
 $pageTitle = 'Edit Product';
 require_once __DIR__ . '/../../includes/header.php';
