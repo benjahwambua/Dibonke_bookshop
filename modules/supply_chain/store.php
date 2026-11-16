@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../config/db.php';
 if($_SERVER['REQUEST_METHOD']!=='POST'){header('Location:index.php');exit;}
 verify_csrf();
+requireModulePermission('supply_chain','create');
 try{
  $supplierId=(int)($_POST['supplier_id']??0);$poDate=(string)($_POST['po_date']??date('Y-m-d'));$expected=trim((string)($_POST['expected_date']??''));$notes=trim((string)($_POST['notes']??''));$items=$_POST['items']??[];
  if($supplierId<=0||!is_array($items)||!$items)throw new RuntimeException('Select a supplier and add at least one item.');
