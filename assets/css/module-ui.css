@@ -47,3 +47,36 @@ main.content .form-actions{display:flex;align-items:center;justify-content:flex-
 @media(max-width:900px){main.content{padding:24px 20px 30px}main.content .stats-grid,main.content .stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:600px){main.content{padding:19px 14px 26px}main.content .page-head,main.content .content-header{align-items:flex-start;flex-direction:column}main.content .stats-grid,main.content .stats{grid-template-columns:1fr 1fr;gap:9px}main.content .stat{padding:13px}main.content .toolbar{align-items:stretch}main.content .toolbar input,main.content .toolbar select,main.content .toolbar .btn{width:100%;min-width:0}main.content .table-card,main.content .panel{padding:12px}}
 @media(max-width:390px){main.content .stats-grid,main.content .stats{grid-template-columns:1fr}}
+
+/* Legacy module compatibility: normalize existing page-specific heading variants. */
+main.content .page-head,main.content .page-heading,main.content .head,main.content .pos-title,
+main.content .content-header{gap:14px;margin:0 0 22px;flex-wrap:wrap}
+main.content .page-head h1,main.content .page-heading h1,main.content .head h1,
+main.content .pos-title h1,main.content .content-header h1{margin:0;color:var(--db-navy);font-size:clamp(1.4rem,2.3vw,1.85rem);font-weight:800;letter-spacing:-.03em}
+main.content .page-heading p,main.content .head p,main.content .pos-title p,
+main.content .content-header p{margin:5px 0 0;color:var(--db-muted);font-size:12px}
+main.content .breadcrumbs,main.content .breadcrumb{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px;color:var(--db-muted);font-size:11px}
+main.content .breadcrumbs a,main.content .breadcrumb a{color:var(--db-navy);text-decoration:none}
+main.content .breadcrumbs a:hover,main.content .breadcrumb a:hover{text-decoration:underline}
+main.content .btn.primary,main.content .btn-primary{background:var(--db-navy);color:#fff}
+main.content .btn.primary:hover,main.content .btn-primary:hover{background:var(--db-navy-deep);color:#fff}
+main.content .btn.light,main.content .btn-secondary{background:#eef2f6;border:1px solid #e1e7ee;color:#405268}
+main.content .btn.success{background:#147d5a;color:#fff}
+main.content .btn.warning{background:#b7791f;color:#fff}
+main.content .btn.danger{background:#b42318;color:#fff}
+main.content .filter-form{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+main.content .filter-form input,main.content .filter-form select,
+main.content .filter input,main.content .filter select{min-height:39px;padding:9px 11px;border:1px solid #d9e1e9;border-radius:8px;background:#fff;color:var(--db-ink);font:inherit;font-size:12px}
+main.content .filter-form input:focus,main.content .filter-form select:focus,
+main.content .filter input:focus,main.content .filter select:focus{outline:0;border-color:#7894ad;box-shadow:0 0 0 3px rgba(23,50,77,.09)}
+main.content table:not(.table){border-collapse:collapse}
+main.content table:not(.table) thead th{background:#eef2f6;color:#42566b;font-size:10px;font-weight:800;letter-spacing:.055em;text-transform:uppercase}
+main.content table:not(.table) th,main.content table:not(.table) td{padding:11px 13px;border-bottom:1px solid #edf1f5}
+main.content table:not(.table) tbody tr:hover td{background:#fafbfd}
+main.content .empty,main.content .empty-state,main.content .empty-message{padding:38px 20px;text-align:center;color:var(--db-muted)}
+main.content .alert,main.content .flash{border-radius:9px;font-size:12px}
+main.content input:not([type=checkbox]):not([type=radio]),main.content select,main.content textarea{max-width:100%}
+@media(max-width:700px){
+ main.content .page-heading,main.content .head,main.content .pos-title{align-items:flex-start;flex-direction:column}
+ main.content .filter-form>*{width:100%;min-width:0}
+}
