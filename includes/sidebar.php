@@ -30,6 +30,7 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
 .sidebar nav a .icon-main{width:17px;flex:0 0 17px;color:#9fb4c7;text-align:center;font-size:13px}
 .sidebar nav a:hover{background:rgba(255,255,255,.09);color:#fff}.sidebar nav a:hover .icon-main{color:#e9c477}
 .sidebar nav a.active{background:#fff;color:#17324d;box-shadow:0 3px 12px rgba(0,0,0,.12)}.sidebar nav a.active .icon-main{color:#a87924}
+.sidebar-access-note{display:flex;gap:8px;align-items:flex-start;margin:13px 5px;padding:11px;border:1px solid rgba(233,196,119,.22);border-radius:9px;background:rgba(233,196,119,.08);color:#e8d6ae;font-size:10px;line-height:1.5}.sidebar-access-note i{margin-top:2px;color:#e9c477}
 .sidebar nav a.logout-link{margin-top:18px;border:1px solid rgba(248,113,113,.18);background:rgba(248,113,113,.08);color:#fecaca}
 .sidebar nav a.logout-link .icon-main{color:#fca5a5}
 @media(max-width:768px){#appSidebar.sidebar{position:fixed;display:flex!important;left:0;top:var(--app-topbar-height,72px);right:auto;bottom:0;width:min(290px,86vw);height:auto;display:flex;flex-direction:column;gap:0;padding:0;border:0;transform:translateX(-105%);box-shadow:12px 0 30px rgba(0,0,0,.2)}#appSidebar.sidebar.is-open{transform:translateX(0);visibility:visible!important}.sidebar nav{display:block;flex-direction:column;overflow-y:auto;overflow-x:hidden}.sidebar nav a{width:auto;white-space:normal;flex-shrink:initial}}
@@ -47,6 +48,9 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
     <nav aria-label="Main navigation">
         <div class="menu-title">Workspace</div>
         <a href="<?= BASE_URL ?>/index.php" class="<?= $currentPath === BASE_URL . '/index.php' ? 'active' : '' ?>"><i class="fas fa-th-large icon-main"></i>Dashboard</a>
+        <?php if (!isSuperUser() && count(roleModules()[currentUserRole()] ?? []) === 0): ?>
+        <div class="sidebar-access-note"><i class="fas fa-lock"></i><span>No modules are assigned to your current role. Contact an administrator for access.</span></div>
+        <?php endif; ?>
 
         <?php if (canAccessModule('products') || canAccessModule('categories') || canAccessModule('brands') || canAccessModule('price_lists')): ?>
         <div class="menu-title">Catalogue &amp; Inventory</div>
