@@ -30,11 +30,39 @@ try{
  $categoryName='';
  if($categoryId){$s=$conn->prepare("SELECT category_name FROM categories WHERE id=:id");$s->execute([':id'=>$categoryId]);$categoryName=(string)($s->fetchColumn()?:'');}
 
+ $conn->beginTransaction();
+
  $stmt=$conn->prepare("INSERT INTO products(product_name,product_type,isbn,category,category_id,brand_id,supplier_id,sku,barcode,unit,buying_price,selling_price,wholesale_price,stock_quantity,reorder_level,icon,status) VALUES(:name,:product_type,:isbn,:category,:category_id,:brand,:supplier,:sku,:barcode,:unit,:buy,:sell,:wholesale,:stock,:reorder,:icon,'Active')");
  $stmt->execute([':name'=>$name,':product_type'=>$productType,':isbn'=>$isbn,':category'=>$categoryName,':category_id'=>$categoryId?:null,':brand'=>$brandId?:null,':supplier'=>$supplierId?:null,':sku'=>$sku,':barcode'=>$barcode,':unit'=>$unit,':buy'=>$buy,':sell'=>$sell,':wholesale'=>$wholesale,':stock'=>$stock,':reorder'=>$reorder,':icon'=>$icon]);
-$productId=(int)$conn->lastInsertId();
-$sync=$conn->prepare("INSERT INTO product_prices(price_list_id,product_id,min_quantity,price) SELECT id,?,1,? FROM price_lists WHERE code=? ON DUPLICATE KEY UPDATE price=VALUES(price)");
-$sync->execute([productId,$sell,'normal']);if($wholesale>0){$sync->execute([productId,$wholesale,'wholesale']);}else{$del=$conn->prepare("DELETE FROM product_prices WHERE product_id=? AND min_quantity=1 AND price_list_id=(SELECT id FROM price_lists WHERE code='wholesale' LIMIT 1)");$del->execute([productId]);}
+ $productId=(int)$conn->lastInsertId();
+
+ $sync=$conn->prepare("INSERT INTO product_prices(price_list_id,product_id,min_quantity,price) SELECT id,?,1,? FROM price_lists WHERE code=? ON DUPLICATE KEY UPDATE price=VALUES(price)");
+ $sync->execute([$productId,$sell,'normal']);
+ if($wholesale>0){
+     $sync->execute([$productId,$wholesale,'wholesale']);
+ }else{
+     $del=$conn->prepare("DELETE FROM product_prices WHERE product_id=? AND min_quantity=1 AND price_list_id=(SELECT id FROM price_lists WHERE code='wholesale' LIMIT 1)");
+     $del->execute([$productId]);
+ }
+
+ // Record opening inventory so the stock ledger reconciles with product stock.
+ if($stock>0){
+     $movement=$conn->prepare("INSERT INTO stock_movements (product_id,user_id,movement_type,quantity,stock_before,stock_after,reference_type,reference_id,notes,movement_date) VALUES (?,?,?,?,?,?,?,?,?,?)");
+     $movement->execute([
+         $productId,
+         (int)$_SESSION['user_id'],
+         'Opening Stock',
+         $stock,
+         0,
+         $stock,
+         'product',
+         $productId,
+         'Opening stock recorded when product was created',
+         date('Y-m-d H:i:s')
+     ]);
+ }
+
+ $conn->commit();
  $_SESSION['product_flash']='Product created successfully.';
-}catch(Throwable $e){error_log($e->getMessage());$_SESSION['product_flash']='Product could not be saved: '.$e->getMessage();}
+}catch(Throwable $e){if($conn->inTransaction())$conn->rollBack();error_log($e->getMessage());$_SESSION['product_flash']='Product could not be saved: '.$e->getMessage();}
 header('Location: index.php'); exit;
