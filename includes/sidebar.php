@@ -77,10 +77,14 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <?php if (canAccessModule('analytics')): ?><a href="<?= BASE_URL ?>/modules/analytics/index.php" class="<?= navActive('/analytics/') ?>"><i class="fas fa-chart-line icon-main"></i>Analytics</a><?php endif; ?>
         <?php endif; ?>
 
+        <?php if (canAccessModule('staff') || isSuperUser()): ?>
+        <div class="menu-title">Staff &amp; Access</div>
+        <?php if (canAccessModule('staff')): ?><a href="<?= BASE_URL ?>/modules/staff/index.php" class="<?= navActive('/staff/') ?>"><i class="fas fa-id-badge icon-main"></i>Staff Directory</a><?php endif; ?>
         <?php if (isSuperUser()): ?>
-        <div class="menu-title">Administration</div>
-        <a href="<?= BASE_URL ?>/modules/users/index.php" class="<?= navActive('/users/') ?>"><i class="fas fa-user-shield icon-main"></i>Users &amp; Access</a>
+        <a href="<?= BASE_URL ?>/modules/users/index.php" class="<?= navActive('/users/') ?>"><i class="fas fa-user-shield icon-main"></i>Users</a>
+        <a href="<?= BASE_URL ?>/modules/roles/index.php" class="<?= navActive('/roles/') ?>"><i class="fas fa-user-lock icon-main"></i>Roles &amp; Permissions</a>
         <a href="<?= BASE_URL ?>/modules/settings/index.php" class="<?= navActive('/settings/') ?>"><i class="fas fa-sliders-h icon-main"></i>Settings</a>
+        <?php endif; ?>
         <?php endif; ?>
         <?php if (canAccessModule('mpesa')): ?><a href="<?= BASE_URL ?>/modules/mpesa/index.php" class="<?= navActive('/mpesa/') ?>"><i class="fas fa-mobile-alt icon-main"></i>M-PESA</a><?php endif; ?>
         <a href="<?= BASE_URL ?>/auth/logout.php" class="logout-link"><i class="fas fa-sign-out-alt icon-main"></i>Sign out</a>
