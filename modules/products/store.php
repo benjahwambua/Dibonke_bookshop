@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../config/db.php';
 
 if($_SERVER['REQUEST_METHOD']!=='POST'){ header('Location: index.php'); exit; }
+requireModulePermission('products','create');
 
 try{
  $name=trim((string)($_POST['product_name']??''));
