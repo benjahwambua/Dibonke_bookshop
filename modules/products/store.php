@@ -8,6 +8,9 @@ if($_SERVER['REQUEST_METHOD']!=='POST'){ header('Location: index.php'); exit; }
 try{
  $name=trim((string)($_POST['product_name']??''));
  if($name==='') throw new RuntimeException('Product name is required.');
+ $isbn=trim((string)($_POST['isbn']??'')) ?: null;
+ $productType=trim((string)($_POST['product_type']??'General')) ?: 'General';
+ if($isbn!==null && !preg_match('/^(?:97[89])?[0-9Xx-]{10,17}$/',$isbn)) throw new RuntimeException('Enter a valid ISBN-10 or ISBN-13, or leave the ISBN blank.');
 
  $categoryId=(int)($_POST['category_id']??0);
  $brandId=(int)($_POST['brand_id']??0);
@@ -20,15 +23,15 @@ try{
  $sku=trim((string)($_POST['sku']??'')) ?: null;
  $barcode=trim((string)($_POST['barcode']??'')) ?: null;
  $unit=trim((string)($_POST['unit']??'Piece')) ?: 'Piece';
- $icon=trim((string)($_POST['icon']??'🍾')) ?: '🍾';
+ $icon=trim((string)($_POST['icon']??'📚')) ?: '📦';
 
  if($buy<0||$sell<0||$wholesale<0||$stock<0||$reorder<0) throw new RuntimeException('Prices and quantities cannot be negative.');
 
  $categoryName='';
  if($categoryId){$s=$conn->prepare("SELECT category_name FROM categories WHERE id=:id");$s->execute([':id'=>$categoryId]);$categoryName=(string)($s->fetchColumn()?:'');}
 
- $stmt=$conn->prepare("INSERT INTO products(product_name,category,category_id,brand_id,supplier_id,sku,barcode,unit,buying_price,selling_price,wholesale_price,stock_quantity,reorder_level,icon,status) VALUES(:name,:category,:category_id,:brand,:supplier,:sku,:barcode,:unit,:buy,:sell,:wholesale,:stock,:reorder,:icon,'Active')");
- $stmt->execute([':name'=>$name,':category'=>$categoryName,':category_id'=>$categoryId?:null,':brand'=>$brandId?:null,':supplier'=>$supplierId?:null,':sku'=>$sku,':barcode'=>$barcode,':unit'=>$unit,':buy'=>$buy,':sell'=>$sell,':wholesale'=>$wholesale,':stock'=>$stock,':reorder'=>$reorder,':icon'=>$icon]);
+ $stmt=$conn->prepare("INSERT INTO products(product_name,product_type,isbn,category,category_id,brand_id,supplier_id,sku,barcode,unit,buying_price,selling_price,wholesale_price,stock_quantity,reorder_level,icon,status) VALUES(:name,:product_type,:isbn,:category,:category_id,:brand,:supplier,:sku,:barcode,:unit,:buy,:sell,:wholesale,:stock,:reorder,:icon,'Active')");
+ $stmt->execute([':name'=>$name,':product_type'=>$productType,':isbn'=>$isbn,':category'=>$categoryName,':category_id'=>$categoryId?:null,':brand'=>$brandId?:null,':supplier'=>$supplierId?:null,':sku'=>$sku,':barcode'=>$barcode,':unit'=>$unit,':buy'=>$buy,':sell'=>$sell,':wholesale'=>$wholesale,':stock'=>$stock,':reorder'=>$reorder,':icon'=>$icon]);
 $productId=(int)$conn->lastInsertId();
 $sync=$conn->prepare("INSERT INTO product_prices(price_list_id,product_id,min_quantity,price) SELECT id,?,1,? FROM price_lists WHERE code=? ON DUPLICATE KEY UPDATE price=VALUES(price)");
 $sync->execute([productId,$sell,'normal']);if($wholesale>0){$sync->execute([productId,$wholesale,'wholesale']);}else{$del=$conn->prepare("DELETE FROM product_prices WHERE product_id=? AND min_quantity=1 AND price_list_id=(SELECT id FROM price_lists WHERE code='wholesale' LIMIT 1)");$del->execute([productId]);}
