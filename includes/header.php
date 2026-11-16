@@ -11,6 +11,7 @@ $userInitial = strtoupper(substr(trim($userName), 0, 1)) ?: 'U';
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <title><?= e($pageTitle ?? APP_NAME) ?> | Dibonke Bookshop</title>
     <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/module-ui.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root{--app-topbar-height:72px;--app-sidebar-width:264px;--app-navy:#17324d;--app-navy-deep:#10263b;--app-gold:#d6a84f;--app-bg:#f5f7fa;--app-border:#e5eaf0}
