@@ -84,7 +84,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <td>KES <?=number_format((float)$p['buying_price'],2)?></td><td>KES <?=number_format((float)$p['selling_price'],2)?></td><td>KES <?=number_format((float)$p['wholesale_price'],2)?></td>
 <td><?php if($stock===0): ?><span class="stock-out">Out of stock</span><?php elseif($stock<=(int)$p['reorder_level']): ?><span class="stock-low">⚠ <?=$stock?></span><?php else:?><span class="stock-ok">✓ <?=$stock?></span><?php endif;?></td>
 <td><?=e($p['status'])?></td>
-<td><div class="actions"><a class="btn btn-edit" href="edit.php?id=<?=$p['id']?>"><i class="fas fa-edit"></i></a><a class="btn btn-danger" href="delete.php?id=<?=$p['id']?>" onclick="return confirm('Delete this product?')"><i class="fas fa-trash"></i></a></div></td>
+<td><div class="actions"><?php if(hasModulePermission('products','edit')):?><a class="btn btn-edit" href="edit.php?id=<?=$p['id']?>"><i class="fas fa-edit"></i></a><?php endif;?><?php if(hasModulePermission('products','delete')):?><form method="post" action="delete.php" onsubmit="return confirm('Delete this product?')" style="display:inline"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>"><input type="hidden" name="id" value="<?=(int)$p['id']?>"><button class="btn btn-danger" type="submit"><i class="fas fa-trash"></i></button></form><?php endif;?></div></td>
 </tr>
 <?php endforeach; endif;?>
 </tbody></table></div>
