@@ -27,8 +27,8 @@ declare(strict_types=1);
     toggle.addEventListener('click',()=>sidebar.classList.contains('is-open')?close():open());
     backdrop.addEventListener('click',close);
     document.addEventListener('keydown',event=>{if(event.key==='Escape')close();});
-    sidebar.querySelectorAll('a').forEach(link=>link.addEventListener('click',()=>{if(window.innerWidth<=700)close();}));
-    window.addEventListener('resize',()=>{if(window.innerWidth>700)close();});
+    sidebar.querySelectorAll('a').forEach(link=>link.addEventListener('click',()=>{if(window.innerWidth<=768)close();}));
+    window.addEventListener('resize',()=>{if(window.innerWidth>768)close();});
 })();
 </script>
 </body>
