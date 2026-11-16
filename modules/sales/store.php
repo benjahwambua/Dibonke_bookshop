@@ -3,6 +3,7 @@ declare(strict_types=1);
 require_once __DIR__.'/../../includes/auth.php'; require_once __DIR__.'/../../config/db.php';
 require_once __DIR__.'/../../config/mpesa.php';
 if($_SERVER['REQUEST_METHOD']!=='POST'){header('Location: index.php');exit;} verify_csrf();
+requireModulePermission('sales','create');
 try{
 $cart=json_decode((string)($_POST['cart_json']??''),true); if(!is_array($cart)||!$cart)throw new RuntimeException('Add at least one product.');
 $customerId=(int)($_POST['customer_id']??0);$customerId=$customerId>0?$customerId:null;
