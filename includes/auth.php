@@ -30,6 +30,7 @@ function hasModulePermission(string $module,string $action='view'): bool {
  $cache[$key]=(int)$value===1;return $cache[$key];
 }
 function canAccessModule(string $module): bool { return hasModulePermission($module,'view'); }
+function requireModulePermission(string $module,string $action): void { if(hasModulePermission($module,$action))return; http_response_code(403); exit('Access denied. Your role does not have permission to '.$action.' in this module.'); }
 function requireModuleAccess(string $module): void {
  if(in_array($module,['users','roles','settings'],true)){if(isSuperUser())return;http_response_code(403);exit('Access denied.');}
  if(canAccessModule($module))return;
