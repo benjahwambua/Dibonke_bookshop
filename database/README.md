@@ -53,6 +53,7 @@ The POS also reads `customers`, `sales`, `settings` and `activity_logs`. Purchas
 - Completed purchases increase product stock and write `Purchase` movements.
 - Completed sales decrease product stock and write `Sale` movements.
 - Manual increases, decreases and physical-count corrections are recorded as `Adjustment` movements. The adjustment workflow locks the product row and updates the product balance and ledger in one transaction.
+- The adjustment action requires the existing `stock_movements.create` permission; no role grants were changed as part of this work.
 - Editing product details does not directly overwrite stock. Use the stock adjustment workflow, purchases or sales so the ledger remains traceable.
 
 **Current quantity limitation:** the inherited products, purchase, POS and stock-ledger handlers use whole-number quantities. The present workflow is therefore intended for piece/pack-style units. Supporting fractional units such as kilograms or metres requires a coordinated DECIMAL schema and PHP change across products, purchases, sales, stock movements, receipts and reports; changing only the products column would be unsafe.
