@@ -14,3 +14,12 @@ These are supporting/extension scripts, not a complete standalone database insta
 4. Test installation and transactions on a fresh local database.
 
 Use a separate local development database named `dibonke_bookshop_db`. Do not reuse the Stalk & Stable production database.
+
+
+## Product catalogue extension
+
+The additive migration `dibonke_products_inventory.sql` adds:
+- `product_type` to distinguish Books, Stationery and General retail items.
+- Optional `isbn` for books, with a unique index to prevent duplicate ISBN entries.
+
+Run this migration only after a valid base `products` table has been installed. It does not create the base schema. Existing products are retained and default to the `General` type. Review and back up the database before applying any migration.
