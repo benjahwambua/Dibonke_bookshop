@@ -280,7 +280,7 @@ const adjustmentProduct = document.getElementById('adjustmentProduct');
 const adjustmentMode = document.getElementById('adjustmentMode');
 const adjustmentQuantity = document.getElementById('adjustmentQuantity');
 const adjustmentQuantityLabel = document.getElementById('adjustmentQuantityLabel');
-function syncAdjustmentQuantity() {
+function syncAdjustmentQuantity(resetAmount = false) {
     const option = adjustmentProduct.options[adjustmentProduct.selectedIndex];
     const currentStock = option ? option.dataset.stock || '0' : '0';
     if (adjustmentMode.value === 'set') {
@@ -290,11 +290,11 @@ function syncAdjustmentQuantity() {
     } else {
         adjustmentQuantityLabel.firstChild.textContent = 'Quantity to add/remove *';
         adjustmentQuantity.min = '1';
-        if (Number(adjustmentQuantity.value) < 1) adjustmentQuantity.value = '1';
+        if (resetAmount || Number(adjustmentQuantity.value) < 1) adjustmentQuantity.value = '1';
     }
 }
-adjustmentProduct.addEventListener('change', syncAdjustmentQuantity);
-adjustmentMode.addEventListener('change', syncAdjustmentQuantity);
+adjustmentProduct.addEventListener('change', () => syncAdjustmentQuantity());
+adjustmentMode.addEventListener('change', () => syncAdjustmentQuantity(true));
 </script>
 <?php endif; ?>
 
