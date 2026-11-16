@@ -11,6 +11,8 @@ $editBrand = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     $action = $_POST['action'] ?? '';
+    $permissionAction = $action === 'create' ? 'create' : ($action === 'delete' ? 'delete' : 'edit');
+    requireModulePermission('brands', $permissionAction);
 
     try {
         if ($action === 'create' || $action === 'update') {
