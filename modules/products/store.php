@@ -1,70 +1,168 @@
 <?php
 declare(strict_types=1);
+
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../includes/product_helpers.php';
 
-if($_SERVER['REQUEST_METHOD']!=='POST'){ header('Location: index.php'); exit; }
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: index.php');
+    exit;
+}
+
 verify_csrf();
-requireModulePermission('products','create');
+requireModulePermission('products', 'create');
 
-try{
- $name=trim((string)($_POST['product_name']??''));
- if($name==='') throw new RuntimeException('Product name is required.');
- $isbn=trim((string)($_POST['isbn']??'')) ?: null;
- $productType=trim((string)($_POST['product_type']??'General')) ?: 'General';
- if($isbn!==null && !preg_match('/^(?:97[89])?[0-9Xx-]{10,17}$/',$isbn)) throw new RuntimeException('Enter a valid ISBN-10 or ISBN-13, or leave the ISBN blank.');
+try {
+    $name = trim((string)($_POST['product_name'] ?? ''));
+    if ($name === '' || strlen($name) > 160) {
+        throw new RuntimeException('Enter a product name of up to 160 characters.');
+    }
 
- $categoryId=(int)($_POST['category_id']??0);
- $brandId=(int)($_POST['brand_id']??0);
- $supplierId=(int)($_POST['supplier_id']??0);
- $buy=(float)($_POST['buying_price']??0);
- $sell=(float)($_POST['selling_price']??0);
- $wholesale=(float)($_POST['wholesale_price']??0);
- $stock=(int)($_POST['stock_quantity']??0);
- $reorder=(int)($_POST['reorder_level']??10);
- $sku=trim((string)($_POST['sku']??'')) ?: null;
- $barcode=trim((string)($_POST['barcode']??'')) ?: null;
- $unit=trim((string)($_POST['unit']??'Piece')) ?: 'Piece';
- $icon=trim((string)($_POST['icon']??'📚')) ?: '📦';
+    $productType = normalizeProductType($_POST['product_type'] ?? 'General');
+    $isbn = normalizeProductIsbn($_POST['isbn'] ?? '');
 
- if($buy<0||$sell<0||$wholesale<0||$stock<0||$reorder<0) throw new RuntimeException('Prices and quantities cannot be negative.');
+    $categoryId = (int)($_POST['category_id'] ?? 0);
+    $brandId = (int)($_POST['brand_id'] ?? 0);
+    $supplierId = (int)($_POST['supplier_id'] ?? 0);
 
- $categoryName='';
- if($categoryId){$s=$conn->prepare("SELECT category_name FROM categories WHERE id=:id");$s->execute([':id'=>$categoryId]);$categoryName=(string)($s->fetchColumn()?:'');}
+    $buyRaw = trim((string)($_POST['buying_price'] ?? ''));
+    $sellRaw = trim((string)($_POST['selling_price'] ?? ''));
+    $wholesaleRaw = trim((string)($_POST['wholesale_price'] ?? ''));
+    if ($buyRaw === '' || !is_numeric($buyRaw) || $sellRaw === '' || !is_numeric($sellRaw)) {
+        throw new RuntimeException('Enter valid buying and selling prices.');
+    }
+    if ($wholesaleRaw !== '' && !is_numeric($wholesaleRaw)) {
+        throw new RuntimeException('Enter a valid wholesale price or leave it blank.');
+    }
 
- $conn->beginTransaction();
+    $buy = (float)$buyRaw;
+    $sell = (float)$sellRaw;
+    $wholesale = $wholesaleRaw === '' ? 0.0 : (float)$wholesaleRaw;
 
- $stmt=$conn->prepare("INSERT INTO products(product_name,product_type,isbn,category,category_id,brand_id,supplier_id,sku,barcode,unit,buying_price,selling_price,wholesale_price,stock_quantity,reorder_level,icon,status) VALUES(:name,:product_type,:isbn,:category,:category_id,:brand,:supplier,:sku,:barcode,:unit,:buy,:sell,:wholesale,:stock,:reorder,:icon,'Active')");
- $stmt->execute([':name'=>$name,':product_type'=>$productType,':isbn'=>$isbn,':category'=>$categoryName,':category_id'=>$categoryId?:null,':brand'=>$brandId?:null,':supplier'=>$supplierId?:null,':sku'=>$sku,':barcode'=>$barcode,':unit'=>$unit,':buy'=>$buy,':sell'=>$sell,':wholesale'=>$wholesale,':stock'=>$stock,':reorder'=>$reorder,':icon'=>$icon]);
- $productId=(int)$conn->lastInsertId();
+    $stockRaw = trim((string)($_POST['stock_quantity'] ?? '0'));
+    $reorderRaw = trim((string)($_POST['reorder_level'] ?? '10'));
+    if (!preg_match('/^\d+$/', $stockRaw) || !preg_match('/^\d+$/', $reorderRaw)) {
+        throw new RuntimeException('Opening stock and reorder level must be whole, non-negative quantities.');
+    }
+    $stock = (int)$stockRaw;
+    $reorder = (int)$reorderRaw;
 
- $sync=$conn->prepare("INSERT INTO product_prices(price_list_id,product_id,min_quantity,price) SELECT id,?,1,? FROM price_lists WHERE code=? ON DUPLICATE KEY UPDATE price=VALUES(price)");
- $sync->execute([$productId,$sell,'normal']);
- if($wholesale>0){
-     $sync->execute([$productId,$wholesale,'wholesale']);
- }else{
-     $del=$conn->prepare("DELETE FROM product_prices WHERE product_id=? AND min_quantity=1 AND price_list_id=(SELECT id FROM price_lists WHERE code='wholesale' LIMIT 1)");
-     $del->execute([$productId]);
- }
+    if ($buy < 0 || $sell < 0 || $wholesale < 0) {
+        throw new RuntimeException('Prices cannot be negative.');
+    }
 
- // Record opening inventory so the stock ledger reconciles with product stock.
- if($stock>0){
-     $movement=$conn->prepare("INSERT INTO stock_movements (product_id,user_id,movement_type,quantity,stock_before,stock_after,reference_type,reference_id,notes,movement_date) VALUES (?,?,?,?,?,?,?,?,?,?)");
-     $movement->execute([
-         $productId,
-         (int)$_SESSION['user_id'],
-         'Opening Stock',
-         $stock,
-         0,
-         $stock,
-         'product',
-         $productId,
-         'Opening stock recorded when product was created',
-         date('Y-m-d H:i:s')
-     ]);
- }
+    $categoryName = null;
+    if ($categoryId > 0) {
+        $lookup = $conn->prepare("SELECT category_name FROM categories WHERE id = ? AND status = 'Active' LIMIT 1");
+        $lookup->execute([$categoryId]);
+        $categoryName = $lookup->fetchColumn();
+        if ($categoryName === false) {
+            throw new RuntimeException('The selected category is unavailable. Refresh the page and choose an active category.');
+        }
+    }
 
- $conn->commit();
- $_SESSION['product_flash']='Product created successfully.';
-}catch(Throwable $e){if($conn->inTransaction())$conn->rollBack();error_log($e->getMessage());$_SESSION['product_flash']='Product could not be saved: '.$e->getMessage();}
-header('Location: index.php'); exit;
+    if ($brandId > 0) {
+        $lookup = $conn->prepare("SELECT id FROM brands WHERE id = ? AND status = 'Active' LIMIT 1");
+        $lookup->execute([$brandId]);
+        if (!$lookup->fetchColumn()) {
+            throw new RuntimeException('The selected brand or publisher is unavailable.');
+        }
+    }
+
+    if ($supplierId > 0) {
+        $lookup = $conn->prepare("SELECT id FROM suppliers WHERE id = ? AND status = 'Active' LIMIT 1");
+        $lookup->execute([$supplierId]);
+        if (!$lookup->fetchColumn()) {
+            throw new RuntimeException('The selected supplier is unavailable.');
+        }
+    }
+
+    $sku = trim((string)($_POST['sku'] ?? '')) ?: null;
+    $barcode = trim((string)($_POST['barcode'] ?? '')) ?: null;
+    $unit = trim((string)($_POST['unit'] ?? 'Piece')) ?: 'Piece';
+    $icon = trim((string)($_POST['icon'] ?? '📦')) ?: '📦';
+
+    $conn->beginTransaction();
+
+    // The product catalogue and POS both depend on an active standard price list.
+    $priceListStmt = $conn->prepare("SELECT id FROM price_lists WHERE code = 'normal' AND status = 'Active' LIMIT 1");
+    $priceListStmt->execute();
+    $normalPriceListId = (int)$priceListStmt->fetchColumn();
+    if ($normalPriceListId <= 0) {
+        throw new RuntimeException('The Standard price list is missing. Complete the price-list database setup before adding products.');
+    }
+
+    $wholesalePriceListId = 0;
+    if ($wholesale > 0) {
+        $priceListStmt = $conn->prepare("SELECT id FROM price_lists WHERE code = 'wholesale' AND status = 'Active' LIMIT 1");
+        $priceListStmt->execute();
+        $wholesalePriceListId = (int)$priceListStmt->fetchColumn();
+        if ($wholesalePriceListId <= 0) {
+            throw new RuntimeException('A wholesale price was entered, but the Wholesale price list is not configured.');
+        }
+    }
+
+    $insert = $conn->prepare(
+        "INSERT INTO products (
+            product_name, product_type, isbn, category, category_id,
+            brand_id, supplier_id, sku, barcode, unit, buying_price,
+            selling_price, wholesale_price, stock_quantity, reorder_level,
+            icon, status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active')"
+    );
+    $insert->execute([
+        $name, $productType, $isbn, $categoryName, $categoryId ?: null,
+        $brandId ?: null, $supplierId ?: null, $sku, $barcode, $unit,
+        $buy, $sell, $wholesale, $stock, $reorder, $icon
+    ]);
+    $productId = (int)$conn->lastInsertId();
+
+    $priceInsert = $conn->prepare(
+        "INSERT INTO product_prices (price_list_id, product_id, min_quantity, price)
+         VALUES (?, ?, 1, ?)
+         ON DUPLICATE KEY UPDATE price = VALUES(price)"
+    );
+    $priceInsert->execute([$normalPriceListId, $productId, $sell]);
+    if ($wholesalePriceListId > 0) {
+        $priceInsert->execute([$wholesalePriceListId, $productId, $wholesale]);
+    }
+
+    // Opening stock is posted to both the product balance and the stock ledger.
+    if ($stock > 0) {
+        $movement = $conn->prepare(
+            "INSERT INTO stock_movements (
+                product_id, user_id, movement_type, quantity, stock_before,
+                stock_after, reference_type, reference_id, notes, movement_date
+            ) VALUES (?, ?, 'Opening Stock', ?, 0, ?, 'product', ?, ?, ?)"
+        );
+        $movement->execute([
+            $productId,
+            (int)$_SESSION['user_id'],
+            $stock,
+            $stock,
+            $productId,
+            'Opening stock recorded when product was created',
+            date('Y-m-d H:i:s')
+        ]);
+    }
+
+    $conn->commit();
+    $_SESSION['product_flash'] = 'Product created successfully.';
+} catch (Throwable $e) {
+    if ($conn->inTransaction()) {
+        $conn->rollBack();
+    }
+
+    if ($e instanceof PDOException && $e->getCode() === '23000' && strpos($e->getMessage(), 'uq_products_isbn') !== false) {
+        $_SESSION['product_flash'] = 'That ISBN is already assigned to another product.';
+    } else {
+        error_log('Dibonke product creation failed: ' . $e->getMessage());
+        $_SESSION['product_flash'] = $e instanceof RuntimeException
+            ? 'Product could not be saved: ' . $e->getMessage()
+            : 'Product could not be saved. Check the database setup and application error log.';
+    }
+}
+
+header('Location: index.php');
+exit;
