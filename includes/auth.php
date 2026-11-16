@@ -4,11 +4,11 @@ declare(strict_types=1);
 require_once __DIR__ . '/../config/app.php';
 
 /**
- * Authentication + role-based authorization.
+ * Authentication + temporary open module access.
  *
- * Super users bypass module restrictions. Every other user is limited
- * to the modules assigned to their role. This is enforced here so a
- * user cannot bypass the sidebar by typing a module URL directly.
+ * Authentication remains mandatory, but module-level role restrictions are
+ * temporarily disabled while the bookshop roles and permissions are being
+ * finalized. Keep the role map below as the reference for restoring RBAC.
  */
 if (empty($_SESSION['user_id'])) {
     header('Location: ' . BASE_URL . '/auth/login.php');
@@ -57,16 +57,14 @@ function roleModules(): array
     ];
 }
 
+/**
+ * TEMPORARY: allow every authenticated user through module-level checks.
+ * Restore the roleModules() lookup here when the unified permissions module
+ * is ready. Login authentication is still enforced above.
+ */
 function canAccessModule(string $module): bool
 {
-    if (isSuperUser()) {
-        return true;
-    }
-
-    $role = currentUserRole();
-    $permissions = roleModules();
-
-    return in_array($module, $permissions[$role] ?? [], true);
+    return true;
 }
 
 function requireModuleAccess(string $module): void
@@ -81,7 +79,6 @@ function requireModuleAccess(string $module): void
 
 /**
  * Automatically enforce the permission for any page under /modules/{module}/.
- * Individual module pages do not need to remember to add another guard.
  */
 $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '';
 $modulesMarker = '/modules/';
