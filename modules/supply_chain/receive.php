@@ -20,6 +20,7 @@ if($_SERVER['REQUEST_METHOD']==='GET'){
  }catch(Throwable $e){http_response_code(404);echo json_encode(['ok'=>false,'message'=>$e->getMessage()]);}exit;
 }
 if($_SERVER['REQUEST_METHOD']!=='POST'){header('Location:index.php');exit;}verify_csrf();
+requireModulePermission('supply_chain','create');
 try{
  $poId=(int)($_POST['purchase_order_id']??0);$receivedDate=trim((string)($_POST['received_date']??''));$invoice=trim((string)($_POST['supplier_invoice']??''));$delivery=trim((string)($_POST['delivery_note']??''));$notes=trim((string)($_POST['notes']??''));$items=$_POST['items']??[];
  if($poId<=0||!is_array($items))throw new RuntimeException('Invalid goods receipt.');
