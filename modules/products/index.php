@@ -18,7 +18,7 @@ $sql="SELECT p.*, b.brand_name, s.supplier_name, c.category_name
       LEFT JOIN categories c ON c.id=p.category_id
       WHERE 1=1";
 $params=[];
-if($search!==''){ $sql.=" AND (p.product_name LIKE :q OR p.sku LIKE :q OR p.barcode LIKE :q OR b.brand_name LIKE :q)"; $params[':q']="%{$search}%"; }
+if($search!==''){ $sql.=" AND (p.product_name LIKE :q OR p.sku LIKE :q OR p.barcode LIKE :q OR p.isbn LIKE :q OR b.brand_name LIKE :q)"; $params[':q']="%{$search}%"; }
 if($category>0){ $sql.=" AND p.category_id=:category"; $params[':category']=$category; }
 if(in_array($status,['Active','Inactive'],true)){ $sql.=" AND p.status=:status"; $params[':status']=$status; }
 $sql.=" ORDER BY p.id DESC";
@@ -48,6 +48,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 @media(max-width:900px){.stats-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:600px){.stats-grid{grid-template-columns:1fr}.content{padding:18px}}
 </style>
 
+<nav class="breadcrumbs" aria-label="Breadcrumb"><span class="current">Catalogue</span><span aria-hidden="true">/</span><span class="current">Products</span></nav>
 <div class="page-head">
  <div><h1>Products Inventory</h1><p class="muted">Manage products, pricing, stock and suppliers.</p></div>
  <button class="btn btn-primary" onclick="document.getElementById('productModal').classList.add('show')"><i class="fas fa-plus"></i> Add Product</button>
@@ -63,7 +64,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 </div>
 
 <form class="toolbar" method="get">
- <input name="q" value="<?=e($search)?>" placeholder="Search product, SKU, barcode or brand...">
+ <input name="q" value="<?=e($search)?>" placeholder="Search product, ISBN, SKU, barcode or brand...">
  <select name="category"><option value="0">All Categories</option><?php foreach($categories as $c): ?><option value="<?=$c['id']?>" <?=$category===(int)$c['id']?'selected':''?>><?=e($c['category_name'])?></option><?php endforeach;?></select>
  <select name="status"><option value="Active" <?=$status==='Active'?'selected':''?>>Active</option><option value="Inactive" <?=$status==='Inactive'?'selected':''?>>Inactive</option><option value="all" <?=$status==='all'?'selected':''?>>All Status</option></select>
  <button class="btn btn-light" type="submit"><i class="fas fa-search"></i> Filter</button>
@@ -71,7 +72,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 </form>
 
 <div class="table-card">
-<table class="products-table">
+<table class="table products-table">
 <thead><tr><th>Product</th><th>Type / ISBN</th><th>Category</th><th>Brand</th><th>Supplier</th><th>Buy Price</th><th>Normal Price</th><th>Wholesale Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead>
 <tbody>
 <?php if(!$products): ?><tr><td colspan="11" style="text-align:center;padding:45px;color:#64748b">No products found.</td></tr>
@@ -83,7 +84,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <td><?=e($p['brand_name']?:'—')?></td><td><?=e($p['supplier_name']?:'—')?></td>
 <td>KES <?=number_format((float)$p['buying_price'],2)?></td><td>KES <?=number_format((float)$p['selling_price'],2)?></td><td>KES <?=number_format((float)$p['wholesale_price'],2)?></td>
 <td><?php if($stock===0): ?><span class="stock-out">Out of stock</span><?php elseif($stock<=(int)$p['reorder_level']): ?><span class="stock-low">⚠ <?=$stock?></span><?php else:?><span class="stock-ok">✓ <?=$stock?></span><?php endif;?></td>
-<td><?=e($p['status'])?></td>
+<td><span class="status <?=strtolower(e($p['status']))?>"><?=e($p['status'])?></span></td>
 <td><div class="actions"><?php if(hasModulePermission('products','edit')):?><a class="btn btn-edit" href="edit.php?id=<?=$p['id']?>"><i class="fas fa-edit"></i></a><?php endif;?><?php if(hasModulePermission('products','delete')):?><form method="post" action="delete.php" onsubmit="return confirm('Delete this product?')" style="display:inline"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>"><input type="hidden" name="id" value="<?=(int)$p['id']?>"><button class="btn btn-danger" type="submit"><i class="fas fa-trash"></i></button></form><?php endif;?></div></td>
 </tr>
 <?php endforeach; endif;?>
