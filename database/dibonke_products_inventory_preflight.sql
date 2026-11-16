@@ -194,21 +194,11 @@ WHERE TABLE_SCHEMA = DATABASE()
   )
 ORDER BY TABLE_NAME, ORDINAL_POSITION;
 
--- 4) Check the Standard and optional Wholesale price-list seed records.
-SELECT expected.code,
-       pl.id,
-       pl.name,
-       pl.status,
-       pl.is_default,
-       CASE WHEN pl.id IS NULL THEN 'MISSING' ELSE 'PRESENT' END AS seed_status
-FROM (
-    SELECT 'normal' AS code UNION ALL
-    SELECT 'wholesale'
-) AS expected
-LEFT JOIN price_lists pl ON pl.code = expected.code
-ORDER BY expected.code;
+-- Once price_lists is confirmed present, verify that code='normal' is active
+-- and code='wholesale' is present when wholesale prices are configured:
+-- SELECT code, status, is_default FROM price_lists WHERE code IN ('normal', 'wholesale');
 
--- 5) Inspect unique/index definitions, including the ISBN and price-tier keys.
+-- 4) Inspect unique/index definitions, including the ISBN and price-tier keys.
 SELECT TABLE_NAME,
        INDEX_NAME,
        NON_UNIQUE,
@@ -219,7 +209,7 @@ WHERE TABLE_SCHEMA = DATABASE()
 GROUP BY TABLE_NAME, INDEX_NAME, NON_UNIQUE
 ORDER BY TABLE_NAME, INDEX_NAME;
 
--- 6) Inspect catalogue, price, transaction and stock foreign keys.
+-- 5) Inspect catalogue, price, transaction and stock foreign keys.
 SELECT k.TABLE_NAME,
        k.COLUMN_NAME,
        k.CONSTRAINT_NAME,
