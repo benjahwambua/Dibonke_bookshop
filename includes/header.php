@@ -22,7 +22,7 @@ $userInitial = strtoupper(substr(trim($userName), 0, 1)) ?: 'U';
         .logo-container{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;border-radius:12px;background:var(--app-navy);color:#fff;font-size:21px;box-shadow:inset 0 -3px 0 rgba(0,0,0,.12)}
         .header-title-wrapper{min-width:0}.header-title{margin:0;color:var(--app-navy);font-size:18px;line-height:1.2;font-weight:800;letter-spacing:-.3px}
         .subtitle{margin-top:4px;color:#7a8795;font-size:11px;letter-spacing:.25px}
-        .sidebar-toggle{width:38px;height:38px;display:grid;place-items:center;border:1px solid var(--app-border);border-radius:10px;background:#fff;color:var(--app-navy);font-size:16px;cursor:pointer;transition:.2s}
+        .sidebar-toggle{display:none;width:38px;height:38px;display:grid;place-items:center;border:1px solid var(--app-border);border-radius:10px;background:#fff;color:var(--app-navy);font-size:16px;cursor:pointer;transition:.2s}
         .sidebar-toggle:hover{background:#f1f5f9;border-color:#cbd5e1}
         .header-right{gap:15px}.header-date{color:#7b8794;font-size:12px;white-space:nowrap}
         .header-user{gap:9px;padding:6px 11px 6px 6px;border:1px solid var(--app-border);border-radius:30px;background:#fff}
@@ -34,7 +34,7 @@ $userInitial = strtoupper(substr(trim($userName), 0, 1)) ?: 'U';
         .content{flex:1;min-width:0;margin-left:var(--app-sidebar-width);padding:30px 32px 36px;background:var(--app-bg)}
         .mobile-sidebar-backdrop{display:none}
         @media(max-width:900px){.top-header{padding:0 18px}.header-date{display:none}.content{padding:24px 20px}}
-        @media(max-width:700px){.header-title-wrapper{display:none}.top-header{padding:0 13px;gap:10px}.header-left-group{gap:10px}.header-right{gap:8px}.user-name{display:none}.header-user{padding:5px}.btn-logout{width:36px;height:36px;justify-content:center;padding:0;font-size:0}.btn-logout i{font-size:14px}.content{margin-left:0;padding:22px 15px 28px}.layout{min-height:calc(100vh - var(--app-topbar-height))}.mobile-sidebar-backdrop.is-visible{display:block;position:fixed;inset:var(--app-topbar-height) 0 0;background:rgba(15,23,42,.42);z-index:990}}
+        @media(max-width:700px){.sidebar-toggle{display:grid}.header-title-wrapper{display:none}.top-header{padding:0 13px;gap:10px}.header-left-group{gap:10px}.header-right{gap:8px}.user-name{display:none}.header-user{padding:5px}.btn-logout{width:36px;height:36px;justify-content:center;padding:0;font-size:0}.btn-logout i{font-size:14px}.content{margin-left:0;padding:22px 15px 28px}.layout{min-height:calc(100vh - var(--app-topbar-height))}.mobile-sidebar-backdrop.is-visible{display:block;position:fixed;inset:var(--app-topbar-height) 0 0;background:rgba(15,23,42,.42);z-index:990}}
     </style>
 </head>
 <body>
