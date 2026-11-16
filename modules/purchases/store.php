@@ -26,6 +26,7 @@ try {
     else $purchaseDate = date('Y-m-d H:i:s', strtotime($purchaseDate));
     if ($paidAmount < 0 || $discount < 0 || $tax < 0) throw new RuntimeException('Payment, discount and tax cannot be negative.');
     if (!in_array($paymentMethod, ['Credit','Cash','M-Pesa','Bank','Cheque','Other'], true)) throw new RuntimeException('Invalid payment method.');
+    if ($paidAmount > 0 && $paymentMethod === 'Credit') throw new RuntimeException('Select the actual payment method for a paid amount, or use Credit when no amount is paid.');
     if (!is_array($items) || !$items) throw new RuntimeException('Add at least one purchase item.');
 
     $cleanItems = [];
@@ -95,6 +96,28 @@ try {
     if ($balance > 0) {
         $stmt = $conn->prepare("UPDATE suppliers SET balance=balance+? WHERE id=?");
         $stmt->execute([$balance,$supplierId]);
+    }
+
+    // Record any amount paid at purchase time in the supplier payment ledger.
+    if ($paidAmount > 0) {
+        $paymentPrefix = 'SUP-PAY';
+        $prefixStmt = $conn->prepare("SELECT setting_value FROM settings WHERE setting_key='supplier_payment_prefix' LIMIT 1");
+        $prefixStmt->execute();
+        $configuredPaymentPrefix = $prefixStmt->fetchColumn();
+        if ($configuredPaymentPrefix) $paymentPrefix = (string)$configuredPaymentPrefix;
+
+        $paymentReceipt = $paymentPrefix . '-' . date('YmdHis') . '-' . random_int(100, 999);
+        $paymentStmt = $conn->prepare("INSERT INTO supplier_payments (receipt_number,supplier_id,goods_receipt_id,user_id,amount,payment_method,transaction_reference,payment_date,notes) VALUES (?,?,NULL,?,?,?,?,?,?)");
+        $paymentStmt->execute([
+            $paymentReceipt,
+            $supplierId,
+            (int)$_SESSION['user_id'],
+            $paidAmount,
+            $paymentMethod,
+            null,
+            $purchaseDate,
+            'Payment recorded against purchase '.$purchaseNumber
+        ]);
     }
 
     $conn->commit();
