@@ -94,6 +94,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <div class="modal-box">
 <h2>Add Product</h2><button class="modal-close" onclick="document.getElementById('productModal').classList.remove('show')">&times;</button>
 <form method="post" action="store.php">
+<input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>">
 <div class="form-grid">
 <label>Product Name *<input name="product_name" required maxlength="160"></label>
 <label>Item Type<select name="product_type"><option value="Book">Book</option><option value="Stationery">Stationery</option><option value="General" selected>General</option></select></label>
