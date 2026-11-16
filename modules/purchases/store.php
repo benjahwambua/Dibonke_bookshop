@@ -25,7 +25,7 @@ try {
     if ($purchaseDate === '') $purchaseDate = date('Y-m-d H:i:s');
     else $purchaseDate = date('Y-m-d H:i:s', strtotime($purchaseDate));
     if ($paidAmount < 0 || $discount < 0 || $tax < 0) throw new RuntimeException('Payment, discount and tax cannot be negative.');
-    if (!in_array($paymentMethod, ['Credit','Cash','M-Pesa','Bank','Cheque','Other'], true)) throw new RuntimeException('Invalid payment method.');
+    if (!in_array($paymentMethod, ['Credit','Cash','M-Pesa','Bank'], true)) throw new RuntimeException('Invalid payment method.');
     if ($paidAmount > 0 && $paymentMethod === 'Credit') throw new RuntimeException('Select the actual payment method for a paid amount, or use Credit when no amount is paid.');
     if (!is_array($items) || !$items) throw new RuntimeException('Add at least one purchase item.');
 
@@ -71,7 +71,7 @@ try {
 
     $purchaseNumber = $prefix . '-' . date('YmdHis') . '-' . random_int(100, 999);
 
-    $stmt = $conn->prepare("INSERT INTO purchases (purchase_number,supplier_id,user_id,purchase_date,subtotal,discount,tax,total_amount,paid_amount,balance,payment_method,status,notes) VALUES (?,?,?,?,?,?,?,?,?,?,?,'Completed',?)");
+    $stmt = $conn->prepare("INSERT INTO purchases (purchase_number,supplier_id,user_id,purchase_date,subtotal,discount,tax,total_amount,paid_amount,balance,payment_method,status,notes) VALUES (?,?,?,?,?,?,?,?,?,?,?,'Received',?)");
     $stmt->execute([
         $purchaseNumber,$supplierId,(int)$_SESSION['user_id'],$purchaseDate,
         $subtotal,$discount,$tax,$total,$paidAmount,$balance,$paymentMethod,$notes ?: null
