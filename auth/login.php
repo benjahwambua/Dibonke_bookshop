@@ -20,8 +20,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Please enter your username/email and password.';
     } else {
         $stmt = $conn->prepare(
-            "SELECT id, full_name, username, email, password, role, is_super, status
-             FROM users
+            "SELECT u.id,u.full_name,u.username,u.email,u.password,COALESCE(r.role_name,u.role) AS role,u.role_id,u.is_super,u.status
+             FROM users u LEFT JOIN roles r ON r.id=u.role_id
              WHERE (username = :username OR email = :email)
              LIMIT 1"
         );
