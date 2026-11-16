@@ -18,7 +18,21 @@ $sql="SELECT p.*, b.brand_name, s.supplier_name, c.category_name
       LEFT JOIN categories c ON c.id=p.category_id
       WHERE 1=1";
 $params=[];
-if($search!==''){ $sql.=" AND (p.product_name LIKE :q OR p.sku LIKE :q OR p.barcode LIKE :q OR p.isbn LIKE :q OR b.brand_name LIKE :q)"; $params[':q']="%{$search}%"; }
+if ($search !== '') {
+    $isbnSearch = (string)preg_replace('/[\s-]+/u', '', $search);
+    $sql .= " AND (
+        p.product_name LIKE :name_q
+        OR p.sku LIKE :sku_q
+        OR p.barcode LIKE :barcode_q
+        OR p.isbn LIKE :isbn_q
+        OR b.brand_name LIKE :brand_q
+    )";
+    $params[':name_q'] = "%{$search}%";
+    $params[':sku_q'] = "%{$search}%";
+    $params[':barcode_q'] = "%{$search}%";
+    $params[':isbn_q'] = "%{$isbnSearch}%";
+    $params[':brand_q'] = "%{$search}%";
+}
 if($category>0){ $sql.=" AND p.category_id=:category"; $params[':category']=$category; }
 if(in_array($status,['Active','Inactive'],true)){ $sql.=" AND p.status=:status"; $params[':status']=$status; }
 $sql.=" ORDER BY p.id DESC";
