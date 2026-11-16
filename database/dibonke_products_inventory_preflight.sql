@@ -1,12 +1,13 @@
--- Dibonke Bookshop: Products and Inventory schema preflight
--- READ ONLY: this script does not CREATE, ALTER, UPDATE, DELETE or DROP data.
--- Run it while the target Dibonke database is selected in phpMyAdmin.
--- It reports the current module contract; it is not a base-schema installer.
+-- Dibonke Bookshop: Products, POS and Inventory schema preflight
+-- READ ONLY: this script contains SELECT statements only.
+-- Run it with the target Dibonke database selected in phpMyAdmin.
+-- It reports dependencies used by the current catalogue, POS, purchase and
+-- stock-ledger workflows. It is not a base-schema installer.
 
 SELECT DATABASE() AS selected_database;
 
--- 1) Required tables used by the catalogue, POS, purchasing and stock ledger.
-SELECT expected.table_name,
+-- 1) Required tables used by the product catalogue and its dependent workflows.
+SELECT req.table_name,
        CASE WHEN t.TABLE_NAME IS NULL THEN 'MISSING' ELSE 'PRESENT' END AS table_status
 FROM (
     SELECT 'products' AS table_name UNION ALL
@@ -18,22 +19,25 @@ FROM (
     SELECT 'product_prices' UNION ALL
     SELECT 'stock_movements' UNION ALL
     SELECT 'customers' UNION ALL
+    SELECT 'customer_payments' UNION ALL
     SELECT 'sales' UNION ALL
     SELECT 'sale_items' UNION ALL
     SELECT 'purchases' UNION ALL
     SELECT 'purchase_items' UNION ALL
+    SELECT 'supplier_payments' UNION ALL
     SELECT 'settings' UNION ALL
-    SELECT 'activity_logs'
-) AS expected
+    SELECT 'activity_logs' UNION ALL
+    SELECT 'mpesa_transactions'
+) AS req
 LEFT JOIN information_schema.TABLES t
        ON t.TABLE_SCHEMA = DATABASE()
-      AND t.TABLE_NAME = expected.table_name
-ORDER BY expected.table_name;
+      AND t.TABLE_NAME = req.table_name
+ORDER BY req.table_name;
 
--- 2) Required columns. Missing columns must be reconciled before using the
---    affected module; do not apply ad-hoc ALTER statements to a live database.
-SELECT expected.table_name,
-       expected.column_name,
+-- 2) Required columns. A MISSING result must be reconciled before the
+--    corresponding module is used; do not apply ad-hoc ALTER statements.
+SELECT req.table_name,
+       req.column_name,
        CASE WHEN c.COLUMN_NAME IS NULL THEN 'MISSING' ELSE 'PRESENT' END AS column_status,
        c.COLUMN_TYPE,
        c.IS_NULLABLE,
@@ -55,6 +59,7 @@ FROM (
     SELECT 'products', 'wholesale_price' UNION ALL
     SELECT 'products', 'stock_quantity' UNION ALL
     SELECT 'products', 'reorder_level' UNION ALL
+    SELECT 'products', 'icon' UNION ALL
     SELECT 'products', 'status' UNION ALL
     SELECT 'categories', 'id' UNION ALL
     SELECT 'categories', 'category_name' UNION ALL
@@ -65,12 +70,15 @@ FROM (
     SELECT 'brands', 'status' UNION ALL
     SELECT 'suppliers', 'id' UNION ALL
     SELECT 'suppliers', 'supplier_name' UNION ALL
+    SELECT 'suppliers', 'credit_limit' UNION ALL
+    SELECT 'suppliers', 'balance' UNION ALL
     SELECT 'suppliers', 'status' UNION ALL
     SELECT 'users', 'id' UNION ALL
     SELECT 'users', 'full_name' UNION ALL
     SELECT 'price_lists', 'id' UNION ALL
     SELECT 'price_lists', 'code' UNION ALL
     SELECT 'price_lists', 'status' UNION ALL
+    SELECT 'price_lists', 'is_default' UNION ALL
     SELECT 'product_prices', 'price_list_id' UNION ALL
     SELECT 'product_prices', 'product_id' UNION ALL
     SELECT 'product_prices', 'min_quantity' UNION ALL
@@ -85,25 +93,96 @@ FROM (
     SELECT 'stock_movements', 'reference_id' UNION ALL
     SELECT 'stock_movements', 'notes' UNION ALL
     SELECT 'stock_movements', 'movement_date' UNION ALL
+    SELECT 'customers', 'id' UNION ALL
+    SELECT 'customers', 'customer_name' UNION ALL
+    SELECT 'customers', 'credit_limit' UNION ALL
+    SELECT 'customers', 'balance' UNION ALL
+    SELECT 'customers', 'price_list_id' UNION ALL
+    SELECT 'customers', 'status' UNION ALL
+    SELECT 'sales', 'id' UNION ALL
+    SELECT 'sales', 'invoice_number' UNION ALL
+    SELECT 'sales', 'customer_id' UNION ALL
     SELECT 'sales', 'price_list_id' UNION ALL
+    SELECT 'sales', 'user_id' UNION ALL
+    SELECT 'sales', 'sale_date' UNION ALL
+    SELECT 'sales', 'subtotal' UNION ALL
+    SELECT 'sales', 'discount' UNION ALL
+    SELECT 'sales', 'tax' UNION ALL
+    SELECT 'sales', 'total_amount' UNION ALL
+    SELECT 'sales', 'paid_amount' UNION ALL
+    SELECT 'sales', 'balance' UNION ALL
+    SELECT 'sales', 'payment_method' UNION ALL
+    SELECT 'sales', 'sale_status' UNION ALL
+    SELECT 'sales', 'notes' UNION ALL
+    SELECT 'sale_items', 'sale_id' UNION ALL
     SELECT 'sale_items', 'product_id' UNION ALL
     SELECT 'sale_items', 'quantity' UNION ALL
+    SELECT 'sale_items', 'price' UNION ALL
+    SELECT 'sale_items', 'discount' UNION ALL
+    SELECT 'sale_items', 'subtotal' UNION ALL
+    SELECT 'sale_items', 'buying_price' UNION ALL
+    SELECT 'purchases', 'id' UNION ALL
+    SELECT 'purchases', 'purchase_number' UNION ALL
     SELECT 'purchases', 'supplier_id' UNION ALL
+    SELECT 'purchases', 'user_id' UNION ALL
+    SELECT 'purchases', 'purchase_date' UNION ALL
+    SELECT 'purchases', 'subtotal' UNION ALL
+    SELECT 'purchases', 'discount' UNION ALL
+    SELECT 'purchases', 'tax' UNION ALL
+    SELECT 'purchases', 'total_amount' UNION ALL
+    SELECT 'purchases', 'paid_amount' UNION ALL
+    SELECT 'purchases', 'balance' UNION ALL
+    SELECT 'purchases', 'payment_method' UNION ALL
+    SELECT 'purchases', 'status' UNION ALL
+    SELECT 'purchases', 'notes' UNION ALL
+    SELECT 'purchase_items', 'purchase_id' UNION ALL
     SELECT 'purchase_items', 'product_id' UNION ALL
     SELECT 'purchase_items', 'quantity' UNION ALL
     SELECT 'purchase_items', 'buying_price' UNION ALL
+    SELECT 'purchase_items', 'subtotal' UNION ALL
+    SELECT 'customer_payments', 'receipt_number' UNION ALL
+    SELECT 'customer_payments', 'customer_id' UNION ALL
+    SELECT 'customer_payments', 'sale_id' UNION ALL
+    SELECT 'customer_payments', 'user_id' UNION ALL
+    SELECT 'customer_payments', 'amount' UNION ALL
+    SELECT 'customer_payments', 'payment_method' UNION ALL
+    SELECT 'customer_payments', 'payment_date' UNION ALL
+    SELECT 'supplier_payments', 'receipt_number' UNION ALL
+    SELECT 'supplier_payments', 'supplier_id' UNION ALL
+    SELECT 'supplier_payments', 'goods_receipt_id' UNION ALL
+    SELECT 'supplier_payments', 'user_id' UNION ALL
+    SELECT 'supplier_payments', 'amount' UNION ALL
+    SELECT 'supplier_payments', 'payment_method' UNION ALL
+    SELECT 'supplier_payments', 'payment_date' UNION ALL
     SELECT 'settings', 'setting_key' UNION ALL
     SELECT 'settings', 'setting_value' UNION ALL
-    SELECT 'activity_logs', 'user_id'
-) AS expected
+    SELECT 'activity_logs', 'user_id' UNION ALL
+    SELECT 'activity_logs', 'action' UNION ALL
+    SELECT 'activity_logs', 'module' UNION ALL
+    SELECT 'activity_logs', 'description' UNION ALL
+    SELECT 'activity_logs', 'ip_address' UNION ALL
+    SELECT 'mpesa_transactions', 'transaction_type' UNION ALL
+    SELECT 'mpesa_transactions', 'direction' UNION ALL
+    SELECT 'mpesa_transactions', 'phone_number' UNION ALL
+    SELECT 'mpesa_transactions', 'amount' UNION ALL
+    SELECT 'mpesa_transactions', 'account_reference' UNION ALL
+    SELECT 'mpesa_transactions', 'merchant_request_id' UNION ALL
+    SELECT 'mpesa_transactions', 'checkout_request_id' UNION ALL
+    SELECT 'mpesa_transactions', 'result_code' UNION ALL
+    SELECT 'mpesa_transactions', 'result_description' UNION ALL
+    SELECT 'mpesa_transactions', 'result_status' UNION ALL
+    SELECT 'mpesa_transactions', 'reference_type' UNION ALL
+    SELECT 'mpesa_transactions', 'reference_id' UNION ALL
+    SELECT 'mpesa_transactions', 'raw_response'
+) AS req
 LEFT JOIN information_schema.COLUMNS c
        ON c.TABLE_SCHEMA = DATABASE()
-      AND c.TABLE_NAME = expected.table_name
-      AND c.COLUMN_NAME = expected.column_name
-ORDER BY expected.table_name, expected.column_name;
+      AND c.TABLE_NAME = req.table_name
+      AND c.COLUMN_NAME = req.column_name
+ORDER BY req.table_name, req.column_name;
 
 -- 3) Inspect quantity precision. Current PHP purchase/POS handlers cast
---    quantities to integers, so the current workflow is whole-unit only.
+--    quantities to integers, so the present workflow is whole-unit only.
 SELECT TABLE_NAME, COLUMN_NAME, COLUMN_TYPE
 FROM information_schema.COLUMNS
 WHERE TABLE_SCHEMA = DATABASE()
@@ -115,18 +194,32 @@ WHERE TABLE_SCHEMA = DATABASE()
   )
 ORDER BY TABLE_NAME, ORDINAL_POSITION;
 
--- 4) Inspect indexes relevant to ISBN uniqueness and quantity price tiers.
+-- 4) Check the Standard and optional Wholesale price-list seed records.
+SELECT expected.code,
+       pl.id,
+       pl.name,
+       pl.status,
+       pl.is_default,
+       CASE WHEN pl.id IS NULL THEN 'MISSING' ELSE 'PRESENT' END AS seed_status
+FROM (
+    SELECT 'normal' AS code UNION ALL
+    SELECT 'wholesale'
+) AS expected
+LEFT JOIN price_lists pl ON pl.code = expected.code
+ORDER BY expected.code;
+
+-- 5) Inspect unique/index definitions, including the ISBN and price-tier keys.
 SELECT TABLE_NAME,
        INDEX_NAME,
        NON_UNIQUE,
        GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) AS indexed_columns
 FROM information_schema.STATISTICS
 WHERE TABLE_SCHEMA = DATABASE()
-  AND TABLE_NAME IN ('products', 'product_prices', 'price_lists')
+  AND TABLE_NAME IN ('products', 'product_prices', 'price_lists', 'sale_items', 'purchase_items')
 GROUP BY TABLE_NAME, INDEX_NAME, NON_UNIQUE
 ORDER BY TABLE_NAME, INDEX_NAME;
 
--- 5) Inspect catalogue and stock foreign keys without changing them.
+-- 6) Inspect catalogue, price, transaction and stock foreign keys.
 SELECT k.TABLE_NAME,
        k.COLUMN_NAME,
        k.CONSTRAINT_NAME,
@@ -143,6 +236,7 @@ WHERE k.TABLE_SCHEMA = DATABASE()
   AND k.REFERENCED_TABLE_NAME IS NOT NULL
   AND k.TABLE_NAME IN (
       'products', 'product_prices', 'stock_movements',
-      'sale_items', 'purchase_items'
+      'sale_items', 'purchase_items', 'customer_payments',
+      'supplier_payments'
   )
-ORDER BY TABLE_NAME, CONSTRAINT_NAME;
+ORDER BY k.TABLE_NAME, k.CONSTRAINT_NAME;
