@@ -32,8 +32,8 @@ $purchases = $stmt->fetchAll();
 
 $stats = [
     'count' => (int)$conn->query("SELECT COUNT(*) FROM purchases WHERE status='Received'")->fetchColumn(),
-    'value' => (float)$conn->query("SELECT COALESCE(SUM(total_amount),0) FROM purchases WHERE status='Completed'")->fetchColumn(),
-    'credit' => (float)$conn->query("SELECT COALESCE(SUM(balance),0) FROM purchases WHERE status='Completed'")->fetchColumn(),
+    'value' => (float)$conn->query("SELECT COALESCE(SUM(total_amount),0) FROM purchases WHERE status='Received'")->fetchColumn(),
+    'credit' => (float)$conn->query("SELECT COALESCE(SUM(balance),0) FROM purchases WHERE status='Received'")->fetchColumn(),
     'suppliers' => (int)$conn->query("SELECT COUNT(*) FROM suppliers WHERE status='Active'")->fetchColumn()
 ];
 
@@ -128,7 +128,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <label>Purchase Date *<input type="datetime-local" name="purchase_date" required value="<?= date('Y-m-dTH:i') ?>"></label>
 <label>Payment Method *
 <select name="payment_method">
-<option>Credit</option><option>Cash</option><option>M-Pesa</option><option>Bank</option><option>Cheque</option><option>Other</option>
+<option>Credit</option><option>Cash</option><option>M-Pesa</option><option>Bank</option>
 </select></label>
 <label>Paid Amount *<input type="number" name="paid_amount" id="paidAmount" min="0" step="0.01" value="0"></label>
 <label>Discount<input type="number" name="discount" id="discount" min="0" step="0.01" value="0"></label>
