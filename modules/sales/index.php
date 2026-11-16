@@ -36,7 +36,7 @@ require_once __DIR__.'/../../includes/sidebar.php';
 </style>
 
 <div class="pos-wrap">
-<div class="pos-title"><div><h1><i class="fas fa-cash-register"></i> Supermarket POS</h1><div class="muted">Fast checkout • scan/search products • print customer receipt</div></div><a class="btn light" href="<?=BASE_URL?>/modules/customers/index.php"><i class="fas fa-users"></i> Customers</a></div>
+<div class="pos-title"><div><h1><i class="fas fa-cash-register"></i> Retail POS</h1><div class="muted">Fast checkout • scan/search products • print customer receipt</div></div><a class="btn light" href="<?=BASE_URL?>/modules/customers/index.php"><i class="fas fa-users"></i> Customers</a></div>
 <?php if($flash): ?><div class="flash"><?=e($flash)?></div><?php endif; ?>
 <div class="kpis"><div class="kpi"><span>Today's Sales</span><strong>KES <?=number_format($stats['today'],2)?></strong></div><div class="kpi"><span>This Month</span><strong>KES <?=number_format($stats['month'],2)?></strong></div><div class="kpi"><span>Customer Credit</span><strong>KES <?=number_format($stats['credit'],2)?></strong></div></div>
 
