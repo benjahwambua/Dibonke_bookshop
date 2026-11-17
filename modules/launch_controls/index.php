@@ -36,6 +36,8 @@ $canStockApprove=hasModulePermission('stocktaking','edit');
 $canAudit=hasModulePermission('audit_logs','view');
 $canEtims=hasModulePermission('etims','view');
 $canEtimsCreate=hasModulePermission('etims','create');
+$roleName=strtolower(trim((string)($_SESSION['role']??'')));
+$canViewAllOperations=isSuperUser()||in_array($roleName,['administrator','admin','manager'],true);
 
 // Do not let an unapplied/partially applied SQL extension crash the whole page.
 $requiredLaunchTables=['sales_returns','sales_return_items','sales_return_payments','cash_shifts','cash_shift_movements','cash_shift_guard','stock_counts','stock_count_items','stock_count_guard','audit_events','etims_documents'];
@@ -138,8 +140,8 @@ $flash=$_SESSION['launch_flash']??null;unset($_SESSION['launch_flash']);
 $openShift=$conn->prepare("SELECT * FROM cash_shifts WHERE user_id=? AND status='Open' ORDER BY id DESC LIMIT 1");$openShift->execute([$uid]);$openShift=$openShift->fetch();
 $openShiftSummary=$openShift?lcExpectedCash($conn,$openShift):null;
 $shiftMovements=[];if($openShift){$sm=$conn->prepare("SELECT * FROM cash_shift_movements WHERE shift_id=? ORDER BY id DESC LIMIT 30");$sm->execute([(int)$openShift['id']]);$shiftMovements=$sm->fetchAll();}
-$shifts=$canCash?$conn->query("SELECT cs.*,u.full_name FROM cash_shifts cs JOIN users u ON u.id=cs.user_id ORDER BY cs.id DESC LIMIT 50")->fetchAll():[];
-$returns=$canReturn?$conn->query("SELECT sr.*,s.invoice_number,u.full_name,(sr.total_amount-sr.credit_applied-sr.settled_amount) refund_due FROM sales_returns sr JOIN sales s ON s.id=sr.sale_id JOIN users u ON u.id=sr.user_id ORDER BY sr.id DESC LIMIT 60")->fetchAll():[];
+if($canCash){$shiftSql="SELECT cs.*,u.full_name FROM cash_shifts cs JOIN users u ON u.id=cs.user_id";if(!$canViewAllOperations)$shiftSql.=" WHERE cs.user_id=".(int)$uid;$shifts=$conn->query($shiftSql." ORDER BY cs.id DESC LIMIT 50")->fetchAll();}else{$shifts=[];}
+if($canReturn){$returnSql="SELECT sr.*,s.invoice_number,u.full_name,(sr.total_amount-sr.credit_applied-sr.settled_amount) refund_due FROM sales_returns sr JOIN sales s ON s.id=sr.sale_id JOIN users u ON u.id=sr.user_id";if(!$canViewAllOperations)$returnSql.=" WHERE sr.user_id=".(int)$uid;$returns=$conn->query($returnSql." ORDER BY sr.id DESC LIMIT 60")->fetchAll();}else{$returns=[];}
 $returnLines=$canReturnCreate?$conn->query("SELECT si.id,si.quantity,si.price,s.invoice_number,p.product_name FROM sale_items si JOIN sales s ON s.id=si.sale_id JOIN products p ON p.id=si.product_id WHERE s.sale_status='Completed' ORDER BY si.id DESC LIMIT 150")->fetchAll():[];
 $counts=$canStock?$conn->query("SELECT sc.*,u.full_name FROM stock_counts sc JOIN users u ON u.id=sc.created_by ORDER BY sc.id DESC LIMIT 40")->fetchAll():[];
 $activeCount=$canStock?(int)$conn->query("SELECT id FROM stock_counts WHERE status='Counting' ORDER BY id DESC LIMIT 1")->fetchColumn():0;
