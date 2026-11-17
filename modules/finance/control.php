@@ -25,10 +25,10 @@ $supplierOut=(float)$run("SELECT COALESCE(SUM(amount),0) FROM supplier_payments 
 $expenseOut=(float)$run("SELECT COALESCE(SUM(amount),0) FROM expenses WHERE expense_date BETWEEN ? AND ?",[$from,$to])->fetchColumn();
 $customerDue=(float)$conn->query("SELECT COALESCE(SUM(balance),0) FROM customers")->fetchColumn();$supplierDue=(float)$conn->query("SELECT COALESCE(SUM(balance),0) FROM suppliers")->fetchColumn();
 $methods=$run("SELECT method,SUM(received) received,SUM(spent) spent FROM (
- SELECT payment_method method,SUM(paid_amount) received,0 spent FROM sales WHERE sale_status='Completed' AND DATE(sale_date) BETWEEN ? AND ? GROUP BY payment_method
- UNION ALL SELECT payment_method,SUM(amount),0 FROM customer_payments WHERE sale_id IS NULL AND DATE(payment_date) BETWEEN ? AND ? GROUP BY payment_method
- UNION ALL SELECT payment_method,0,SUM(amount) FROM supplier_payments WHERE DATE(payment_date) BETWEEN ? AND ? GROUP BY payment_method
- UNION ALL SELECT payment_method,0,SUM(amount) FROM expenses WHERE expense_date BETWEEN ? AND ? GROUP BY payment_method
+ SELECT CONVERT(payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci method,SUM(paid_amount) received,0 spent FROM sales WHERE sale_status='Completed' AND DATE(sale_date) BETWEEN ? AND ? GROUP BY payment_method
+ UNION ALL SELECT CONVERT(payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,SUM(amount),0 FROM customer_payments WHERE sale_id IS NULL AND DATE(payment_date) BETWEEN ? AND ? GROUP BY payment_method
+ UNION ALL SELECT CONVERT(payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,0,SUM(amount) FROM supplier_payments WHERE DATE(payment_date) BETWEEN ? AND ? GROUP BY payment_method
+ UNION ALL SELECT CONVERT(payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,0,SUM(amount) FROM expenses WHERE expense_date BETWEEN ? AND ? GROUP BY payment_method
 ) x GROUP BY method ORDER BY method",[$from,$to,$from,$to,$from,$to,$from,$to])->fetchAll();
 $exceptions=[];
 $over=$conn->query("SELECT COUNT(*) FROM sales WHERE sale_status='Completed' AND (paid_amount>total_amount+0.01 OR balance<0)")->fetchColumn();if((int)$over>0)$exceptions[]=['High','Sales records with overpayment or negative balance', (int)$over];
