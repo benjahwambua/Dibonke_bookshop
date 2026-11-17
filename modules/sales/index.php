@@ -159,6 +159,35 @@ body.counter-mode .vat-value{padding:3px 0;font-size:14px}
 @media(max-width:1100px){body.counter-mode .cashier{grid-template-columns:minmax(0,1fr) 390px}body.counter-mode .products{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}}
 @media(max-width:850px){body.counter-mode .cashier{grid-template-columns:1fr}body.counter-mode .checkout{height:auto;position:static}body.counter-mode .products{max-height:none;grid-template-columns:repeat(auto-fill,minmax(145px,1fr))}}
 @media(max-width:520px){body.counter-mode .content{padding:8px!important}body.counter-mode .pos-title{padding:12px}body.counter-mode .payment-options{grid-template-columns:repeat(3,1fr)}}
+
+/* Cashier: keep scanning and sale completion on one screen */
+@media(min-width:1001px){
+ body.counter-mode .content{height:100vh;min-height:0;box-sizing:border-box;overflow:hidden}
+ body.counter-mode .pos-wrap{height:100%;display:flex;flex-direction:column;min-height:0}
+ body.counter-mode .pos-title{flex:0 0 auto}
+ body.counter-mode #saleForm{flex:1 1 auto;min-height:0;display:flex}
+ body.counter-mode .cashier{flex:1 1 auto;min-height:0;align-items:stretch}
+ body.counter-mode .catalog{height:100%;min-height:0;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden}
+ body.counter-mode .catalog .scan-panel,
+ body.counter-mode .catalog .section-heading,
+ body.counter-mode .catalog .categories{flex:0 0 auto}
+ body.counter-mode .catalog .products{flex:1 1 auto;min-height:0;max-height:none;overflow-y:auto;align-content:start}
+ body.counter-mode .checkout{height:100%;min-height:0;box-sizing:border-box;display:flex;flex-direction:column;overflow:hidden;padding:14px 16px}
+ body.counter-mode .checkout-heading{flex:0 0 auto;margin-bottom:6px;padding-bottom:9px}
+ body.counter-mode .checkout-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-right:3px}
+ body.counter-mode .checkout-footer{flex:0 0 auto;background:#fff;border-top:1px solid #e5ebf2;padding-top:7px}
+ body.counter-mode .checkout-footer .totals{padding:4px 0}
+ body.counter-mode .checkout-footer .line{margin:4px 0;font-size:11px}
+ body.counter-mode .checkout-footer .grand{font-size:21px;padding-top:7px}
+ body.counter-mode .checkout-footer .exact-btn{margin:3px 0 7px;padding:8px}
+ body.counter-mode .checkout-footer .success{min-height:48px;padding:9px;font-size:14px}
+}
+@media(max-width:1000px){
+ body.counter-mode .checkout{height:auto;overflow:visible}
+ body.counter-mode .checkout-body{overflow:visible}
+ body.counter-mode .checkout-footer{position:sticky;bottom:0;background:#fff;z-index:4;padding:10px 0 2px;border-top:1px solid #e5ebf2}
+}
+
 </style>
 
 <div class="pos-wrap">
@@ -183,6 +212,7 @@ body.counter-mode .vat-value{padding:3px 0;font-size:14px}
 
 <section class="checkout">
 <div class="checkout-heading"><div><span class="checkout-kicker">CURRENT TRANSACTION</span><h3><i class="fas fa-shopping-basket"></i> Order summary</h3></div><div class="basket-count" id="basketCount">0 items</div></div>
+<div class="checkout-body">
 <div class="field"><label>Price List</label><select name="price_list_id" id="price_list_id"><?php foreach($priceLists as $pl):?><option value="<?=$pl['id']?>" data-code="<?=e($pl['code'])?>"><?=e($pl['name'])?></option><?php endforeach;?></select></div>
 <div class="price-tier-hint" id="priceTierHint"></div><div class="field"><label>Customer</label><select name="customer_id" id="customer_id"><option value="">Walk-in Customer</option><?php foreach($customers as $c): ?><option value="<?=$c['id']?>" data-limit="<?=$c['credit_limit']?>" data-balance="<?=$c['balance']?>" data-price-list="<?=$c['price_list_id']??''?>"><?=e($c['customer_name'])?><?= $c['phone']?' — '.e($c['phone']):'' ?></option><?php endforeach; ?></select></div>
 <div class="cart-toolbar"><span>Items in this basket</span><button type="button" class="clear-cart" onclick="clearCart()">Clear all</button></div><div id="cart" class="cart"><div class="empty">Your basket is empty. Select a product to begin.</div></div>
@@ -191,9 +221,12 @@ body.counter-mode .vat-value{padding:3px 0;font-size:14px}
 <div class="field vat-summary"><label>VAT (<?=$vatRate?>%)</label><div class="vat-value"><?=$vatRate?>% VAT</div><small class="muted"><?=e($vatMode==='inclusive'?'Included in displayed prices':'Added to selling prices')?></small><input type="hidden" name="tax" id="tax" value="0"></div>
 <div class="field payment-method-field"><label>Payment method</label><div class="payment-options"><button type="button" class="payment-option active" data-method="Cash" onclick="selectPayment('Cash',this)"><i class="fas fa-money-bill-wave"></i><span>Cash</span></button><button type="button" class="payment-option" data-method="M-Pesa" onclick="selectPayment('M-Pesa',this)"><i class="fas fa-mobile-alt"></i><span>M-Pesa</span></button><button type="button" class="payment-option" data-method="Bank" onclick="selectPayment('Bank',this)"><i class="fas fa-building-columns"></i><span>Bank</span></button><button type="button" class="payment-option" data-method="Credit" onclick="selectPayment('Credit',this)"><i class="fas fa-file-invoice"></i><span>Credit</span></button><button type="button" class="payment-option" data-method="Mixed" onclick="selectPayment('Mixed',this)"><i class="fas fa-layer-group"></i><span>Mixed</span></button></div><select name="payment_method" id="payment_method" class="payment-method-native"><option>Cash</option><option>M-Pesa</option><option>Bank</option><option>Credit</option><option>Mixed</option></select></div><div class="field" id="mpesaPhoneField" style="display:none"><label>M-PESA Phone</label><input name="mpesa_phone" id="mpesa_phone" placeholder="07XXXXXXXX" maxlength="15"><small class="muted">For M-PESA STK Push. The customer will receive the payment prompt.</small></div>
 <div class="field"><label>Amount Paid (KES)</label><input type="number" name="paid_amount" id="paid_amount" min="0" step=".01" value="0"></div>
+</div>
+<div class="checkout-footer">
 <div class="totals"><div class="line"><span>Subtotal</span><strong id="subtotal">KES 0.00</strong></div><div class="line"><span>Discount</span><strong id="discountView">KES 0.00</strong></div><div class="line"><span>VAT</span><strong id="taxView">KES 0.00</strong></div><div class="line grand"><span>Total</span><strong id="total">KES 0.00</strong></div><div class="line"><span>Balance due</span><strong id="balance">KES 0.00</strong></div><div class="line change-line"><span>Change to give</span><strong id="changeDue">KES 0.00</strong></div></div><button type="button" class="btn light exact-btn" onclick="setExactPayment()">Set exact amount</button>
 <div class="field"><label>Notes</label><input name="notes" maxlength="500" placeholder="Optional note"></div>
 <button class="btn success" type="submit"><i class="fas fa-check-circle"></i> Complete Sale &amp; Print Receipt</button>
+</div>
 </section>
 </div>
 </form>
