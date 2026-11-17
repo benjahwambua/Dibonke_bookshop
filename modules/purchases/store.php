@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../includes/audit.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: index.php');
@@ -124,6 +125,7 @@ try {
         ]);
     }
 
+    recordAuditEvent($conn,'Create','purchases','Created purchase '.$purchaseNumber.' for KES '.number_format($total,2),'purchase',$purchaseId,null,['supplier_id'=>$supplierId,'total_amount'=>$total,'paid_amount'=>$paidAmount,'balance'=>$balance]);
     $conn->commit();
 
     $_SESSION['purchase_flash'] = 'Purchase '.$purchaseNumber.' completed successfully. Stock has been updated.';
