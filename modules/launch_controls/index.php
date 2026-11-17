@@ -13,7 +13,7 @@ function lcExpectedCash(PDO $db,array $shift):array{
  $sum=function(string $sql,array $params)use($db):float{$q=$db->prepare($sql);$q->execute($params);return (float)$q->fetchColumn();};
  $sales=$sum("SELECT COALESCE(SUM(paid_amount),0) FROM sales WHERE user_id=? AND payment_method='Cash' AND sale_status='Completed' AND sale_date BETWEEN ? AND ?",[$uid,$start,$end]);
  $collections=$sum("SELECT COALESCE(SUM(amount),0) FROM customer_payments WHERE user_id=? AND sale_id IS NULL AND payment_method='Cash' AND payment_date BETWEEN ? AND ?",[$uid,$start,$end]);
- $supplier=$sum("SELECT COALESCE(SUM(amount),0) FROM supplier_payments WHERE user_id=? AND payment_method='Cash' AND payment_date BETWEEN ? AND ?",[$uid,$start,$end]);
+ $supplier=$sum("SELECT COALESCE(SUM(amount),0) FROM supplier_payments WHERE cash_shift_id=? AND payment_method='Cash'",[$id]);
  $expenses=$sum("SELECT COALESCE(SUM(amount),0) FROM expenses WHERE cash_shift_id=? AND payment_method='Cash'",[$id]);
  $refunds=$sum("SELECT COALESCE(SUM(amount),0) FROM sales_return_payments WHERE paid_by=? AND payment_method='Cash' AND paid_at BETWEEN ? AND ?",[$uid,$start,$end]);
  $manual=$sum("SELECT COALESCE(SUM(CASE WHEN movement_type='Cash In' THEN amount ELSE -amount END),0) FROM cash_shift_movements WHERE shift_id=?",[$id]);
@@ -44,7 +44,9 @@ $requiredLaunchTables=['sales_returns','sales_return_items','sales_return_paymen
 $existingLaunchTables=array_flip($conn->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN));
 $missingLaunchTables=array_values(array_filter($requiredLaunchTables,static fn($table)=>!isset($existingLaunchTables[$table])));
 $cashShiftColumn=$conn->query("SHOW COLUMNS FROM expenses LIKE 'cash_shift_id'")->fetch();
+$supplierShiftColumn=$conn->query("SHOW COLUMNS FROM supplier_payments LIKE 'cash_shift_id'")->fetch();
 if(!$cashShiftColumn)$missingLaunchTables[]='expenses.cash_shift_id';
+if(!$supplierShiftColumn)$missingLaunchTables[]='supplier_payments.cash_shift_id';
 if($missingLaunchTables){
  require_once __DIR__.'/../../includes/header.php';
  require_once __DIR__.'/../../includes/sidebar.php';
