@@ -4,7 +4,7 @@ require_once __DIR__.'/../../includes/auth.php';
 require_once __DIR__.'/../../config/db.php';
 $pageTitle='Retail POS';
 $vatRate=(float)($conn->query("SELECT setting_value FROM settings WHERE setting_key='vat_rate' LIMIT 1")->fetchColumn()?:16);
-$vatMode=(string)($conn->query("SELECT setting_value FROM settings WHERE setting_key='vat_mode' LIMIT 1")->fetchColumn()?:'exclusive');
+$vatMode=(string)($conn->query("SELECT setting_value FROM settings WHERE setting_key='vat_mode' LIMIT 1")->fetchColumn()?:'inclusive');
 if(!in_array($vatMode,['exclusive','inclusive'],true))$vatMode='exclusive';
 
 $products=$conn->query("SELECT p.id,p.product_name,p.category,p.sku,p.barcode,p.isbn,p.selling_price,p.wholesale_price,p.stock_quantity,p.unit,b.brand_name FROM products p LEFT JOIN brands b ON b.id=p.brand_id WHERE p.status='Active' ORDER BY p.product_name")->fetchAll();
