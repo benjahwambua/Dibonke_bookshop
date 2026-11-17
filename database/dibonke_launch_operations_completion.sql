@@ -35,6 +35,11 @@ CREATE TABLE IF NOT EXISTS cash_shift_movements (
   KEY idx_cash_movement_created(created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+-- Link cash expenses to the cashier shift that was open when they were recorded.
+ALTER TABLE expenses
+  ADD COLUMN IF NOT EXISTS cash_shift_id BIGINT UNSIGNED NULL,
+  ADD KEY IF NOT EXISTS idx_expenses_cash_shift(cash_shift_id);
+
 -- Record migration version for the setup checklist.
 INSERT INTO settings(setting_key,setting_value)
 SELECT 'launch_operations_completion_migration','1'
