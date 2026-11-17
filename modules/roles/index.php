@@ -2,7 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__.'/../../includes/auth.php';require_once __DIR__.'/../../config/db.php';
 if(!isSuperUser()){http_response_code(403);exit('Access denied.');}
-$modules=['products'=>'Products & Books','categories'=>'Categories','brands'=>'Brands / Publishers','price_lists'=>'Price Lists','customers'=>'Customers','suppliers'=>'Suppliers','purchases'=>'Purchases','sales'=>'Sales & POS','customer_payments'=>'Customer Payments','supplier_payments'=>'Supplier Payments','deliveries'=>'Deliveries','stock_movements'=>'Stock Movements','expenses'=>'Expenses','reports'=>'Reports','analytics'=>'Analytics','supply_chain'=>'Supply Chain','mpesa'=>'M-PESA','staff'=>'Staff'];
+$modules=['products'=>'Products & Books','categories'=>'Categories','brands'=>'Brands / Publishers','price_lists'=>'Price Lists','customers'=>'Customers','suppliers'=>'Suppliers','purchases'=>'Purchases','sales'=>'Sales & POS','customer_payments'=>'Customer Payments','supplier_payments'=>'Supplier Payments','deliveries'=>'Deliveries','stock_movements'=>'Stock Movements','expenses'=>'Expenses','finance'=>'Finance','billing'=>'Billing & Invoices','reports'=>'Reports','analytics'=>'Analytics','supply_chain'=>'Supply Chain','mpesa'=>'M-PESA','staff'=>'Staff'];
 $roles=$conn->query("SELECT * FROM roles ORDER BY is_system DESC,role_name")->fetchAll();$selected=(int)($_GET['id']??($roles[0]['id']??0));$role=null;$permissions=[];
 if($selected){$q=$conn->prepare("SELECT * FROM roles WHERE id=?");$q->execute([$selected]);$role=$q->fetch();$q=$conn->prepare("SELECT * FROM role_permissions WHERE role_id=?");$q->execute([$selected]);foreach($q->fetchAll() as $p)$permissions[$p['module_key']]=$p;}
 $flash=$_SESSION['role_flash']??null;unset($_SESSION['role_flash']);
