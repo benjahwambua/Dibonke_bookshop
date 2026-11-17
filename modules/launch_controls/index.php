@@ -26,7 +26,7 @@ $canEtims=hasModulePermission('etims','view');
 $canEtimsCreate=hasModulePermission('etims','create');
 
 // Do not let an unapplied/partially applied SQL extension crash the whole page.
-$requiredLaunchTables=['sales_returns','sales_return_items','cash_shifts','stock_counts','stock_count_items','audit_events','etims_documents'];
+$requiredLaunchTables=['sales_returns','sales_return_items','sales_return_payments','cash_shifts','cash_shift_movements','stock_counts','stock_count_items','audit_events','etims_documents'];
 $existingLaunchTables=array_flip($conn->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN));
 $missingLaunchTables=array_values(array_filter($requiredLaunchTables,static fn($table)=>!isset($existingLaunchTables[$table])));
 if($missingLaunchTables){
@@ -50,11 +50,23 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
    $float=max(0,(float)($_POST['opening_float']??0));$number='CS-'.date('YmdHis').'-'.strtoupper(bin2hex(random_bytes(2)));
    $q=$conn->prepare("INSERT INTO cash_shifts(shift_number,user_id,opened_at,opening_float) VALUES(?,?,NOW(),?)");$q->execute([$number,$uid,$float]);$id=(int)$conn->lastInsertId();lcAudit($conn,'Open Shift','cash_management','Opened '.$number,'cash_shift',$id);$conn->commit();lcFlash('Cash shift '.$number.' opened.');
   }
+  if($action==='cash_movement'){
+   requireModulePermission('cash_management','create');$shiftId=(int)($_POST['shift_id']??0);$type=(string)($_POST['movement_type']??'');$amount=(float)($_POST['amount']??0);$description=trim((string)($_POST['description']??''));$reference=trim((string)($_POST['reference']??''));
+   if(!in_array($type,['Cash In','Cash Out'],true)||$amount<=0||$description==='')throw new RuntimeException('Select a valid cash movement type, amount and description.');
+   $conn->beginTransaction();$q=$conn->prepare("SELECT id FROM cash_shifts WHERE id=? AND user_id=? AND status='Open' FOR UPDATE");$q->execute([$shiftId,$uid]);if(!$q->fetchColumn())throw new RuntimeException('Your open shift could not be found.');
+   $q=$conn->prepare("INSERT INTO cash_shift_movements(shift_id,user_id,movement_type,amount,reference,description,created_at) VALUES(?,?,?,?,?,?,NOW())");$q->execute([$shiftId,$uid,$type,$amount,$reference?:null,$description]);$movementId=(int)$conn->lastInsertId();lcAudit($conn,$type,'cash_management',$description.' KES '.number_format($amount,2),'cash_shift_movement',$movementId);$conn->commit();lcFlash($type.' recorded.');
+  }
   if($action==='close_shift'){
    requireModulePermission('cash_management','edit');$id=(int)($_POST['shift_id']??0);$counted=max(0,(float)($_POST['counted_cash']??0));$notes=trim((string)($_POST['closing_notes']??''));
    $conn->beginTransaction();$q=$conn->prepare("SELECT * FROM cash_shifts WHERE id=? AND user_id=? AND status='Open' FOR UPDATE");$q->execute([$id,$uid]);$shift=$q->fetch();if(!$shift)throw new RuntimeException('Open shift not found.');
-   $sales=$conn->prepare("SELECT COALESCE(SUM(paid_amount),0) FROM sales WHERE user_id=? AND payment_method='Cash' AND sale_status='Completed' AND sale_date BETWEEN ? AND NOW()");$sales->execute([(int)$shift['user_id'],$shift['opened_at']]);$cashSales=(float)$sales->fetchColumn();
-   $expected=round((float)$shift['opening_float']+$cashSales,2);$variance=round($counted-$expected,2);
+   $endAt=date('Y-m-d H:i:s');
+   $sales=$conn->prepare("SELECT COALESCE(SUM(paid_amount),0) FROM sales WHERE user_id=? AND payment_method='Cash' AND sale_status='Completed' AND sale_date BETWEEN ? AND ?");$sales->execute([(int)$shift['user_id'],$shift['opened_at'],$endAt]);$cashSales=(float)$sales->fetchColumn();
+   $collections=$conn->prepare("SELECT COALESCE(SUM(amount),0) FROM customer_payments WHERE user_id=? AND payment_method='Cash' AND payment_date BETWEEN ? AND ?");$collections->execute([(int)$shift['user_id'],$shift['opened_at'],$endAt]);$cashCollections=(float)$collections->fetchColumn();
+   $supplier=$conn->prepare("SELECT COALESCE(SUM(amount),0) FROM supplier_payments WHERE user_id=? AND payment_method='Cash' AND payment_date BETWEEN ? AND ?");$supplier->execute([(int)$shift['user_id'],$shift['opened_at'],$endAt]);$cashSupplier=(float)$supplier->fetchColumn();
+   $expenses=$conn->prepare("SELECT COALESCE(SUM(amount),0) FROM expenses WHERE user_id=? AND payment_method='Cash' AND expense_date BETWEEN DATE(?) AND DATE(?)");$expenses->execute([(int)$shift['user_id'],$shift['opened_at'],$endAt]);$cashExpenses=(float)$expenses->fetchColumn();
+   $refunds=$conn->prepare("SELECT COALESCE(SUM(amount),0) FROM sales_return_payments WHERE paid_by=? AND payment_method='Cash' AND paid_at BETWEEN ? AND ?");$refunds->execute([(int)$shift['user_id'],$shift['opened_at'],$endAt]);$cashRefunds=(float)$refunds->fetchColumn();
+   $moves=$conn->prepare("SELECT COALESCE(SUM(CASE WHEN movement_type='Cash In' THEN amount ELSE -amount END),0) FROM cash_shift_movements WHERE shift_id=?");$moves->execute([$id]);$manualNet=(float)$moves->fetchColumn();
+   $expected=round((float)$shift['opening_float']+$cashSales+$cashCollections-$cashSupplier-$cashExpenses-$cashRefunds+$manualNet,2);$variance=round($counted-$expected,2);
    $u=$conn->prepare("UPDATE cash_shifts SET closed_at=NOW(),expected_cash=?,counted_cash=?,variance=?,closing_notes=?,status='Closed' WHERE id=?");$u->execute([$expected,$counted,$variance,$notes?:null,$id]);
    lcAudit($conn,'Close Shift','cash_management','Closed '.$shift['shift_number'].'; expected '.number_format($expected,2).', counted '.number_format($counted,2),'cash_shift',$id);$conn->commit();lcFlash('Shift closed. Expected cash KES '.number_format($expected,2).'; variance KES '.number_format($variance,2).'.');
   }
