@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/product_helpers.php';
+require_once __DIR__ . '/../../includes/audit.php';
 
 requireModulePermission('products', 'edit');
 
@@ -161,6 +162,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $deleteWholesale->execute([$id]);
         }
 
+        recordAuditEvent($conn,'Update','products','Updated product '.$name,'product',$id,['product_name'=>$p['product_name'],'sku'=>$p['sku']??null,'barcode'=>$p['barcode']??null,'selling_price'=>$p['selling_price']??null],['product_name'=>$name,'sku'=>$sku,'barcode'=>$barcode,'selling_price'=>$sell,'status'=>$status]);
         $conn->commit();
         $_SESSION['product_flash'] = 'Product updated successfully.';
         header('Location: index.php');
