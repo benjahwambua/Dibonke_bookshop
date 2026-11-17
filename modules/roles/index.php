@@ -3,7 +3,32 @@ declare(strict_types=1);
 require_once __DIR__.'/../../includes/auth.php';require_once __DIR__.'/../../config/db.php';
 if(!isSuperUser()){http_response_code(403);exit('Access denied.');}
 $modules=['products'=>'Products & Books','categories'=>'Categories','brands'=>'Brands / Publishers','price_lists'=>'Price Lists','customers'=>'Customers','suppliers'=>'Suppliers','purchases'=>'Purchases','sales'=>'Sales & POS','customer_payments'=>'Customer Payments','supplier_payments'=>'Supplier Payments','deliveries'=>'Deliveries','stock_movements'=>'Stock Movements','expenses'=>'Expenses','finance'=>'Finance','billing'=>'Billing & Invoices','reports'=>'Reports','analytics'=>'Analytics','supply_chain'=>'Supply Chain','mpesa'=>'M-PESA','staff'=>'Staff'];
-$roleRows = $conn->query("SELECT * FROM roles ORDER BY is_system DESC, role_name")->fetchAll(PDO::FETCH_ASSOC);\n$roles = [];\nforeach ($roleRows as $roleRow) {\n    if (is_array($roleRow) && isset($roleRow['id'], $roleRow['role_name'])) {\n        $roles[] = $roleRow;\n    }\n}\n$firstRoleId = isset($roles[0]) && is_array($roles[0]) ? (int) $roles[0]['id'] : 0;\n$selected = isset($_GET['id']) ? (int) $_GET['id'] : $firstRoleId;\n$role = null;\n$permissions = [];\nif ($selected > 0) {\n    $q = $conn->prepare("SELECT * FROM roles WHERE id = ? LIMIT 1");\n    $q->execute([$selected]);\n    $roleRow = $q->fetch(PDO::FETCH_ASSOC);\n    $role = is_array($roleRow) ? $roleRow : null;\n    $q = $conn->prepare("SELECT * FROM role_permissions WHERE role_id = ?");\n    $q->execute([$selected]);\n    $permissionRows = $q->fetchAll(PDO::FETCH_ASSOC);\n    foreach ($permissionRows as $permissionRow) {\n        if (!is_array($permissionRow) || !isset($permissionRow['module_key'])) {\n            continue;\n        }\n        $permissions[(string) $permissionRow['module_key']] = $permissionRow;\n    }\n}
+$roleRows = $conn->query("SELECT * FROM roles ORDER BY is_system DESC, role_name")->fetchAll(PDO::FETCH_ASSOC);
+$roles = [];
+foreach ($roleRows as $roleRow) {
+    if (is_array($roleRow) && isset($roleRow['id'], $roleRow['role_name'])) {
+        $roles[] = $roleRow;
+    }
+}
+$firstRoleId = isset($roles[0]) && is_array($roles[0]) ? (int) $roles[0]['id'] : 0;
+$selected = isset($_GET['id']) ? (int) $_GET['id'] : $firstRoleId;
+$role = null;
+$permissions = [];
+if ($selected > 0) {
+    $q = $conn->prepare("SELECT * FROM roles WHERE id = ? LIMIT 1");
+    $q->execute([$selected]);
+    $roleRow = $q->fetch(PDO::FETCH_ASSOC);
+    $role = is_array($roleRow) ? $roleRow : null;
+    $q = $conn->prepare("SELECT * FROM role_permissions WHERE role_id = ?");
+    $q->execute([$selected]);
+    $permissionRows = $q->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($permissionRows as $permissionRow) {
+        if (!is_array($permissionRow) || !isset($permissionRow['module_key'])) {
+            continue;
+        }
+        $permissions[(string) $permissionRow['module_key']] = $permissionRow;
+    }
+}
 $flash=$_SESSION['role_flash']??null;unset($_SESSION['role_flash']);
 require_once __DIR__.'/../../includes/header.php';require_once __DIR__.'/../../includes/sidebar.php';?>
 <main class="content"><style>
