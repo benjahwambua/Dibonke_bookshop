@@ -40,5 +40,5 @@ if($method==='M-Pesa'){
 }else{
     $_SESSION['sale_flash']='Sale '.$invoice.' completed successfully. Total KES '.number_format($total,2).'.';
 }
-header('Location: receipt.php?id='.$saleId.($method==='M-Pesa'?'':'&autoprint=1'));exit;
+header('Location: receipt.php?id='.$saleId.'&autoprint=1');exit;
 }catch(Throwable $e){if($conn->inTransaction())$conn->rollBack();$_SESSION['sale_flash']='Sale failed: '.$e->getMessage();header('Location: index.php');exit;}
