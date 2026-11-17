@@ -50,27 +50,17 @@ require_once __DIR__ . '/includes/sidebar.php';
         <div class="dashboard-date"><i class="far fa-calendar-alt"></i><span><?= e(date('l, d F Y')) ?></span></div>
     </section>
 
-    <section class="dashboard-kpis" aria-label="Business summary">
-        <article class="dashboard-kpi kpi-sales">
-            <div class="kpi-top"><span>Sales this month</span><span class="kpi-icon"><i class="fas fa-chart-line"></i></span></div>
-            <strong>KES <?= number_format($monthSales, 2) ?></strong>
-            <small>Completed transactions</small>
-        </article>
-        <article class="dashboard-kpi">
-            <div class="kpi-top"><span>Active products</span><span class="kpi-icon"><i class="fas fa-book"></i></span></div>
-            <strong><?= number_format($totalProducts) ?></strong>
-            <small>Books, stationery &amp; retail items</small>
-        </article>
-        <article class="dashboard-kpi">
-            <div class="kpi-top"><span>Active customers</span><span class="kpi-icon"><i class="fas fa-users"></i></span></div>
-            <strong><?= number_format($totalCustomers) ?></strong>
-            <small>Registered customers</small>
-        </article>
-        <article class="dashboard-kpi <?= $lowStock > 0 ? 'kpi-warning' : '' ?>">
-            <div class="kpi-top"><span>Low stock items</span><span class="kpi-icon"><i class="fas fa-exclamation-triangle"></i></span></div>
-            <strong><?= number_format($lowStock) ?></strong>
-            <small><?= $lowStock > 0 ? 'Review items for replenishment' : 'Stock levels look healthy' ?></small>
-        </article>
+    <section class="dashboard-kpis" aria-label="<?= $isCashierDashboard ? 'My sales summary' : 'Business summary' ?>">
+        <?php if ($isCashierDashboard): ?>
+        <article class="dashboard-kpi kpi-sales"><div class="kpi-top"><span>My sales today</span><span class="kpi-icon"><i class="fas fa-cash-register"></i></span></div><strong>KES <?= number_format($todaySales, 2) ?></strong><small>Completed sales under your login</small></article>
+        <article class="dashboard-kpi"><div class="kpi-top"><span>My sales this month</span><span class="kpi-icon"><i class="fas fa-chart-line"></i></span></div><strong>KES <?= number_format($monthSales, 2) ?></strong><small>Your completed transactions</small></article>
+        <article class="dashboard-kpi"><div class="kpi-top"><span>My recent transactions</span><span class="kpi-icon"><i class="fas fa-receipt"></i></span></div><strong><?= count($recentSales) ?></strong><small>Latest transactions listed below</small></article>
+        <?php else: ?>
+        <article class="dashboard-kpi kpi-sales"><div class="kpi-top"><span>Sales this month</span><span class="kpi-icon"><i class="fas fa-chart-line"></i></span></div><strong>KES <?= number_format($monthSales, 2) ?></strong><small>Completed transactions</small></article>
+        <article class="dashboard-kpi"><div class="kpi-top"><span>Active products</span><span class="kpi-icon"><i class="fas fa-book"></i></span></div><strong><?= number_format($totalProducts) ?></strong><small>Books, stationery &amp; retail items</small></article>
+        <article class="dashboard-kpi"><div class="kpi-top"><span>Active customers</span><span class="kpi-icon"><i class="fas fa-users"></i></span></div><strong><?= number_format($totalCustomers) ?></strong><small>Registered customers</small></article>
+        <article class="dashboard-kpi <?= $lowStock > 0 ? 'kpi-warning' : '' ?>"><div class="kpi-top"><span>Low stock items</span><span class="kpi-icon"><i class="fas fa-exclamation-triangle"></i></span></div><strong><?= number_format($lowStock) ?></strong><small><?= $lowStock > 0 ? 'Review items for replenishment' : 'Stock levels look healthy' ?></small></article>
+        <?php endif; ?>
     </section>
 
     <section class="dashboard-shortcuts">
@@ -88,7 +78,7 @@ require_once __DIR__ . '/includes/sidebar.php';
     <section class="dashboard-lower">
         <article class="dashboard-panel recent-sales-panel">
             <div class="dashboard-section-heading">
-                <div><h2>Recent sales</h2><p>Your latest completed transactions.</p></div>
+                <div><h2><?= $isCashierDashboard ? "My recent sales" : "Recent sales" ?></h2><p><?= $isCashierDashboard ? "Only transactions recorded under your login." : "Your latest completed transactions." ?></p></div>
                 <?php if (canAccessModule('sales')): ?><a class="dashboard-view-link" href="<?= BASE_URL ?>/modules/sales/index.php">View sales <i class="fas fa-arrow-right"></i></a><?php endif; ?>
             </div>
             <?php if (!$recentSales): ?>
@@ -112,6 +102,7 @@ require_once __DIR__ . '/includes/sidebar.php';
             <?php endif; ?>
         </article>
 
+        <?php if (!$isCashierDashboard): ?>
         <article class="dashboard-panel financial-panel">
             <div class="dashboard-section-heading"><div><h2>Financial snapshot</h2><p>This month's position.</p></div></div>
             <div class="financial-line"><span><i class="fas fa-wallet"></i> Expenses this month</span><strong>KES <?= number_format($monthExpenses, 2) ?></strong></div>
@@ -119,6 +110,7 @@ require_once __DIR__ . '/includes/sidebar.php';
             <div class="financial-note"><i class="fas fa-info-circle"></i> Figures are based on transactions currently recorded in the system.</div>
             <?php if (canAccessModule('reports')): ?><a class="dashboard-report-link" href="<?= BASE_URL ?>/modules/reports/index.php">Open reports <i class="fas fa-arrow-right"></i></a><?php endif; ?>
         </article>
+        <?php endif; ?>
     </section>
 </main>
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
