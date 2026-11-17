@@ -41,6 +41,11 @@ ALTER TABLE expenses
   ADD COLUMN IF NOT EXISTS cash_shift_id BIGINT UNSIGNED NULL,
   ADD KEY IF NOT EXISTS idx_expenses_cash_shift(cash_shift_id);
 
+-- Link supplier cash payments to the cashier shift that handled the payment.
+ALTER TABLE supplier_payments
+  ADD COLUMN IF NOT EXISTS cash_shift_id BIGINT UNSIGNED NULL,
+  ADD KEY IF NOT EXISTS idx_supplier_payments_cash_shift(cash_shift_id);
+
 -- Record migration version for the setup checklist.
 INSERT INTO settings(setting_key,setting_value)
 SELECT 'launch_operations_completion_migration','1'
