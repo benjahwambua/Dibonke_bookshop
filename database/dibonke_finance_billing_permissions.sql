@@ -5,7 +5,7 @@ SELECT id,'finance',0,0,0,0 FROM roles;
 INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete)
 SELECT id,'billing',0,0,0,0 FROM roles;
 UPDATE role_permissions rp JOIN roles r ON r.id=rp.role_id
-SET rp.can_view=1,rp.can_create=1,rp.can_edit=1,rp.can_delete=1
+SET rp.can_view=1,rp.can_create=0,rp.can_edit=0,rp.can_delete=0
 WHERE r.role_code IN ('ADMIN','MANAGER') AND rp.module_key IN ('finance','billing');
 UPDATE role_permissions rp JOIN roles r ON r.id=rp.role_id
 SET rp.can_view=1,rp.can_create=0,rp.can_edit=0,rp.can_delete=0
