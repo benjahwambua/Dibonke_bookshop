@@ -5,7 +5,13 @@ require_once __DIR__ . '/../config/app.php';
 require_once __DIR__ . '/../config/db.php';
 
 if (!empty($_SESSION['user_id'])) {
-    header('Location: ' . BASE_URL . '/index.php');
+    $roleCode = strtoupper(trim((string)($_SESSION['role_code'] ?? '')));
+    $roleName = strtolower(trim((string)($_SESSION['role'] ?? '')));
+    $landingPage = in_array($roleCode, ['CASHIER', 'SALES'], true)
+        || in_array($roleName, ['cashier', 'sales'], true)
+        ? '/modules/sales/index.php'
+        : '/index.php';
+    header('Location: ' . BASE_URL . $landingPage);
     exit;
 }
 
@@ -20,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Please enter your username/email and password.';
     } else {
         $stmt = $conn->prepare(
-            "SELECT u.id,u.full_name,u.username,u.email,u.password,COALESCE(r.role_name,u.role) AS role,u.role_id,u.is_super,u.status
+            "SELECT u.id,u.full_name,u.username,u.email,u.password,COALESCE(r.role_name,u.role) AS role,u.role_id,r.role_code,u.is_super,u.status
              FROM users u LEFT JOIN roles r ON r.id=u.role_id
              WHERE (username = :username OR email = :email)
              LIMIT 1"
@@ -40,12 +46,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['username'] = $user['username'];
             $_SESSION['email'] = $user['email'];
             $_SESSION['role'] = $user['role'];
+            $_SESSION['role_code'] = $user['role_code'] ?? '';
             $_SESSION['is_super'] = (int)$user['is_super'];
 
             $update = $conn->prepare("UPDATE users SET last_login = NOW() WHERE id = :id");
             $update->execute([':id' => $user['id']]);
 
-            $landingPage = in_array(strtolower(trim((string)$user['role'])), ['cashier', 'sales'], true) ? '/modules/sales/index.php' : '/index.php';
+            $roleCode = strtoupper(trim((string)($user['role_code'] ?? '')));
+            $roleName = strtolower(trim((string)$user['role']));
+            $landingPage = in_array($roleCode, ['CASHIER', 'SALES'], true)
+                || in_array($roleName, ['cashier', 'sales'], true)
+                ? '/modules/sales/index.php'
+                : '/index.php';
             header('Location: ' . BASE_URL . $landingPage);
             exit;
         }
