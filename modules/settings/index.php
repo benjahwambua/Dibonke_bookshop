@@ -28,7 +28,7 @@ require_once __DIR__.'/../../includes/header.php';require_once __DIR__.'/../../i
 <?php foreach($allowed as $key):$value=$settings[$key]??'';?>
 <div class="field"><label><?=e(ucwords(str_replace('_',' ',$key)))?></label>
 <?php if($key==='vat_mode'):?>
-<select name="settings[vat_mode]"><option value="exclusive" <?=($value?:'exclusive')==='exclusive'?'selected':''?>>Add VAT to selling prices</option><option value="inclusive" <?=$value==='inclusive'?'selected':''?>>Selling prices already include VAT</option></select>
+<select name="settings[vat_mode]"><option value="exclusive" <?=($value?:'inclusive')==='exclusive'?'selected':''?>>Add VAT to selling prices</option><option value="inclusive" <?=($value?:'inclusive')==='inclusive'?'selected':''?>>Selling prices already include VAT</option></select>
 <?php else:?>
 <input name="settings[<?=e($key)?>]" value="<?=e($value!==''?$value:($key==='vat_rate'?'16':''))?>" <?=in_array($key,['company_name','currency'],true)?'required':''?> <?= $key==='vat_rate'?'type="number" min="0" max="100" step="0.01"':''?>>
 <?php endif;?></div>
