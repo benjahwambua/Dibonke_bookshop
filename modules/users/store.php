@@ -8,7 +8,7 @@ if (!isSuperUser()) { http_response_code(403); exit('Access denied.'); }
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') { header('Location: index.php'); exit; }
 verify_csrf();
 
-function userFlash(string $type, string $message): never {
+function userFlash(string $type, string $message): void {
     $_SESSION['user_flash'] = ['type'=>$type, 'message'=>$message];
     header('Location: index.php');
     exit;
