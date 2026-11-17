@@ -21,6 +21,7 @@ Before a fresh installation can be declared ready, the project still needs to:
 | `price_lists.sql` | Standard/wholesale price lists and product price tiers | Requires `products`, `customers` and `sales` |
 | `supply_chain_mpesa.sql` | Purchase orders, goods receipts, supplier payments and M-PESA transaction storage | Requires base `users`, `suppliers` and `settings` tables |\n| `dibonke_goods_receiving_scanner.sql` | Adds supplier invoice date/total fields and grants Manager/Storekeeper receiving permissions | Requires `goods_receipts`, `roles` and `role_permissions` |
 | `dibonke_staff_roles.sql` | Staff profiles and unified role permissions | Requires the existing `users` table |
+| `dibonke_launch_operations.sql` | Sales returns, cash shifts, stock counts, audit events and eTIMS queue | Requires the existing retail tables plus `roles`, `role_permissions` and `settings`; uses indexed references without foreign-key constraints to tolerate inherited ID definitions |
 | `dibonke_finance_billing_permissions.sql` | Adds Finance and Billing module permissions to existing roles | Requires `roles` and `role_permissions` from the staff/roles migration |
 | `dibonke_products_inventory_preflight.sql` | Read-only check of product, POS, purchase and stock-ledger dependencies | Run with the target Dibonke database selected |
 
