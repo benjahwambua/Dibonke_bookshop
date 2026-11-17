@@ -169,3 +169,9 @@ INSERT INTO settings(setting_key,setting_value)
 SELECT 'etims_environment','sandbox' WHERE NOT EXISTS(SELECT 1 FROM settings WHERE setting_key='etims_environment');
 INSERT INTO settings(setting_key,setting_value)
 SELECT 'etims_enabled','0' WHERE NOT EXISTS(SELECT 1 FROM settings WHERE setting_key='etims_enabled');
+
+-- Unified launch controls landing page permission. Detailed actions remain
+-- checked against each individual module permission in the application.
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete)
+SELECT r.id,'launch_controls',1,0,0,0 FROM roles r
+WHERE r.role_code IN ('ADMIN','MANAGER','SALES','CASHIER','STOREKEEPER');
