@@ -74,7 +74,7 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <div class="menu-title">Finance &amp; Billing</div>
         <?php if (canAccessModule('finance')): ?>
         <a href="<?= BASE_URL ?>/modules/finance/index.php" class="<?= navActive('/finance/') ?>"><i class="fas fa-chart-pie icon-main"></i>Finance Overview</a>
-        <a href="<?= BASE_URL ?>/modules/finance/ledger.php" class="<?= navActive('/finance/ledger.php') ?>"><i class="fas fa-book icon-main"></i>General Ledger</a>
+        <a href="<?= BASE_URL ?>/modules/finance/ledger.php" class="<?= navActive('/finance/ledger.php') ?>"><i class="fas fa-book icon-main"></i>Ledger</a>
         <a href="<?= BASE_URL ?>/modules/finance/control.php" class="<?= navActive('/finance/control.php') ?>"><i class="fas fa-shield-alt icon-main"></i>Financial Control</a>
         <?php endif; ?>
         <?php if (canAccessModule('expenses')): ?><a href="<?= BASE_URL ?>/modules/expenses/index.php" class="<?= navActive('/expenses/') ?>"><i class="fas fa-wallet icon-main"></i>Expenses</a><?php endif; ?>
