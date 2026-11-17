@@ -112,17 +112,17 @@ try {
         if ($configuredPaymentPrefix) $paymentPrefix = (string)$configuredPaymentPrefix;
 
         $paymentReceipt = $paymentPrefix . '-' . date('YmdHis') . '-' . random_int(100, 999);
-        $paymentStmt = $conn->prepare("INSERT INTO supplier_payments (receipt_number,supplier_id,goods_receipt_id,user_id,amount,payment_method,transaction_reference,payment_date,notes) VALUES (?,?,NULL,?,?,?,?,?,?)");
-        $paymentStmt->execute([
-            $paymentReceipt,
-            $supplierId,
-            (int)$_SESSION['user_id'],
-            $paidAmount,
-            $paymentMethod,
-            null,
-            $purchaseDate,
-            'Payment recorded against purchase '.$purchaseNumber
-        ]);
+        $hasCashShiftColumn=(bool)$conn->query("SHOW COLUMNS FROM supplier_payments LIKE 'cash_shift_id'")->fetch();
+        $cashShiftId=null;
+        if($paymentMethod==='Cash'&&$hasCashShiftColumn){$shiftQ=$conn->prepare("SELECT id FROM cash_shifts WHERE user_id=? AND status='Open' ORDER BY id DESC LIMIT 1");$shiftQ->execute([(int)$_SESSION['user_id']]);$cashShiftId=$shiftQ->fetchColumn()?:null;}
+        $paymentDate=($paymentMethod==='Cash'&&$cashShiftId)?date('Y-m-d H:i:s'):$purchaseDate;
+        if($hasCashShiftColumn){
+            $paymentStmt = $conn->prepare("INSERT INTO supplier_payments (receipt_number,supplier_id,goods_receipt_id,user_id,amount,payment_method,transaction_reference,payment_date,notes,cash_shift_id) VALUES (?,?,NULL,?,?,?,?,?,?,?)");
+            $paymentStmt->execute([$paymentReceipt,$supplierId,(int)$_SESSION['user_id'],$paidAmount,$paymentMethod,null,$paymentDate,'Payment recorded against purchase '.$purchaseNumber,$cashShiftId]);
+        }else{
+            $paymentStmt = $conn->prepare("INSERT INTO supplier_payments (receipt_number,supplier_id,goods_receipt_id,user_id,amount,payment_method,transaction_reference,payment_date,notes) VALUES (?,?,NULL,?,?,?,?,?,?)");
+            $paymentStmt->execute([$paymentReceipt,$supplierId,(int)$_SESSION['user_id'],$paidAmount,$paymentMethod,null,$paymentDate,'Payment recorded against purchase '.$purchaseNumber]);
+        }
     }
 
     recordAuditEvent($conn,'Create','purchases','Created purchase '.$purchaseNumber.' for KES '.number_format($total,2),'purchase',$purchaseId,null,['supplier_id'=>$supplierId,'total_amount'=>$total,'paid_amount'=>$paidAmount,'balance'=>$balance]);
