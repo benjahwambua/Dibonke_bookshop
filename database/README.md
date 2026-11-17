@@ -20,6 +20,8 @@ Before a fresh installation can be declared ready, the project still needs to:
 | `dibonke_products_inventory.sql` | Additive product type and ISBN extension | Requires an existing `products` table |
 | `price_lists.sql` | Standard/wholesale price lists and product price tiers | Requires `products`, `customers` and `sales` |
 | `supply_chain_mpesa.sql` | Purchase orders, goods receipts, supplier payments and M-PESA transaction storage | Requires base `users`, `suppliers` and `settings` tables |
+| `dibonke_staff_roles.sql` | Staff profiles and unified role permissions | Requires the existing `users` table |
+| `dibonke_finance_billing_permissions.sql` | Adds Finance and Billing module permissions to existing roles | Requires `roles` and `role_permissions` from the staff/roles migration |
 | `dibonke_products_inventory_preflight.sql` | Read-only check of product, POS, purchase and stock-ledger dependencies | Run with the target Dibonke database selected |
 
 The preflight script performs SELECTs against `information_schema` only. It does not create or alter tables and is safe to use before planning migrations. Missing columns or foreign keys must be reconciled deliberately; do not apply one-off ALTER statements to a live database.
@@ -68,3 +70,11 @@ The POS also reads `customers`, `sales`, `settings` and `activity_logs`. Purchas
 6. Test opening stock, purchase receiving, POS sale, price-list selection and manual stock adjustment on test records.
 
 No production data, passwords, API credentials or live customer records belong in committed SQL files.
+
+
+## Finance and Billing modules
+
+- **Finance** is an operational cash summary built from existing completed sales, customer collections, supplier payments and expense records. Customer collections already included in a sale's paid amount are not counted a second time; later customer payments without a sale link are added separately.
+- **Billing & Invoices** is the central register for invoices created by completed POS sales. It filters by date, customer/invoice search and payment status, and links to the existing receipt and customer collection workflows.
+- These first versions do not create a second invoice ledger or duplicate payments. They are operational summaries, not a double-entry general ledger, bank reconciliation, tax filing engine or standalone recurring-invoice system.
+- Apply `dibonke_finance_billing_permissions.sql` after the staff/roles migration. Administrator and Manager receive view access; Sales and Cashier receive Billing view access. The new dashboard pages are read-only; posting sales, collections, supplier payments and expenses continues through their existing workflows.
