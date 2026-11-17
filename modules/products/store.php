@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/product_helpers.php';
+require_once __DIR__ . '/../../includes/audit.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: index.php');
@@ -147,6 +148,7 @@ try {
         ]);
     }
 
+    recordAuditEvent($conn,'Create','products','Created product '.$name,'product',$productId,null,['product_type'=>$productType,'sku'=>$sku,'barcode'=>$barcode,'opening_stock'=>$stock]);
     $conn->commit();
     $_SESSION['product_flash'] = 'Product created successfully.';
 } catch (Throwable $e) {
