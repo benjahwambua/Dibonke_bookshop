@@ -144,7 +144,7 @@ $returnLines=$canReturnCreate?$conn->query("SELECT si.id,si.quantity,si.price,s.
 $counts=$canStock?$conn->query("SELECT sc.*,u.full_name FROM stock_counts sc JOIN users u ON u.id=sc.created_by ORDER BY sc.id DESC LIMIT 40")->fetchAll():[];
 $activeCount=$canStock?(int)$conn->query("SELECT id FROM stock_counts WHERE status='Counting' ORDER BY id DESC LIMIT 1")->fetchColumn():0;
 $countItems=[];if($activeCount){$q=$conn->prepare("SELECT sci.*,p.product_name,p.sku,p.barcode FROM stock_count_items sci JOIN products p ON p.id=sci.product_id WHERE sci.stock_count_id=? ORDER BY p.product_name");$q->execute([$activeCount]);$countItems=$q->fetchAll();}
-$audit=$canAudit?$conn->query("SELECT * FROM (SELECT ae.created_at,u.full_name,ae.action,ae.module_key,ae.record_type,ae.record_id,ae.description,ae.ip_address FROM audit_events ae LEFT JOIN users u ON u.id=ae.user_id UNION ALL SELECT al.created_at,u.full_name,al.action,al.module module_key,NULL record_type,NULL record_id,al.description,al.ip_address FROM activity_logs al LEFT JOIN users u ON u.id=al.user_id) audit_rows ORDER BY created_at DESC LIMIT 150")->fetchAll():[];
+$audit=$canAudit?$conn->query("SELECT * FROM (SELECT ae.created_at,u.full_name,ae.action,ae.module_key,ae.record_type,ae.record_id,ae.description,ae.ip_address FROM audit_events ae LEFT JOIN users u ON u.id=ae.user_id UNION ALL SELECT al.created_at,u.full_name,al.action,al.module module_key,NULL record_type,NULL record_id,al.description,al.ip_address FROM activity_logs al LEFT JOIN users u ON u.id=al.user_id WHERE al.module NOT IN ('Sales','Expenses','Customer Payments')) audit_rows ORDER BY created_at DESC LIMIT 150")->fetchAll():[];
 $etims=$canEtims?$conn->query("SELECT ed.*,s.total_amount FROM etims_documents ed JOIN sales s ON s.id=ed.sale_id ORDER BY ed.id DESC LIMIT 60")->fetchAll():[];
 $unqueuedSales=$canEtimsCreate?$conn->query("SELECT s.id,s.invoice_number,s.total_amount,s.sale_date FROM sales s LEFT JOIN etims_documents ed ON ed.sale_id=s.id WHERE s.sale_status='Completed' AND ed.id IS NULL ORDER BY s.id DESC LIMIT 100")->fetchAll():[];
 $etimsEnvironment=(string)($conn->query("SELECT setting_value FROM settings WHERE setting_key='etims_environment' LIMIT 1")->fetchColumn()?:'sandbox');
@@ -199,8 +199,9 @@ require_once __DIR__.'/../../includes/header.php';require_once __DIR__.'/../../i
   const code=scanner.value.trim().toLowerCase();
   if(!code)return;
   const fields=Array.from(document.querySelectorAll('.counted-qty'));
-  const match=fields.find(field=>(field.dataset.sku||'').trim().toLowerCase()===code||(field.dataset.barcode||'').trim().toLowerCase()===code);
-  if(!match){alert('No product in this count matches SKU/barcode: '+scanner.value.trim());scanner.select();return;}
+  const matches=fields.filter(field=>(field.dataset.sku||'').trim().toLowerCase()===code||(field.dataset.barcode||'').trim().toLowerCase()===code);
+  if(matches.length!==1){alert(matches.length?'More than one product matches this SKU/barcode. Check the product records.':'No product in this count matches SKU/barcode: '+scanner.value.trim());scanner.select();return;}
+  const match=matches[0];
   match.value=String((parseInt(match.value||'0',10)||0)+1);
   match.dispatchEvent(new Event('change',{bubbles:true}));
   scanner.value='';scanner.focus();
