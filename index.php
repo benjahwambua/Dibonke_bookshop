@@ -12,20 +12,30 @@ function scalar(PDO $db, string $sql): int|float
     return is_numeric($value) ? (float)$value : 0;
 }
 
-$totalProducts = (int)scalar($conn, "SELECT COUNT(*) FROM products WHERE status = 'Active'");
-$totalCustomers = (int)scalar($conn, "SELECT COUNT(*) FROM customers WHERE status = 'Active'");
-$lowStock = (int)scalar($conn, "SELECT COUNT(*) FROM products WHERE status = 'Active' AND stock_quantity <= reorder_level");
-$monthSales = (float)scalar($conn, "SELECT COALESCE(SUM(total_amount),0) FROM sales WHERE sale_status = 'Completed' AND YEAR(sale_date)=YEAR(CURDATE()) AND MONTH(sale_date)=MONTH(CURDATE())");
-$monthExpenses = (float)scalar($conn, "SELECT COALESCE(SUM(amount),0) FROM expenses WHERE YEAR(expense_date)=YEAR(CURDATE()) AND MONTH(expense_date)=MONTH(CURDATE())");
-$creditBalance = (float)scalar($conn, "SELECT COALESCE(SUM(balance),0) FROM customers WHERE status='Active' AND balance > 0");
+$roleName = strtolower(trim((string)($_SESSION['role'] ?? '')));
+$roleCode = strtoupper(trim((string)($_SESSION['role_code'] ?? '')));
+$isCashierDashboard = in_array($roleName, ['cashier', 'sales'], true) || in_array($roleCode, ['CASHIER', 'SALES'], true);
+$currentUserId = (int)($_SESSION['user_id'] ?? 0);
 
-$recentSales = $conn->query(
-    "SELECT s.invoice_number, s.sale_date, s.total_amount, c.customer_name
-     FROM sales s
-     LEFT JOIN customers c ON c.id=s.customer_id
-     WHERE s.sale_status='Completed'
-     ORDER BY s.id DESC LIMIT 8"
-)->fetchAll();
+if ($isCashierDashboard) {
+    $stmt = $conn->prepare("SELECT COALESCE(SUM(total_amount),0) FROM sales WHERE sale_status='Completed' AND user_id=? AND DATE(sale_date)=CURDATE()");
+    $stmt->execute([$currentUserId]);
+    $todaySales = (float)$stmt->fetchColumn();
+    $stmt = $conn->prepare("SELECT COALESCE(SUM(total_amount),0) FROM sales WHERE sale_status='Completed' AND user_id=? AND YEAR(sale_date)=YEAR(CURDATE()) AND MONTH(sale_date)=MONTH(CURDATE())");
+    $stmt->execute([$currentUserId]);
+    $monthSales = (float)$stmt->fetchColumn();
+    $stmt = $conn->prepare("SELECT s.invoice_number,s.sale_date,s.total_amount,c.customer_name FROM sales s LEFT JOIN customers c ON c.id=s.customer_id WHERE s.sale_status='Completed' AND s.user_id=? ORDER BY s.id DESC LIMIT 8");
+    $stmt->execute([$currentUserId]);
+    $recentSales = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} else {
+    $totalProducts = (int)scalar($conn, "SELECT COUNT(*) FROM products WHERE status='Active'");
+    $totalCustomers = (int)scalar($conn, "SELECT COUNT(*) FROM customers WHERE status='Active'");
+    $lowStock = (int)scalar($conn, "SELECT COUNT(*) FROM products WHERE status='Active' AND stock_quantity<=reorder_level");
+    $monthSales = (float)scalar($conn, "SELECT COALESCE(SUM(total_amount),0) FROM sales WHERE sale_status='Completed' AND YEAR(sale_date)=YEAR(CURDATE()) AND MONTH(sale_date)=MONTH(CURDATE())");
+    $monthExpenses = (float)scalar($conn, "SELECT COALESCE(SUM(amount),0) FROM expenses WHERE YEAR(expense_date)=YEAR(CURDATE()) AND MONTH(expense_date)=MONTH(CURDATE())");
+    $creditBalance = (float)scalar($conn, "SELECT COALESCE(SUM(balance),0) FROM customers WHERE status='Active' AND balance>0");
+    $recentSales = $conn->query("SELECT s.invoice_number,s.sale_date,s.total_amount,c.customer_name FROM sales s LEFT JOIN customers c ON c.id=s.customer_id WHERE s.sale_status='Completed' ORDER BY s.id DESC LIMIT 8")->fetchAll(PDO::FETCH_ASSOC);
+}
 
 require_once __DIR__ . '/includes/header.php';
 require_once __DIR__ . '/includes/sidebar.php';
