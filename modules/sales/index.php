@@ -17,7 +17,7 @@ $roleCode = strtoupper(trim((string)($_SESSION['role_code'] ?? '')));
 $isCashierTerminal = in_array($roleName, ['cashier', 'sales'], true) || in_array($roleCode, ['CASHIER', 'SALES'], true);
 $currentUserId = (int)($_SESSION['user_id'] ?? 0);
 if ($isCashierTerminal) {
-    $statsStmt = $conn->prepare("SELECT COALESCE(SUM(total_amount),0) today, COALESCE(SUM(CASE WHEN YEAR(sale_date)=YEAR(CURDATE()) AND MONTH(sale_date)=MONTH(CURDATE()) THEN total_amount ELSE 0 END),0) month FROM sales WHERE sale_status='Completed' AND user_id=? AND DATE(sale_date)=CURDATE()");
+    $statsStmt = $conn->prepare("SELECT COALESCE(SUM(CASE WHEN DATE(sale_date)=CURDATE() THEN total_amount ELSE 0 END),0) today, COALESCE(SUM(CASE WHEN YEAR(sale_date)=YEAR(CURDATE()) AND MONTH(sale_date)=MONTH(CURDATE()) THEN total_amount ELSE 0 END),0) month FROM sales WHERE sale_status='Completed' AND user_id=?");
     $statsStmt->execute([$currentUserId]);
     $statsRow = $statsStmt->fetch(PDO::FETCH_ASSOC) ?: [];
     $stats = ['today'=>(float)($statsRow['today']??0),'month'=>(float)($statsRow['month']??0),'credit'=>0.0];
