@@ -7,6 +7,12 @@ if($id<=0){header('Location: index.php');exit;}
 $s=$conn->prepare("SELECT s.*,pl.name price_list_name,COALESCE(c.customer_name,'Walk-in Customer') customer_name,c.phone,c.address,u.full_name cashier FROM sales s LEFT JOIN price_lists pl ON pl.id=s.price_list_id LEFT JOIN customers c ON c.id=s.customer_id LEFT JOIN users u ON u.id=s.user_id WHERE s.id=? AND s.sale_status='Completed'");
 $s->execute([$id]);$sale=$s->fetch();
 if(!$sale){http_response_code(404);exit('Sale not found.');}
+$receiptRole = strtolower(trim((string)($_SESSION['role'] ?? '')));
+$receiptRoleCode = strtoupper(trim((string)($_SESSION['role_code'] ?? '')));
+if ((in_array($receiptRole, ['cashier', 'sales'], true) || in_array($receiptRoleCode, ['CASHIER', 'SALES'], true)) && (int)$sale['user_id'] !== (int)($_SESSION['user_id'] ?? 0)) {
+    http_response_code(403);
+    exit('You can only view receipts for sales recorded under your login.');
+}
 $i=$conn->prepare("SELECT si.quantity,si.price,si.subtotal,p.product_name,p.sku,p.unit FROM sale_items si JOIN products p ON p.id=si.product_id WHERE si.sale_id=? ORDER BY si.id");$i->execute([$id]);$items=$i->fetchAll();
 $paymentStatus = (float)$sale['balance'] <= 0.001 ? 'PAID' : ((float)$sale['paid_amount'] > 0 ? 'PARTIALLY PAID' : ($sale['payment_method'] === 'M-Pesa' ? 'M-PESA NOT YET CONFIRMED' : 'PAYMENT DUE'));
 $flash=$_SESSION['sale_flash']??null;unset($_SESSION['sale_flash']);
