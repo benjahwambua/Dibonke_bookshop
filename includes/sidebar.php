@@ -49,12 +49,13 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <div class="menu-title">Workspace</div>
         <a href="<?= BASE_URL ?>/index.php" class="<?= $currentPath === BASE_URL . '/index.php' ? 'active' : '' ?>"><i class="fas fa-th-large icon-main"></i>Dashboard</a>
 
-        <?php if (canAccessModule('products') || canAccessModule('categories') || canAccessModule('brands') || canAccessModule('price_lists')): ?>
+        <?php if (canAccessModule('products') || canAccessModule('categories') || canAccessModule('brands') || canAccessModule('price_lists') || canAccessModule('stock_movements')): ?>
         <div class="menu-title">Catalogue &amp; Inventory</div>
         <?php if (canAccessModule('products')): ?><a href="<?= BASE_URL ?>/modules/products/index.php" class="<?= navActive('/products/') ?>"><i class="fas fa-book icon-main"></i>Products &amp; Books</a><?php endif; ?>
         <?php if (canAccessModule('categories')): ?><a href="<?= BASE_URL ?>/modules/categories/index.php" class="<?= navActive('/categories/') ?>"><i class="fas fa-layer-group icon-main"></i>Categories</a><?php endif; ?>
         <?php if (canAccessModule('brands')): ?><a href="<?= BASE_URL ?>/modules/brands/index.php" class="<?= navActive('/brands/') ?>"><i class="fas fa-bookmark icon-main"></i>Brands / Publishers</a><?php endif; ?>
         <?php if (canAccessModule('price_lists')): ?><a href="<?= BASE_URL ?>/modules/price_lists/index.php" class="<?= navActive('/price_lists/') ?>"><i class="fas fa-tags icon-main"></i>Price Lists</a><?php endif; ?>
+        <?php if (canAccessModule('stock_movements')): ?><a href="<?= BASE_URL ?>/modules/stock_movements/index.php" class="<?= navActive('/stock_movements/') ?>"><i class="fas fa-exchange-alt icon-main"></i>Stock Movements</a><?php endif; ?>
         <?php endif; ?>
 
         <?php if (canAccessModule('suppliers') || canAccessModule('purchases') || canAccessModule('supply_chain')): ?>
@@ -82,11 +83,7 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <?php if (canAccessModule('billing')): ?><a href="<?= BASE_URL ?>/modules/billing/index.php" class="<?= navActive('/billing/') ?>"><i class="fas fa-file-invoice icon-main"></i>Billing &amp; Invoices</a><?php endif; ?>
         <?php if (canAccessModule('expenses')): ?><a href="<?= BASE_URL ?>/modules/expenses/index.php" class="<?= navActive('/expenses/') ?>"><i class="fas fa-wallet icon-main"></i>Expenses</a><?php endif; ?>
         <?php if (canAccessModule('supplier_payments')): ?><a href="<?= BASE_URL ?>/modules/supplier_payments/index.php" class="<?= navActive('/supplier_payments/') ?>"><i class="fas fa-file-invoice-dollar icon-main"></i>Supplier Payments</a><?php endif; ?>
-        <?php endif; ?>
-
-        <?php if (canAccessModule('stock_movements')): ?>
-        <div class="menu-title">Inventory Control</div>
-        <a href="<?= BASE_URL ?>/modules/stock_movements/index.php" class="<?= navActive('/stock_movements/') ?>"><i class="fas fa-exchange-alt icon-main"></i>Stock Movements</a>
+        <?php if (canAccessModule('mpesa')): ?><a href="<?= BASE_URL ?>/modules/mpesa/index.php" class="<?= navActive('/mpesa/') ?>"><i class="fas fa-mobile-alt icon-main"></i>M-PESA</a><?php endif; ?>
         <?php endif; ?>
 
         <?php if (canAccessModule('launch_controls')): ?>
@@ -109,7 +106,6 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <a href="<?= BASE_URL ?>/modules/settings/index.php" class="<?= navActive('/settings/') ?>"><i class="fas fa-sliders-h icon-main"></i>Settings</a>
         <?php endif; ?>
         <?php endif; ?>
-        <?php if (canAccessModule('mpesa')): ?><a href="<?= BASE_URL ?>/modules/mpesa/index.php" class="<?= navActive('/mpesa/') ?>"><i class="fas fa-mobile-alt icon-main"></i>M-PESA</a><?php endif; ?>
         <a href="<?= BASE_URL ?>/auth/logout.php" class="logout-link"><i class="fas fa-sign-out-alt icon-main"></i>Sign out</a>
     </nav>
 </aside>
