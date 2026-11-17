@@ -53,7 +53,7 @@ try {
         $id = (int)($_POST['id'] ?? 0);
         if ($id <= 0) throw new RuntimeException('Invalid user.');
 
-        $stmt = $conn->prepare("SELECT id, is_super FROM users WHERE id=?");
+        $stmt = $conn->prepare("SELECT id, is_super, full_name, role, status FROM users WHERE id=?");
         $stmt->execute([$id]);
         $existing = $stmt->fetch();
         if (!$existing) throw new RuntimeException('User not found.');
