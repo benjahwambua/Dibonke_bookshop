@@ -7,10 +7,10 @@ function currentUserRole(): string { return trim((string)($_SESSION['role'] ?? '
 function isSuperUser(): bool { return (int)($_SESSION['is_super'] ?? 0) === 1; }
 function roleModules(): array {
  return [
- 'Admin'=>['products','categories','brands','customers','suppliers','purchases','sales','customer_payments','supplier_payments','deliveries','stock_movements','expenses','reports','analytics','supply_chain','mpesa','price_lists','staff'],
- 'Manager'=>['products','categories','brands','customers','suppliers','purchases','sales','customer_payments','supplier_payments','deliveries','stock_movements','expenses','reports','analytics','supply_chain','mpesa','staff'],
- 'Sales'=>['customers','sales','customer_payments','deliveries','reports'],
- 'Cashier'=>['customers','sales','customer_payments'],
+ 'Admin'=>['products','categories','brands','customers','suppliers','purchases','sales','customer_payments','supplier_payments','deliveries','stock_movements','expenses','finance','billing','reports','analytics','supply_chain','mpesa','price_lists','staff'],
+ 'Manager'=>['products','categories','brands','customers','suppliers','purchases','sales','customer_payments','supplier_payments','deliveries','stock_movements','expenses','finance','billing','reports','analytics','supply_chain','mpesa','staff'],
+ 'Sales'=>['customers','sales','customer_payments','deliveries','billing','reports'],
+ 'Cashier'=>['customers','sales','customer_payments','billing'],
  'Storekeeper'=>['products','categories','brands','suppliers','purchases','stock_movements','deliveries','supply_chain'],
  'Driver'=>['deliveries'],'Staff'=>[]
  ];
