@@ -88,3 +88,24 @@ The Finance section groups the Finance Overview, cashbook Ledger, Financial Cont
 - **Financial Control:** date-filtered cash summaries, payment-channel comparisons, current receivables/payables and basic data-quality / pending-payment alerts. It is not a bank reconciliation or statutory audit.
 - **Expenses:** the existing expense register and posting workflow is reached from the Finance navigation. Its existing expense records remain the source of truth.
 - General Settings now shows only company, currency, operational and document-numbering preferences. M-PESA credentials remain on the dedicated M-PESA page; secret fields are masked and blank secret submissions preserve the saved value. This UI masking does not by itself encrypt legacy values already stored in the settings table.
+
+
+## Launch operations extension
+
+Apply `dibonke_launch_operations.sql` after the base tables, Supply Chain extension and staff/roles permissions exist. It adds separate records for sales returns, cashier shifts, physical stock counts, audit events and an eTIMS invoice queue. It also seeds module permissions and a unified Launch Operations navigation permission.
+
+The Launch Operations workspace currently provides:
+- Return requests against original POS sale lines, approval/rejection and stock restoration through the stock movement ledger.
+- Cashier shift opening and closing with opening float, expected cash, counted cash and variance.
+- Physical stock count sessions, scanned/manual quantity entry and approved variance posting.
+- An audit event register for actions performed in these new workflows.
+- An eTIMS document queue for completed sales.
+
+Important limitations before production:
+- A return approval records the refund method but does not itself transfer money or create a separate refund payment transaction. The actual refund must be executed and reconciled through the selected payment channel.
+- Cash shift expected cash currently includes opening float and completed Cash POS sales by the cashier. It does not yet reconcile later customer collections, mixed tender splits, cash refunds, paid-outs or cash drops. Do not use it as a final cash-control sign-off until those workflows are extended and tested.
+- Audit events are captured by the new Launch Operations actions only. Existing historical `activity_logs` are not backfilled, and existing module actions have not all been instrumented yet.
+- eTIMS is queue/readiness only. No live KRA API submission, signing, QR-code generation or acknowledgement handling is enabled. Obtain the correct KRA integration credentials/specification and test environment before enabling live tax invoicing.
+- The current stock-count workflow snapshots active products when a count is created. Complete and approve counts carefully; only entered quantities are posted.
+
+Back up the database before migration and test these workflows with test sales and products before launch.
