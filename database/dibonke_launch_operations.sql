@@ -21,11 +21,7 @@ CREATE TABLE IF NOT EXISTS sales_returns (
   approved_at DATETIME NULL,
   notes TEXT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  KEY idx_returns_sale(sale_id), KEY idx_returns_date(return_date), KEY idx_returns_status(status),
-  CONSTRAINT fk_returns_sale FOREIGN KEY(sale_id) REFERENCES sales(id),
-  CONSTRAINT fk_returns_customer FOREIGN KEY(customer_id) REFERENCES customers(id) ON DELETE SET NULL,
-  CONSTRAINT fk_returns_user FOREIGN KEY(user_id) REFERENCES users(id),
-  CONSTRAINT fk_returns_approver FOREIGN KEY(approved_by) REFERENCES users(id) ON DELETE SET NULL
+  KEY idx_returns_sale(sale_id), KEY idx_returns_date(return_date), KEY idx_returns_status(status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS sales_return_items (
@@ -37,10 +33,7 @@ CREATE TABLE IF NOT EXISTS sales_return_items (
   unit_price DECIMAL(14,2) NOT NULL DEFAULT 0,
   line_total DECIMAL(14,2) NOT NULL DEFAULT 0,
   restock TINYINT(1) NOT NULL DEFAULT 1,
-  KEY idx_return_items_return(return_id), KEY idx_return_items_sale_item(sale_item_id),
-  CONSTRAINT fk_return_items_return FOREIGN KEY(return_id) REFERENCES sales_returns(id) ON DELETE CASCADE,
-  CONSTRAINT fk_return_items_sale_item FOREIGN KEY(sale_item_id) REFERENCES sale_items(id),
-  CONSTRAINT fk_return_items_product FOREIGN KEY(product_id) REFERENCES products(id)
+  KEY idx_return_items_return(return_id), KEY idx_return_items_sale_item(sale_item_id), KEY idx_return_items_product(product_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS cash_shifts (
@@ -58,9 +51,7 @@ CREATE TABLE IF NOT EXISTS cash_shifts (
   reviewed_by INT UNSIGNED NULL,
   reviewed_at DATETIME NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  KEY idx_cash_shift_user_status(user_id,status), KEY idx_cash_shift_opened(opened_at),
-  CONSTRAINT fk_cash_shift_user FOREIGN KEY(user_id) REFERENCES users(id),
-  CONSTRAINT fk_cash_shift_reviewer FOREIGN KEY(reviewed_by) REFERENCES users(id) ON DELETE SET NULL
+  KEY idx_cash_shift_user_status(user_id,status), KEY idx_cash_shift_opened(opened_at), KEY idx_cash_shift_reviewer(reviewed_by)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS stock_counts (
@@ -76,10 +67,7 @@ CREATE TABLE IF NOT EXISTS stock_counts (
   approved_at DATETIME NULL,
   notes TEXT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  KEY idx_stock_count_status(status),
-  CONSTRAINT fk_stock_count_creator FOREIGN KEY(created_by) REFERENCES users(id),
-  CONSTRAINT fk_stock_count_submitter FOREIGN KEY(submitted_by) REFERENCES users(id) ON DELETE SET NULL,
-  CONSTRAINT fk_stock_count_approver FOREIGN KEY(approved_by) REFERENCES users(id) ON DELETE SET NULL
+  KEY idx_stock_count_status(status), KEY idx_stock_count_creator(created_by)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS stock_count_items (
@@ -91,10 +79,7 @@ CREATE TABLE IF NOT EXISTS stock_count_items (
   variance INT NULL,
   counted_by INT UNSIGNED NULL,
   counted_at DATETIME NULL,
-  UNIQUE KEY uq_stock_count_product(stock_count_id,product_id),
-  CONSTRAINT fk_stock_count_item_count FOREIGN KEY(stock_count_id) REFERENCES stock_counts(id) ON DELETE CASCADE,
-  CONSTRAINT fk_stock_count_item_product FOREIGN KEY(product_id) REFERENCES products(id),
-  CONSTRAINT fk_stock_count_item_user FOREIGN KEY(counted_by) REFERENCES users(id) ON DELETE SET NULL
+  UNIQUE KEY uq_stock_count_product(stock_count_id,product_id), KEY idx_stock_count_item_product(product_id), KEY idx_stock_count_item_user(counted_by)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS audit_events (
@@ -110,8 +95,7 @@ CREATE TABLE IF NOT EXISTS audit_events (
   ip_address VARCHAR(45) NULL,
   user_agent VARCHAR(255) NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  KEY idx_audit_created(created_at), KEY idx_audit_module(module_key), KEY idx_audit_user(user_id),
-  CONSTRAINT fk_audit_event_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL
+  KEY idx_audit_created(created_at), KEY idx_audit_module(module_key), KEY idx_audit_user(user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS etims_documents (
@@ -127,8 +111,7 @@ CREATE TABLE IF NOT EXISTS etims_documents (
   error_message VARCHAR(1000) NULL,
   submitted_at DATETIME NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY uq_etims_sale(sale_id), KEY idx_etims_status(status),
-  CONSTRAINT fk_etims_sale FOREIGN KEY(sale_id) REFERENCES sales(id)
+  UNIQUE KEY uq_etims_sale(sale_id), KEY idx_etims_status(status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Permissions: seed missing module keys without overwriting custom role settings.
