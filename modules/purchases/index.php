@@ -57,8 +57,8 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 </style>
 
 <div class="page-head">
-    <div><h1>Purchases</h1><p class="muted">Receive stock, record supplier invoices and manage supplier credit.</p></div>
-    <button class="btn btn-primary" onclick="document.getElementById('purchaseModal').classList.add('show')"><i class="fas fa-plus"></i> New Purchase</button>
+    <div><h1>Purchase Register</h1><p class="muted">Record completed direct purchases and review supplier balances.</p></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn btn-light" href="<?= BASE_URL ?>/modules/supply_chain/index.php"><i class="fas fa-file-invoice"></i> Purchase Orders &amp; Receiving</a><button class="btn btn-primary" onclick="document.getElementById('purchaseModal').classList.add('show')"><i class="fas fa-plus"></i> New Direct Purchase</button></div>
 </div>
 
 <?php if ($flash): ?><div class="flash"><?= e($flash) ?></div><?php endif; ?>
