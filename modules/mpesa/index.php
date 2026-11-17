@@ -3,7 +3,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../config/db.php';
 $pageTitle='M-PESA Integration';
-if($_SERVER['REQUEST_METHOD']==='POST'){verify_csrf();$keys=['mpesa_environment','mpesa_shortcode','mpesa_passkey','mpesa_consumer_key','mpesa_consumer_secret','mpesa_callback_url','mpesa_account_reference'];foreach($keys as $k){$v=trim((string)($_POST[$k]??''));$st=$conn->prepare("INSERT INTO settings(setting_key,setting_value) VALUES(?,?) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value)");$st->execute([$k,$v]);}$_SESSION['mpesa_flash']='M-PESA settings saved.';header('Location:index.php');exit;}
+if($_SERVER['REQUEST_METHOD']==='POST'){verify_csrf();$keys=['mpesa_environment','mpesa_shortcode','mpesa_callback_url','mpesa_account_reference'];foreach($keys as $k){$v=trim((string)($_POST[$k]??''));$st=$conn->prepare("INSERT INTO settings(setting_key,setting_value) VALUES(?,?) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value)");$st->execute([$k,$v]);}foreach(['mpesa_passkey','mpesa_consumer_key','mpesa_consumer_secret'] as $k){$v=trim((string)($_POST[$k]??''));if($v!==''){$st=$conn->prepare("INSERT INTO settings(setting_key,setting_value) VALUES(?,?) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value)");$st->execute([$k,$v]);}}$_SESSION['mpesa_flash']='M-PESA settings saved.';header('Location:index.php');exit;}
 function s(string $k):string{global $conn;$q=$conn->prepare("SELECT setting_value FROM settings WHERE setting_key=?");$q->execute([$k]);return (string)($q->fetchColumn()??'');}
 $flash=$_SESSION['mpesa_flash']??null;unset($_SESSION['mpesa_flash']);
 $tx=$conn->query("SELECT * FROM mpesa_transactions ORDER BY id DESC LIMIT 30")->fetchAll();
@@ -14,9 +14,9 @@ require_once __DIR__ . '/../../includes/header.php';require_once __DIR__ . '/../
 <div class="card"><h2>Daraja Configuration</h2><p class="muted">Use sandbox while testing. Keep production credentials private and use an HTTPS callback URL.</p><form method="post"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>"><div class="grid">
 <label>Environment<select name="mpesa_environment"><option value="sandbox" <?=s('mpesa_environment')==='sandbox'?'selected':''?>>Sandbox</option><option value="live" <?=s('mpesa_environment')==='live'?'selected':''?>>Live</option></select></label>
 <label>Shortcode<input name="mpesa_shortcode" value="<?=e(s('mpesa_shortcode'))?>"></label>
-<label>Passkey<input type="password" name="mpesa_passkey" value="<?=e(s('mpesa_passkey'))?>"></label>
-<label>Consumer Key<input name="mpesa_consumer_key" value="<?=e(s('mpesa_consumer_key'))?>"></label>
-<label>Consumer Secret<input type="password" name="mpesa_consumer_secret" value="<?=e(s('mpesa_consumer_secret'))?>"></label>
+<label>Passkey<input type="password" name="mpesa_passkey" value="" autocomplete="new-password" placeholder="Saved — leave blank to keep current value"></label>
+<label>Consumer Key<input type="password" name="mpesa_consumer_key" value="" autocomplete="new-password" placeholder="Saved — leave blank to keep current value"></label>
+<label>Consumer Secret<input type="password" name="mpesa_consumer_secret" value="" autocomplete="new-password" placeholder="Saved — leave blank to keep current value"></label>
 <label>Account Reference<input name="mpesa_account_reference" value="<?=e(s('mpesa_account_reference')?:'STALKSTABLE')?>"></label>
 <label class="full">Callback URL<input name="mpesa_callback_url" value="<?=e(s('mpesa_callback_url'))?>" placeholder="https://your-domain.com/stalk_stable/modules/mpesa/callback.php"></label>
 </div><button class="btn primary">Save M-PESA Settings</button></form></div>
