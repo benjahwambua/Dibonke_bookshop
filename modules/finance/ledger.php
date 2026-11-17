@@ -17,8 +17,11 @@ $sql="SELECT transaction_date,transaction_type,reference,party,payment_method,di
  UNION ALL
  SELECT e.expense_date,CONVERT('Operating Expense' USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(e.expense_number USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(e.expense_title USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(e.payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT('OUT' USING utf8mb4) COLLATE utf8mb4_unicode_ci,e.amount
  FROM expenses e WHERE e.expense_date BETWEEN ? AND ?
+ UNION ALL
+ SELECT rp.paid_at,CONVERT('Sales Return Refund' USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(sr.return_number USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT('Customer Refund' USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(rp.payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT('OUT' USING utf8mb4) COLLATE utf8mb4_unicode_ci,rp.amount
+ FROM sales_return_payments rp JOIN sales_returns sr ON sr.id=rp.return_id WHERE DATE(rp.paid_at) BETWEEN ? AND ?
 ) ledger_rows ORDER BY transaction_date ASC,reference ASC";
-$q=$conn->prepare($sql);$q->execute([$from,$to,$from,$to,$from,$to,$from,$to]);$rows=$q->fetchAll();
+$q=$conn->prepare($sql);$q->execute([$from,$to,$from,$to,$from,$to,$from,$to,$from,$to]);$rows=$q->fetchAll();
 $currency=(string)($conn->query("SELECT setting_value FROM settings WHERE setting_key='currency' LIMIT 1")->fetchColumn()?:'KES');
 $in=0.0;$out=0.0;$balance=0.0;foreach($rows as &$row){$amount=(float)$row['amount'];if($row['direction']==='IN'){$in+=$amount;$balance+=$amount;}else{$out+=$amount;$balance-=$amount;}$row['running']=$balance;}unset($row);
 require_once __DIR__.'/../../includes/header.php';require_once __DIR__.'/../../includes/sidebar.php';
