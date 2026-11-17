@@ -5,19 +5,33 @@ require_once __DIR__.'/../../config/db.php';
 $pageTitle='Retail POS';
 $vatRate=(float)($conn->query("SELECT setting_value FROM settings WHERE setting_key='vat_rate' LIMIT 1")->fetchColumn()?:16);
 $vatMode=(string)($conn->query("SELECT setting_value FROM settings WHERE setting_key='vat_mode' LIMIT 1")->fetchColumn()?:'inclusive');
-if(!in_array($vatMode,['exclusive','inclusive'],true))$vatMode='exclusive';
+if(!in_array($vatMode,['exclusive','inclusive'],true))$vatMode='inclusive';
 
 $products=$conn->query("SELECT p.id,p.product_name,p.category,p.sku,p.barcode,p.isbn,p.selling_price,p.wholesale_price,p.stock_quantity,p.unit,b.brand_name FROM products p LEFT JOIN brands b ON b.id=p.brand_id WHERE p.status='Active' ORDER BY p.product_name")->fetchAll();
 $customers=$conn->query("SELECT id,customer_name,phone,credit_limit,balance,price_list_id FROM customers WHERE status='Active' ORDER BY customer_name")->fetchAll();
 $priceLists=$conn->query("SELECT id,name,code FROM price_lists WHERE status='Active' ORDER BY is_default DESC,name")->fetchAll();
 $productPrices=$conn->query("SELECT price_list_id,product_id,min_quantity,price FROM product_prices ORDER BY price_list_id,product_id,min_quantity")->fetchAll();
 $categories=$conn->query("SELECT DISTINCT category FROM products WHERE status='Active' AND category IS NOT NULL AND category<>'' ORDER BY category")->fetchAll(PDO::FETCH_COLUMN);
-$stats=[
-'today'=>(float)$conn->query("SELECT COALESCE(SUM(total_amount),0) FROM sales WHERE sale_status='Completed' AND DATE(sale_date)=CURDATE()")->fetchColumn(),
-'month'=>(float)$conn->query("SELECT COALESCE(SUM(total_amount),0) FROM sales WHERE sale_status='Completed' AND YEAR(sale_date)=YEAR(CURDATE()) AND MONTH(sale_date)=MONTH(CURDATE())")->fetchColumn(),
-'credit'=>(float)$conn->query("SELECT COALESCE(SUM(balance),0) FROM customers")->fetchColumn()
-];
-$recent=$conn->query("SELECT s.id,s.invoice_number,s.sale_date,s.total_amount,s.paid_amount,s.balance,s.payment_method,COALESCE(c.customer_name,'Walk-in Customer') customer_name FROM sales s LEFT JOIN customers c ON c.id=s.customer_id WHERE s.sale_status='Completed' ORDER BY s.id DESC LIMIT 10")->fetchAll();
+$roleName = strtolower(trim((string)($_SESSION['role'] ?? '')));
+$roleCode = strtoupper(trim((string)($_SESSION['role_code'] ?? '')));
+$isCashierTerminal = in_array($roleName, ['cashier', 'sales'], true) || in_array($roleCode, ['CASHIER', 'SALES'], true);
+$currentUserId = (int)($_SESSION['user_id'] ?? 0);
+if ($isCashierTerminal) {
+    $statsStmt = $conn->prepare("SELECT COALESCE(SUM(total_amount),0) today, COALESCE(SUM(CASE WHEN YEAR(sale_date)=YEAR(CURDATE()) AND MONTH(sale_date)=MONTH(CURDATE()) THEN total_amount ELSE 0 END),0) month FROM sales WHERE sale_status='Completed' AND user_id=? AND DATE(sale_date)=CURDATE()");
+    $statsStmt->execute([$currentUserId]);
+    $statsRow = $statsStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+    $stats = ['today'=>(float)($statsRow['today']??0),'month'=>(float)($statsRow['month']??0),'credit'=>0.0];
+    $recentStmt = $conn->prepare("SELECT s.id,s.invoice_number,s.sale_date,s.total_amount,s.paid_amount,s.balance,s.payment_method,COALESCE(c.customer_name,'Walk-in Customer') customer_name FROM sales s LEFT JOIN customers c ON c.id=s.customer_id WHERE s.sale_status='Completed' AND s.user_id=? ORDER BY s.id DESC LIMIT 10");
+    $recentStmt->execute([$currentUserId]);
+    $recent = $recentStmt->fetchAll(PDO::FETCH_ASSOC);
+} else {
+    $stats = [
+        'today'=>(float)$conn->query("SELECT COALESCE(SUM(total_amount),0) FROM sales WHERE sale_status='Completed' AND DATE(sale_date)=CURDATE()")->fetchColumn(),
+        'month'=>(float)$conn->query("SELECT COALESCE(SUM(total_amount),0) FROM sales WHERE sale_status='Completed' AND YEAR(sale_date)=YEAR(CURDATE()) AND MONTH(sale_date)=MONTH(CURDATE())")->fetchColumn(),
+        'credit'=>(float)$conn->query("SELECT COALESCE(SUM(balance),0) FROM customers")->fetchColumn()
+    ];
+    $recent=$conn->query("SELECT s.id,s.invoice_number,s.sale_date,s.total_amount,s.paid_amount,s.balance,s.payment_method,COALESCE(c.customer_name,'Walk-in Customer') customer_name FROM sales s LEFT JOIN customers c ON c.id=s.customer_id WHERE s.sale_status='Completed' ORDER BY s.id DESC LIMIT 10")->fetchAll(PDO::FETCH_ASSOC);
+}
 $flash=$_SESSION['sale_flash']??null; unset($_SESSION['sale_flash']);
 require_once __DIR__.'/../../includes/header.php';
 require_once __DIR__.'/../../includes/sidebar.php';
@@ -45,6 +59,48 @@ body.counter-mode .top-header,body.counter-mode #appSidebar,body.counter-mode .m
 @media(max-width:1150px){.products{grid-template-columns:repeat(3,1fr)}.cashier{grid-template-columns:minmax(0,1fr) 360px}}
 @media(max-width:900px){.cashier{grid-template-columns:1fr}.checkout{position:static}.products{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:650px){.kpis{grid-template-columns:1fr}.products{grid-template-columns:repeat(2,1fr)}.pos-title{align-items:flex-start;gap:10px;flex-direction:column}}
+
+/* Supermarket checkout terminal refresh */
+.pos-wrap{max-width:1900px;color:#172b43}
+.pos-title{background:#17324d;color:#fff;padding:18px 22px;border-radius:13px;margin:0 0 14px;box-shadow:0 5px 18px rgba(16,38,59,.13)}
+.pos-title h1{font-size:25px!important;color:#fff;letter-spacing:-.4px}
+.pos-title .muted{color:#c5d3e0;margin-top:5px}
+.pos-title .counter-label{color:#b8f2d7}
+.pos-title .btn.light{background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.2)}
+.pos-wrap .scan-panel{background:#eef6ff;border:2px solid #8ab9e8;border-radius:13px;padding:16px 18px;box-shadow:0 3px 12px rgba(23,74,126,.06)}
+.pos-wrap .scan-panel>label{font-size:13px;letter-spacing:.06em;color:#17324d}
+.pos-wrap .toolbar input{height:62px;border:2px solid #b8cde2;border-radius:10px;padding:12px 16px;font-size:22px;font-weight:700;background:#fff}
+.pos-wrap .toolbar input:focus,.pos-wrap .field input:focus,.pos-wrap .field select:focus{outline:3px solid rgba(37,99,235,.15);border-color:#2563eb}
+.pos-wrap .catalog,.pos-wrap .checkout{border:1px solid #d8e1eb;border-radius:13px;box-shadow:0 4px 16px rgba(16,38,59,.055)}
+.pos-wrap .catalog{padding:16px}
+.pos-wrap .checkout{padding:18px;background:#fbfcfe;top:12px}
+.pos-wrap .products{grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:11px;max-height:calc(100vh - 360px);min-height:280px}
+.pos-wrap .product{min-height:132px;border:1px solid #dce5ef;border-radius:11px;padding:15px;background:linear-gradient(180deg,#fff,#fbfdff);transition:transform .15s,border-color .15s,box-shadow .15s}
+.pos-wrap .product:hover{transform:translateY(-2px);border-color:#4386c5;box-shadow:0 7px 18px rgba(23,74,126,.12)}
+.pos-wrap .product .name{font-size:15px;color:#20364d;line-height:1.35;padding-right:28px}
+.pos-wrap .product .price{font-size:19px;color:#0755a0}
+.pos-wrap .product small{font-size:11px}
+.pos-wrap .badge{background:#eaf1f8;color:#38536e;font-weight:800}
+.pos-wrap .cat{padding:9px 15px;font-weight:750;font-size:12px}
+.pos-wrap .cat.active{background:#17324d;border-color:#17324d}
+.pos-wrap .checkout h3{font-size:19px;color:#17324d;padding-bottom:12px;border-bottom:1px solid #e2e8f0}
+.pos-wrap .field{margin:12px 0}
+.pos-wrap .field label{font-size:11px;color:#40566c}
+.pos-wrap .field input,.pos-wrap .field select{min-height:45px;border:1px solid #cbd7e3;border-radius:8px;font-size:14px}
+.pos-wrap .cart{max-height:34vh;background:#fff;border-radius:9px;padding:0 10px}
+.pos-wrap .cart-row{grid-template-columns:minmax(0,1fr) 58px 82px 25px;gap:7px;font-size:13px;padding:13px 0}
+.pos-wrap .cart-row strong{color:#20364d}
+.pos-wrap .cart-row input{width:52px;min-height:34px;border-radius:6px;text-align:center}
+.pos-wrap .grand{font-size:25px;color:#0755a0;border-top:2px solid #d9e4ef;padding-top:12px}
+.pos-wrap .success{min-height:62px;border-radius:10px;font-size:18px;letter-spacing:.2px;background:#08784f;box-shadow:0 4px 10px rgba(8,120,79,.18)}
+.pos-wrap .exact-btn{border-radius:8px}
+body.counter-mode .content{padding:12px!important;background:#edf1f5}
+body.counter-mode .pos-title{border-radius:10px}
+body.counter-mode .cashier{grid-template-columns:minmax(0,1fr) minmax(410px,480px);gap:14px}
+body.counter-mode .products{max-height:calc(100vh - 290px);min-height:360px;grid-template-columns:repeat(auto-fill,minmax(185px,1fr))}
+body.counter-mode .checkout{height:calc(100vh - 110px);overflow:auto}
+body.counter-mode .cart{max-height:34vh}
+@media(max-width:1000px){body.counter-mode .cashier{grid-template-columns:1fr}body.counter-mode .checkout{height:auto;position:static}}
 </style>
 
 <div class="pos-wrap">
@@ -88,6 +144,7 @@ body.counter-mode .top-header,body.counter-mode #appSidebar,body.counter-mode .m
 </div>
 </main>
 <script>
+const isCashierTerminal=<?=json_encode($isCashierTerminal)?>;
 const vatRate=<?=json_encode($vatRate)?>,vatMode=<?=json_encode($vatMode)?>;
 const products=<?=json_encode(array_map(fn($p)=>['id'=>(int)$p['id'],'name'=>$p['product_name'],'sku'=>$p['sku'],'barcode'=>$p['barcode'],'isbn'=>$p['isbn'],'price'=>(float)$p['selling_price'],'normalPrice'=>(float)$p['selling_price'],'wholesalePrice'=>(float)$p['wholesale_price'],'stock'=>(float)$p['stock_quantity'],'unit'=>$p['unit']],$products),JSON_UNESCAPED_UNICODE)?>;
 const priceTiers=<?=json_encode(array_map(fn($x)=>['list'=>(int)$x['price_list_id'],'product'=>(int)$x['product_id'],'min'=>(int)$x['min_quantity'],'price'=>(float)$x['price']],$productPrices),JSON_UNESCAPED_UNICODE)?>;
@@ -110,6 +167,7 @@ function clearSearch(){document.getElementById('productSearch').value='';filterP
 function money(n){return Number(n).toLocaleString('en-KE',{minimumFractionDigits:2,maximumFractionDigits:2})}function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]||m))}
 document.getElementById('customer_id').addEventListener('change',()=>{const o=document.querySelector('#customer_id option:checked');const pl=o?.dataset.priceList||'';if(pl&&document.querySelector('#price_list_id option[value="'+pl+'"]')){document.getElementById('price_list_id').value=pl;updateCatalogPrices();}});document.getElementById('productSearch').addEventListener('input',filterProducts);document.getElementById('productSearch').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();const q=normalizeLookupCode(e.target.value);const p=products.find(x=>x.barcode&&normalizeLookupCode(x.barcode)===q)||products.find(x=>x.isbn&&normalizeLookupCode(x.isbn)===q)||products.find(x=>x.sku&&normalizeLookupCode(x.sku)===q);if(p){addProduct(p.id);clearSearch();}else{const visible=[...document.querySelectorAll('.product')].filter(x=>x.style.display!=='none'&&!x.classList.contains('out'));if(visible.length===1){addProduct(Number(visible[0].dataset.id));clearSearch();}else{setScanFeedback('No exact barcode, ISBN or SKU match. Check the code or search by name.','error');}}}});document.getElementById('price_list_id').addEventListener('change',updateCatalogPrices);document.getElementById('discount').addEventListener('input',calc);document.getElementById('paid_amount').addEventListener('input',calc);document.getElementById('payment_method').addEventListener('change',()=>{const m=document.getElementById('payment_method').value;document.getElementById('mpesaPhoneField').style.display=m==='M-Pesa'?'block':'none';if(m==='Credit'||m==='M-Pesa')document.getElementById('paid_amount').value=0;calc()});
 document.getElementById('saleForm').addEventListener('submit',e=>{if(!cart.length){e.preventDefault();alert('Add at least one product.');return}let sub=Math.max(0,cart.reduce((a,x)=>a+x.qty*x.price,0)-Number(document.getElementById('discount').value||0)),total=vatMode==='inclusive'?sub:sub+(sub*vatRate/100),paid=Number(document.getElementById('paid_amount').value||0),method=document.getElementById('payment_method').value;if(paid>total&&method!=='Cash'){e.preventDefault();alert('Amount paid cannot exceed the sale total for '+method+'.');return}if(method==='Credit'&&!document.getElementById('customer_id').value){e.preventDefault();alert('Select a customer for Credit sales.');return}if(method==='M-Pesa'&&!document.getElementById('mpesa_phone').value.trim()){e.preventDefault();alert('Enter the customer M-PESA phone number.');return}});render();
+if(isCashierTerminal){document.body.classList.add('counter-mode');const terminalButton=document.getElementById('counterModeBtn');if(terminalButton)terminalButton.innerHTML='<i class="fas fa-compress"></i> Exit counter mode';}
 function updatePriceTierHint(){const hint=document.getElementById('priceTierHint');if(!hint)return;const select=document.getElementById('price_list_id');const code=select.options[select.selectedIndex]?.dataset.code||'';const label=select.options[select.selectedIndex]?.text||'Price list';const active=priceTiers.some(t=>t.list===Number(select.value));document.getElementById('priceTierHint').textContent=(code==='normal'?'Standard price':code==='wholesale'?'Wholesale pricing':label)+(active?' • Quantity tiers active':' • Configure product prices');}
 document.getElementById('price_list_id').addEventListener('change',updateCatalogPrices);
 updatePriceTierHint();
