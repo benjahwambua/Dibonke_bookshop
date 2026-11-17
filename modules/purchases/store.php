@@ -114,7 +114,7 @@ try {
         $paymentReceipt = $paymentPrefix . '-' . date('YmdHis') . '-' . random_int(100, 999);
         $hasCashShiftColumn=(bool)$conn->query("SHOW COLUMNS FROM supplier_payments LIKE 'cash_shift_id'")->fetch();
         $cashShiftId=null;
-        if($paymentMethod==='Cash'&&$hasCashShiftColumn){$shiftQ=$conn->prepare("SELECT id FROM cash_shifts WHERE user_id=? AND status='Open' ORDER BY id DESC LIMIT 1");$shiftQ->execute([(int)$_SESSION['user_id']]);$cashShiftId=$shiftQ->fetchColumn()?:null;}
+        if($paymentMethod==='Cash'&&$hasCashShiftColumn){$shiftQ=$conn->prepare("SELECT id FROM cash_shifts WHERE user_id=? AND status='Open' ORDER BY id DESC LIMIT 1");$shiftQ->execute([(int)$_SESSION['user_id']]);$cashShiftId=$shiftQ->fetchColumn()?:null;if(!$cashShiftId&&hasModulePermission('cash_management','create'))throw new RuntimeException('Open your cashier shift before recording a cash purchase payment.');}
         $paymentDate=($paymentMethod==='Cash'&&$cashShiftId)?date('Y-m-d H:i:s'):$purchaseDate;
         if($hasCashShiftColumn){
             $paymentStmt = $conn->prepare("INSERT INTO supplier_payments (receipt_number,supplier_id,goods_receipt_id,user_id,amount,payment_method,transaction_reference,payment_date,notes,cash_shift_id) VALUES (?,?,NULL,?,?,?,?,?,?,?)");
