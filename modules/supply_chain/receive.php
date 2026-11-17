@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../config/db.php';
+requireModulePermission('supply_chain','view');
 
 if($_SERVER['REQUEST_METHOD']==='GET'){
  header('Content-Type: application/json');
@@ -24,7 +25,7 @@ requireModulePermission('supply_chain','create');
 try{
  $poId=(int)($_POST['purchase_order_id']??0);$receivedDate=trim((string)($_POST['received_date']??''));$invoice=trim((string)($_POST['supplier_invoice']??''));$invoiceDate=trim((string)($_POST['invoice_date']??''));$invoiceTotalRaw=trim((string)($_POST['invoice_total']??''));$invoiceTotal=$invoiceTotalRaw===''?null:(float)$invoiceTotalRaw;$delivery=trim((string)($_POST['delivery_note']??''));$notes=trim((string)($_POST['notes']??''));$items=$_POST['items']??[];
  if($poId<=0||!is_array($items))throw new RuntimeException('Invalid goods receipt.');if($invoice==='')throw new RuntimeException('Enter the supplier invoice number before posting the receipt.');if($invoiceTotal!==null&&$invoiceTotal<0)throw new RuntimeException('Invoice total cannot be negative.');
- $receivedDate=$receivedDate?date('Y-m-d H:i:s',strtotime($receivedDate)):date('Y-m-d H:i:s');$invoiceDate=$invoiceDate?date('Y-m-d',strtotime($invoiceDate)):date('Y-m-d',strtotime($receivedDate));
+ $receivedTimestamp=$receivedDate!==''?strtotime($receivedDate):time();if($receivedTimestamp===false)throw new RuntimeException('Enter a valid goods received date.');$receivedDate=date('Y-m-d H:i:s',$receivedTimestamp);$invoiceTimestamp=$invoiceDate!==''?strtotime($invoiceDate):$receivedTimestamp;if($invoiceTimestamp===false)throw new RuntimeException('Enter a valid supplier invoice date.');$invoiceDate=date('Y-m-d',$invoiceTimestamp);
  $conn->beginTransaction();
  $poSt=$conn->prepare("SELECT po.*,s.supplier_name FROM purchase_orders po JOIN suppliers s ON s.id=po.supplier_id WHERE po.id=? FOR UPDATE");$poSt->execute([$poId]);$po=$poSt->fetch();
  if(!$po||!in_array($po['status'],['Approved','Partially Received'],true))throw new RuntimeException('This PO is not available for receiving.');
