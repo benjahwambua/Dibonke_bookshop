@@ -117,7 +117,7 @@ After the initial `dibonke_launch_operations.sql` migration, apply `dibonke_laun
 
 Completion migration details:
 - `sales_return_payments` records actual refund settlements and their payment references; approved returns first reduce the original sale/customer receivable where a balance is still due, then any remaining amount must be settled.
-- Cash refunds require an open cashier shift. Cash expenses recorded while a shift is open are linked to that shift using `expenses.cash_shift_id`. Cash-in/cash-out adjustments are recorded in `cash_shift_movements`.
+- Cash refunds require an open cashier shift. Cash expenses and supplier cash payments recorded while a shift is open are linked to that shift using `expenses.cash_shift_id` and `supplier_payments.cash_shift_id`. Cash-in/cash-out adjustments are recorded in `cash_shift_movements`.
 - `cash_shift_guard` and `stock_count_guard` serialize creation to prevent duplicate concurrent open shifts/count sessions.
 - Physical stock count approval is blocked until every product in the count snapshot has a counted quantity. SKU/barcode scanning increments the matching physical count by one; manual entry remains available.
 - The shared audit writer records core sales, purchase, payments, expenses, product, staff, user, role and receiving events. Older historical records remain in the legacy `activity_logs` table and are not backfilled into the structured audit register.
