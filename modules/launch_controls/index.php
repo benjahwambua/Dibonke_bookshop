@@ -41,13 +41,15 @@ $canEtimsCreate=hasModulePermission('etims','create');
 $requiredLaunchTables=['sales_returns','sales_return_items','sales_return_payments','cash_shifts','cash_shift_movements','cash_shift_guard','stock_counts','stock_count_items','stock_count_guard','audit_events','etims_documents'];
 $existingLaunchTables=array_flip($conn->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN));
 $missingLaunchTables=array_values(array_filter($requiredLaunchTables,static fn($table)=>!isset($existingLaunchTables[$table])));
+$cashShiftColumn=$conn->query("SHOW COLUMNS FROM expenses LIKE 'cash_shift_id'")->fetch();
+if(!$cashShiftColumn)$missingLaunchTables[]='expenses.cash_shift_id';
 if($missingLaunchTables){
  require_once __DIR__.'/../../includes/header.php';
  require_once __DIR__.'/../../includes/sidebar.php';
  echo '<main class="content"><section style="background:#fff;border:1px solid #e4eaf0;border-radius:12px;padding:22px;margin:18px 0">';
  echo '<h1>Launch Operations setup required</h1>';
  echo '<p>The database extension has not been fully installed. No Launch Operations data has been changed.</p>';
- echo '<p><strong>Missing tables:</strong> '.htmlspecialchars(implode(', ',$missingLaunchTables),ENT_QUOTES,'UTF-8').'</p>';
+ echo '<p><strong>Missing database objects:</strong> '.htmlspecialchars(implode(', ',$missingLaunchTables),ENT_QUOTES,'UTF-8').'</p>';
  echo '<p>Import <code>database/dibonke_launch_operations.sql</code> first, then <code>database/dibonke_launch_operations_completion.sql</code> into <code>dibonke_bookshop_db</code>, then refresh this page.</p>';
  echo '</section></main>';
  require_once __DIR__.'/../../includes/footer.php';
