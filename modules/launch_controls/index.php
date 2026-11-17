@@ -26,7 +26,7 @@ $canEtims=hasModulePermission('etims','view');
 $canEtimsCreate=hasModulePermission('etims','create');
 
 // Do not let an unapplied/partially applied SQL extension crash the whole page.
-$requiredLaunchTables=['sales_returns','sales_return_items','sales_return_payments','cash_shifts','cash_shift_movements','stock_counts','stock_count_items','stock_count_guard','audit_events','etims_documents'];
+$requiredLaunchTables=['sales_returns','sales_return_items','sales_return_payments','cash_shifts','cash_shift_movements','cash_shift_guard','stock_counts','stock_count_items','stock_count_guard','audit_events','etims_documents'];
 $existingLaunchTables=array_flip($conn->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN));
 $missingLaunchTables=array_values(array_filter($requiredLaunchTables,static fn($table)=>!isset($existingLaunchTables[$table])));
 if($missingLaunchTables){
@@ -36,7 +36,7 @@ if($missingLaunchTables){
  echo '<h1>Launch Operations setup required</h1>';
  echo '<p>The database extension has not been fully installed. No Launch Operations data has been changed.</p>';
  echo '<p><strong>Missing tables:</strong> '.htmlspecialchars(implode(', ',$missingLaunchTables),ENT_QUOTES,'UTF-8').'</p>';
- echo '<p>Import the latest <code>database/dibonke_launch_operations.sql</code> migration into <code>dibonke_bookshop_db</code>, then refresh this page.</p>';
+ echo '<p>Import <code>database/dibonke_launch_operations.sql</code> first, then <code>database/dibonke_launch_operations_completion.sql</code> into <code>dibonke_bookshop_db</code>, then refresh this page.</p>';
  echo '</section></main>';
  require_once __DIR__.'/../../includes/footer.php';
  exit;
@@ -46,7 +46,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
  try{
   if($action==='open_shift'){
    requireModulePermission('cash_management','create');
-   $conn->beginTransaction();$open=$conn->prepare("SELECT id FROM cash_shifts WHERE user_id=? AND status='Open' LIMIT 1 FOR UPDATE");$open->execute([$uid]);if($open->fetchColumn())throw new RuntimeException('You already have an open shift.');
+   $conn->beginTransaction();$conn->query("SELECT id FROM cash_shift_guard WHERE id=1 FOR UPDATE")->fetchColumn();$open=$conn->prepare("SELECT id FROM cash_shifts WHERE user_id=? AND status='Open' LIMIT 1");$open->execute([$uid]);if($open->fetchColumn())throw new RuntimeException('You already have an open shift.');
    $float=max(0,(float)($_POST['opening_float']??0));$number='CS-'.date('YmdHis').'-'.strtoupper(bin2hex(random_bytes(2)));
    $q=$conn->prepare("INSERT INTO cash_shifts(shift_number,user_id,opened_at,opening_float) VALUES(?,?,NOW(),?)");$q->execute([$number,$uid,$float]);$id=(int)$conn->lastInsertId();lcAudit($conn,'Open Shift','cash_management','Opened '.$number,'cash_shift',$id);$conn->commit();lcFlash('Cash shift '.$number.' opened.');
   }
@@ -74,7 +74,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
    requireModulePermission('sales_returns','edit');$id=(int)($_POST['return_id']??0);$method=(string)($_POST['payment_method']??'Cash');$amount=(float)($_POST['amount']??0);$reference=trim((string)($_POST['transaction_reference']??''));$notes=trim((string)($_POST['notes']??''));
    if(!in_array($method,['Cash','M-Pesa','Bank','Other'],true)||$amount<=0)throw new RuntimeException('Select a valid refund method and amount.');
    if($method!=='Cash'&&$reference==='')throw new RuntimeException('Enter the transaction reference for this non-cash refund.');
-   $conn->beginTransaction();$q=$conn->prepare("SELECT * FROM sales_returns WHERE id=? AND status='Approved' FOR UPDATE");$q->execute([$id]);$ret=$q->fetch();if(!$ret)throw new RuntimeException('Approved return not found or already settled.');
+   $conn->beginTransaction();$cashShiftId=0;if($method==='Cash'){$cashShift=$conn->prepare("SELECT id FROM cash_shifts WHERE user_id=? AND status='Open' ORDER BY id DESC LIMIT 1 FOR UPDATE");$cashShift->execute([$uid]);$cashShiftId=(int)($cashShift->fetchColumn()?:0);if($cashShiftId<=0)throw new RuntimeException('Open your cashier shift before recording a cash refund.');}$q=$conn->prepare("SELECT * FROM sales_returns WHERE id=? AND status='Approved' FOR UPDATE");$q->execute([$id]);$ret=$q->fetch();if(!$ret)throw new RuntimeException('Approved return not found or already settled.');
    $remaining=round((float)$ret['total_amount']-(float)$ret['credit_applied']-(float)$ret['settled_amount'],2);if($amount>$remaining+0.001)throw new RuntimeException('Refund exceeds the remaining amount of KES '.number_format(max(0,$remaining),2).'.');
    $p=$conn->prepare("INSERT INTO sales_return_payments(return_id,payment_method,amount,transaction_reference,notes,paid_by,paid_at) VALUES(?,?,?,?,?,?,NOW())");$p->execute([$id,$method,$amount,$reference?:null,$notes?:null,$uid]);
    $newSettled=round((float)$ret['settled_amount']+$amount,2);$newStatus=($newSettled+(float)$ret['credit_applied'] >= (float)$ret['total_amount']-0.001)?'Completed':'Approved';
