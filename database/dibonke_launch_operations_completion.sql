@@ -47,6 +47,14 @@ WHERE NOT EXISTS (
   SELECT 1 FROM settings WHERE setting_key='launch_operations_completion_migration'
 );
 
+
+-- Serialize cashier shift opening to prevent duplicate concurrent open shifts.
+CREATE TABLE IF NOT EXISTS cash_shift_guard (
+  id TINYINT UNSIGNED NOT NULL PRIMARY KEY
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT IGNORE INTO cash_shift_guard(id) VALUES (1);
+
 -- Serialize stock-count creation so two users cannot start competing sessions.
 CREATE TABLE IF NOT EXISTS stock_count_guard (
   id TINYINT UNSIGNED NOT NULL PRIMARY KEY
