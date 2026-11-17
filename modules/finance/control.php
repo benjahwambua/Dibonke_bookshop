@@ -23,13 +23,15 @@ $later=$run("SELECT COALESCE(SUM(amount),0) FROM customer_payments WHERE sale_id
 $receipts=(float)$sales['collected']+(float)$later;
 $supplierOut=(float)$run("SELECT COALESCE(SUM(amount),0) FROM supplier_payments WHERE DATE(payment_date) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
 $expenseOut=(float)$run("SELECT COALESCE(SUM(amount),0) FROM expenses WHERE expense_date BETWEEN ? AND ?",[$from,$to])->fetchColumn();
+$returnOut=(float)$run("SELECT COALESCE(SUM(amount),0) FROM sales_return_payments WHERE DATE(paid_at) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
 $customerDue=(float)$conn->query("SELECT COALESCE(SUM(balance),0) FROM customers")->fetchColumn();$supplierDue=(float)$conn->query("SELECT COALESCE(SUM(balance),0) FROM suppliers")->fetchColumn();
 $methods=$run("SELECT method,SUM(received) received,SUM(spent) spent FROM (
  SELECT CONVERT(payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci method,SUM(paid_amount) received,0 spent FROM sales WHERE sale_status='Completed' AND DATE(sale_date) BETWEEN ? AND ? GROUP BY payment_method
  UNION ALL SELECT CONVERT(payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,SUM(amount),0 FROM customer_payments WHERE sale_id IS NULL AND DATE(payment_date) BETWEEN ? AND ? GROUP BY payment_method
  UNION ALL SELECT CONVERT(payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,0,SUM(amount) FROM supplier_payments WHERE DATE(payment_date) BETWEEN ? AND ? GROUP BY payment_method
  UNION ALL SELECT CONVERT(payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,0,SUM(amount) FROM expenses WHERE expense_date BETWEEN ? AND ? GROUP BY payment_method
-) x GROUP BY method ORDER BY method",[$from,$to,$from,$to,$from,$to,$from,$to])->fetchAll();
+ UNION ALL SELECT CONVERT(payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,0,SUM(amount) FROM sales_return_payments WHERE DATE(paid_at) BETWEEN ? AND ? GROUP BY payment_method
+) x GROUP BY method ORDER BY method",[$from,$to,$from,$to,$from,$to,$from,$to,$from,$to])->fetchAll();
 $exceptions=[];
 $over=$conn->query("SELECT COUNT(*) FROM sales WHERE sale_status='Completed' AND (paid_amount>total_amount+0.01 OR balance<0)")->fetchColumn();if((int)$over>0)$exceptions[]=['High','Sales records with overpayment or negative balance', (int)$over];
 $negCust=$conn->query("SELECT COUNT(*) FROM customers WHERE balance<-.01")->fetchColumn();if((int)$negCust>0)$exceptions[]=['Medium','Customers with negative outstanding balances',(int)$negCust];
@@ -51,6 +53,7 @@ require_once __DIR__.'/../../includes/header.php';require_once __DIR__.'/../../i
 <div class="metric"><span>Customer Collections</span><strong><?=e($currency)?> <?=number_format($receipts,2)?></strong></div>
 <div class="metric"><span>Supplier Payments</span><strong><?=e($currency)?> <?=number_format($supplierOut,2)?></strong></div>
 <div class="metric"><span>Operating Expenses</span><strong><?=e($currency)?> <?=number_format($expenseOut,2)?></strong></div>
+<div class="metric"><span>Sales Refunds</span><strong><?=e($currency)?> <?=number_format($returnOut,2)?></strong></div>
 <div class="metric"><span>Customer Receivables</span><strong><?=e($currency)?> <?=number_format($customerDue,2)?></strong><small>Current customer balances</small></div>
 <div class="metric"><span>Supplier Payables</span><strong><?=e($currency)?> <?=number_format($supplierDue,2)?></strong><small>Current supplier balances</small></div>
 </section>
@@ -64,6 +67,6 @@ require_once __DIR__.'/../../includes/header.php';require_once __DIR__.'/../../i
 <?php foreach($exceptions as $ex):?><p style="display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid #edf1f5;padding:9px 0;margin:0"><span><?=e($ex[1])?></span><span class="status"><?=e($ex[0])?> · <?=number_format($ex[2])?></span></p><?php endforeach;?>
 </section>
 </div>
-<p class="muted" style="font-size:11px;margin-top:12px">Control checks are operational alerts, not a statutory audit or bank reconciliation. Payment totals reflect posted records only; pending M-PESA requests are flagged separately and excluded from collections.</p>
+<p class="muted" style="font-size:11px;margin-top:12px">Control checks are operational alerts, not a statutory audit or bank reconciliation. Payment totals reflect posted records only; approved return credits and recorded refund payments are tracked separately. Pending M-PESA requests are excluded from collections.</p>
 </main>
 <?php require_once __DIR__.'/../../includes/footer.php';?>
