@@ -45,7 +45,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $update = $conn->prepare("UPDATE users SET last_login = NOW() WHERE id = :id");
             $update->execute([':id' => $user['id']]);
 
-            header('Location: ' . BASE_URL . '/index.php');
+            $landingPage = in_array(strtolower(trim((string)$user['role'])), ['cashier', 'sales'], true) ? '/modules/sales/index.php' : '/index.php';
+            header('Location: ' . BASE_URL . $landingPage);
             exit;
         }
     }
