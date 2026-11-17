@@ -3,7 +3,20 @@ declare(strict_types=1);
 require_once __DIR__.'/../../includes/auth.php';
 require_once __DIR__.'/../../config/db.php';
 requireModuleAccess('finance');
-$from=$_GET['from']??date('Y-m-01');$to=$_GET['to']??date('Y-m-d');$valid='/^\d{4}-\d{2}-\d{2}$/;$from=preg_match($valid,$from)?$from:date('Y-m-01');$to=preg_match($valid,$to)?$to:date('Y-m-d');if($from>$to){[$from,$to]=[$to,$from];}
+$from = isset($_GET['from']) ? (string) $_GET['from'] : date("Y-m-01");
+$to = isset($_GET['to']) ? (string) $_GET['to'] : date("Y-m-d");
+$datePattern = "~^\\d{4}-\\d{2}-\\d{2}$~";
+if (!preg_match($datePattern, $from)) {
+    $from = date("Y-m-01");
+}
+if (!preg_match($datePattern, $to)) {
+    $to = date("Y-m-d");
+}
+if ($from > $to) {
+    $temporaryDate = $from;
+    $from = $to;
+    $to = $temporaryDate;
+}
 $run=function($sql,$params=[])use($conn){$q=$conn->prepare($sql);$q->execute($params);return $q;};
 $sales=$run("SELECT COUNT(*) invoices,COALESCE(SUM(total_amount),0) revenue,COALESCE(SUM(paid_amount),0) collected,COALESCE(SUM(balance),0) due FROM sales WHERE sale_status='Completed' AND DATE(sale_date) BETWEEN ? AND ?",[$from,$to])->fetch();
 $later=$run("SELECT COALESCE(SUM(amount),0) FROM customer_payments WHERE sale_id IS NULL AND DATE(payment_date) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
