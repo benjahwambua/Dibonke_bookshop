@@ -78,3 +78,13 @@ No production data, passwords, API credentials or live customer records belong i
 - **Billing & Invoices** is the central register for invoices created by completed POS sales. It filters by date, customer/invoice search and payment status, and links to the existing receipt and customer collection workflows.
 - These first versions do not create a second invoice ledger or duplicate payments. They are operational summaries, not a double-entry general ledger, bank reconciliation, tax filing engine or standalone recurring-invoice system.
 - Apply `dibonke_finance_billing_permissions.sql` after the staff/roles migration. Administrator and Manager receive view access; Sales and Cashier receive Billing view access. The new dashboard pages are read-only; posting sales, collections, supplier payments and expenses continues through their existing workflows.
+
+
+### Finance navigation and scope
+
+The Finance section groups the Finance Overview, cashbook Ledger, Financial Control and Expenses. Billing & Invoices remains alongside Finance as a connected operational module.
+
+- **Ledger:** chronological cash movements from completed POS receipts, later customer collections not already linked to a sale, supplier payments and expenses. It is not a double-entry general ledger.
+- **Financial Control:** date-filtered cash summaries, payment-channel comparisons, current receivables/payables and basic data-quality / pending-payment alerts. It is not a bank reconciliation or statutory audit.
+- **Expenses:** the existing expense register and posting workflow is reached from the Finance navigation. Its existing expense records remain the source of truth.
+- General Settings now shows only company, currency, operational and document-numbering preferences. M-PESA credentials remain on the dedicated M-PESA page; secret fields are masked and blank secret submissions preserve the saved value. This UI masking does not by itself encrypt legacy values already stored in the settings table.
