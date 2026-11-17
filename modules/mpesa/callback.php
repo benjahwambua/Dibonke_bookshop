@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../../config/app.php';
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../includes/audit.php';
 
 header('Content-Type: application/json');
 $raw=file_get_contents('php://input')?:'';
@@ -31,6 +32,7 @@ try{
                $ins=$conn->prepare("INSERT INTO customer_payments(receipt_number,customer_id,sale_id,user_id,amount,payment_method,transaction_reference,payment_date,notes) VALUES(?,?,?,?,?,?,?,?,?)");
                $ins->execute([$rc,$customerId,null,(int)($conn->query("SELECT id FROM users ORDER BY id LIMIT 1")->fetchColumn() ?: 1),$payAmount,'M-Pesa',$receipt,date('Y-m-d H:i:s'),'Automatic M-PESA credit payment']);
                $upd=$conn->prepare("UPDATE customers SET balance=GREATEST(0,balance-?) WHERE id=?");$upd->execute([$payAmount,$customerId]);
+               recordAuditEvent($conn,'Receive','customer_payments','Confirmed M-PESA customer credit payment '.$receipt,'customer_payment',(int)$conn->lastInsertId(),null,['customer_id'=>$customerId,'amount'=>$payAmount,'payment_method'=>'M-Pesa','reference'=>$receipt]);
             }
          }
       }
@@ -55,6 +57,7 @@ try{
                $ins->execute([$rc,(int)$sale['customer_id'],$saleId,(int)$sale['user_id'],$payAmount,'M-Pesa',$receipt,date('Y-m-d H:i:s'),'Automatic M-PESA payment for '.$sale['invoice_number']]);
             }
          }
+         recordAuditEvent($conn,'Receive','sales','Confirmed M-PESA payment for invoice '.$sale['invoice_number'],'sale',$saleId,['paid_amount'=>(float)$sale['paid_amount'],'balance'=>(float)$sale['balance']],['paid_amount'=>(float)$sale['paid_amount']+$payAmount,'balance'=>max(0,(float)$sale['total_amount']-(float)$sale['paid_amount']-$payAmount),'payment_method'=>'M-Pesa','reference'=>$receipt]);
       }
       $conn->commit();
    }
