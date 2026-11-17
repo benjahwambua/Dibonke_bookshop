@@ -19,7 +19,7 @@ Before a fresh installation can be declared ready, the project still needs to:
 |---|---|---|
 | `dibonke_products_inventory.sql` | Additive product type and ISBN extension | Requires an existing `products` table |
 | `price_lists.sql` | Standard/wholesale price lists and product price tiers | Requires `products`, `customers` and `sales` |
-| `supply_chain_mpesa.sql` | Purchase orders, goods receipts, supplier payments and M-PESA transaction storage | Requires base `users`, `suppliers` and `settings` tables |
+| `supply_chain_mpesa.sql` | Purchase orders, goods receipts, supplier payments and M-PESA transaction storage | Requires base `users`, `suppliers` and `settings` tables |\n| `dibonke_goods_receiving_scanner.sql` | Adds supplier invoice date/total fields and grants Manager/Storekeeper receiving permissions | Requires `goods_receipts`, `roles` and `role_permissions` |
 | `dibonke_staff_roles.sql` | Staff profiles and unified role permissions | Requires the existing `users` table |
 | `dibonke_finance_billing_permissions.sql` | Adds Finance and Billing module permissions to existing roles | Requires `roles` and `role_permissions` from the staff/roles migration |
 | `dibonke_products_inventory_preflight.sql` | Read-only check of product, POS, purchase and stock-ledger dependencies | Run with the target Dibonke database selected |
@@ -52,7 +52,7 @@ The POS also reads `customers`, `sales`, `settings` and `activity_logs`. Purchas
 ### Stock handling
 
 - New products may be created with opening stock; the same transaction writes an `Opening Stock` ledger entry.
-- Completed purchases increase product stock and write `Purchase` movements.
+- Purchase orders do not change stock. Posting a goods receipt increases stock only for the quantities actually received and writes `Purchase` movements. Partial receipts remain open against the PO.
 - Completed sales decrease product stock and write `Sale` movements.
 - Manual increases, decreases and physical-count corrections are recorded as `Adjustment` movements. The adjustment workflow locks the product row and updates the product balance and ledger in one transaction.
 - The adjustment action requires the existing `stock_movements.create` permission; no role grants were changed as part of this work.
