@@ -12,13 +12,13 @@ foreach ($roleRows as $roleRow) {
 }
 $firstRoleId = isset($roles[0]) && is_array($roles[0]) ? (int) $roles[0]['id'] : 0;
 $selected = isset($_GET['id']) ? (int) $_GET['id'] : $firstRoleId;
-$role = null;
+$selectedRole = null;
 $permissions = [];
 if ($selected > 0) {
     $q = $conn->prepare("SELECT * FROM roles WHERE id = ? LIMIT 1");
     $q->execute([$selected]);
     $roleRow = $q->fetch(PDO::FETCH_ASSOC);
-    $role = is_array($roleRow) ? $roleRow : null;
+    $selectedRole = is_array($roleRow) ? $roleRow : null;
     $q = $conn->prepare("SELECT * FROM role_permissions WHERE role_id = ?");
     $q->execute([$selected]);
     $permissionRows = $q->fetchAll(PDO::FETCH_ASSOC);
@@ -36,4 +36,4 @@ require_once __DIR__.'/../../includes/header.php';require_once __DIR__.'/../../i
 </style><h1>Roles & Permissions</h1><p>Set module access and control view, create, edit and delete rights for each role.</p>
 <?php if($flash):?><div class="flash"><?=e($flash)?></div><?php endif;?>
 <div class="role-layout"><section class="panel"><h3>Roles</h3><div class="role-list"><?php foreach($roles as $r):?><a class="<?=$selected===(int)$r['id']?'active':''?>" href="index.php?id=<?=$r['id']?>"><?=e($r['role_name'])?><?=!empty($r['is_system'])?' · System':''?></a><?php endforeach;?></div><hr><h3>Create Role</h3><form method="post" action="store.php"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>"><input type="hidden" name="action" value="create"><div class="field"><label>Role Name</label><input name="role_name" required maxlength="100" placeholder="e.g. Inventory Supervisor"></div><div class="field"><label>Description</label><input name="description" maxlength="255"></div><button class="btn">Create Role</button></form></section>
-<section class="panel"><?php if($role):?><h3><?=e($role['role_name'])?> Permissions</h3><p style="color:#64748b;font-size:13px">Permission changes apply on the next request made by assigned users.</p><form method="post" action="store.php"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>"><input type="hidden" name="action" value="save_permissions"><input type="hidden" name="role_id" value="<?=$role['id']?>"><div class="perm-wrap"><table class="perm-table"><thead><tr><th>Module</th><th>View</th><th>Create</th><th>Edit</th><th>Delete</th></tr></thead><tbody><?php foreach($modules as $key=>$label):$p=$permissions[$key]??[];if(!is_array($p))$p=[];?><tr><td><?=e($label)?></td><?php foreach(['view','create','edit','delete'] as $a):?><td><input type="checkbox" name="permissions[<?=e($key)?>][<?=e($a)?>]" value="1" <?=!empty($p['can_'.$a])?'checked':''?>></td><?php endforeach;?></tr><?php endforeach;?></tbody></table></div><p><button class="btn">Save Permissions</button></p></form><?php else:?><p>Create a role to configure permissions.</p><?php endif;?></section></div></main><?php require_once __DIR__.'/../../includes/footer.php';?>
+<section class="panel"><?php if(is_array($selectedRole)):?><h3><?=e((string)($selectedRole['role_name'] ?? 'Selected role'))?> Permissions</h3><p style="color:#64748b;font-size:13px">Permission changes apply on the next request made by assigned users.</p><form method="post" action="store.php"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>"><input type="hidden" name="action" value="save_permissions"><input type="hidden" name="role_id" value="<?= (int)($selectedRole['id'] ?? 0) ?>"><div class="perm-wrap"><table class="perm-table"><thead><tr><th>Module</th><th>View</th><th>Create</th><th>Edit</th><th>Delete</th></tr></thead><tbody><?php foreach($modules as $key=>$label):$p=$permissions[$key]??[];if(!is_array($p))$p=[];?><tr><td><?=e($label)?></td><?php foreach(['view','create','edit','delete'] as $a):?><td><input type="checkbox" name="permissions[<?=e($key)?>][<?=e($a)?>]" value="1" <?=!empty($p['can_'.$a])?'checked':''?>></td><?php endforeach;?></tr><?php endforeach;?></tbody></table></div><p><button class="btn">Save Permissions</button></p></form><?php else:?><p>Create a role to configure permissions.</p><?php endif;?></section></div></main><?php require_once __DIR__.'/../../includes/footer.php';?>
