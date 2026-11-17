@@ -10,7 +10,8 @@ if(!$sale){http_response_code(404);exit('Sale not found.');}
 $i=$conn->prepare("SELECT si.quantity,si.price,si.subtotal,p.product_name,p.sku,p.unit FROM sale_items si JOIN products p ON p.id=si.product_id WHERE si.sale_id=? ORDER BY si.id");$i->execute([$id]);$items=$i->fetchAll();
 $paymentStatus = (float)$sale['balance'] <= 0.001 ? 'PAID' : ((float)$sale['paid_amount'] > 0 ? 'PARTIALLY PAID' : ($sale['payment_method'] === 'M-Pesa' ? 'M-PESA NOT YET CONFIRMED' : 'PAYMENT DUE'));
 $flash=$_SESSION['sale_flash']??null;unset($_SESSION['sale_flash']);
-$company=$conn->query("SELECT setting_value FROM settings WHERE setting_key='company_name' LIMIT 1")->fetchColumn()?:'Dibonke Bookshop';
+$company=(string)($conn->query("SELECT setting_value FROM settings WHERE setting_key='company_name' LIMIT 1")->fetchColumn()?:'Dibonke Bookshop');
+if($company===''||strcasecmp($company,'Stalk & Stable')===0)$company='Dibonke Bookshop';
 $currency=$conn->query("SELECT setting_value FROM settings WHERE setting_key='currency' LIMIT 1")->fetchColumn()?:'KES';
 ?>
 <!doctype html><html><head><meta charset="utf-8"><title>Receipt <?=e($sale['invoice_number'])?></title><style>
