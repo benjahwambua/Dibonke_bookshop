@@ -41,3 +41,10 @@ SELECT 'launch_operations_completion_migration','1'
 WHERE NOT EXISTS (
   SELECT 1 FROM settings WHERE setting_key='launch_operations_completion_migration'
 );
+
+-- Serialize stock-count creation so two users cannot start competing sessions.
+CREATE TABLE IF NOT EXISTS stock_count_guard (
+  id TINYINT UNSIGNED NOT NULL PRIMARY KEY
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT IGNORE INTO stock_count_guard(id) VALUES (1);
