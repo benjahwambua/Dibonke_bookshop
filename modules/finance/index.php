@@ -29,6 +29,17 @@ require_once __DIR__.'/../../includes/sidebar.php';
 <style>
 .finance-head{display:flex;justify-content:space-between;align-items:flex-start;gap:15px;flex-wrap:wrap}.filter,.panel,.metric{background:#fff;border:1px solid #e5eaf0;border-radius:12px}.filter{display:flex;gap:10px;align-items:end;flex-wrap:wrap;padding:14px;margin:16px 0}.filter label{display:block;font-size:11px;font-weight:800;color:#475569;margin-bottom:5px}.filter input{padding:9px;border:1px solid #cbd5e1;border-radius:7px}.btn{border:0;border-radius:7px;background:#174a7e;color:#fff;padding:10px 15px;font-weight:800;cursor:pointer}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:15px 0}.metric{padding:16px}.metric span{display:block;color:#64748b;font-size:11px;font-weight:700;text-transform:uppercase}.metric strong{display:block;margin-top:7px;font-size:21px;color:#17324d}.metric small{display:block;margin-top:5px;color:#64748b}.columns{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}.panel{padding:17px;margin-bottom:14px}.panel h3{margin:0 0 13px}.table{width:100%;border-collapse:collapse}.table th,.table td{padding:10px 9px;border-bottom:1px solid #edf1f5;text-align:left;font-size:12px}.table th{background:#f3f6fa;color:#475569}.num{text-align:right!important;white-space:nowrap}.positive{color:#047857!important}.negative{color:#b42318!important}.muted{color:#64748b}@media(max-width:1050px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.columns{grid-template-columns:1fr}}@media(max-width:560px){.metrics{grid-template-columns:1fr}.metric strong{font-size:19px}}
 </style>
+<style>
+.finance-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:16px 0 20px;padding:8px;background:#eef2f7;border-radius:11px}
+.finance-tabs a{padding:10px 14px;border-radius:8px;text-decoration:none;color:#40546a;font-size:12px;font-weight:800}
+.finance-tabs a.active{background:#17324d;color:#fff}
+</style>
+<nav class="finance-tabs" aria-label="Finance sections">
+<a class="active" href="<?=BASE_URL?>/modules/finance/index.php">Overview</a>
+<a href="<?=BASE_URL?>/modules/finance/ledger.php">Ledger</a>
+<a href="<?=BASE_URL?>/modules/finance/control.php">Financial Control</a>
+<a href="<?=BASE_URL?>/modules/expenses/index.php">Expenses</a>
+</nav>
 <div class="finance-head"><div><h1>Finance</h1><p class="muted">A consolidated view of sales collections, supplier payments, expenses and working balances.</p></div></div>
 <form class="filter"><div><label>From</label><input type="date" name="from" value="<?=e($from)?>"></div><div><label>To</label><input type="date" name="to" value="<?=e($to)?>"></div><button class="btn">Apply Period</button></form>
 <section class="metrics">
