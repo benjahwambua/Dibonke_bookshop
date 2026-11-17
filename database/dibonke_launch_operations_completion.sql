@@ -18,7 +18,8 @@ CREATE TABLE IF NOT EXISTS sales_return_payments (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   KEY idx_return_payment_return(return_id),
   KEY idx_return_payment_date(paid_at),
-  KEY idx_return_payment_method(payment_method)
+  KEY idx_return_payment_method(payment_method),
+  UNIQUE KEY uq_return_payment_reference(payment_method,transaction_reference)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS cash_shift_movements (
