@@ -24,6 +24,9 @@ if ($isCashierDashboard) {
     $stmt = $conn->prepare("SELECT COALESCE(SUM(total_amount),0) FROM sales WHERE sale_status='Completed' AND user_id=? AND YEAR(sale_date)=YEAR(CURDATE()) AND MONTH(sale_date)=MONTH(CURDATE())");
     $stmt->execute([$currentUserId]);
     $monthSales = (float)$stmt->fetchColumn();
+    $stmt = $conn->prepare("SELECT COUNT(*) FROM sales WHERE sale_status='Completed' AND user_id=? AND YEAR(sale_date)=YEAR(CURDATE()) AND MONTH(sale_date)=MONTH(CURDATE())");
+    $stmt->execute([$currentUserId]);
+    $myTransactionCount = (int)$stmt->fetchColumn();
     $stmt = $conn->prepare("SELECT s.invoice_number,s.sale_date,s.total_amount,c.customer_name FROM sales s LEFT JOIN customers c ON c.id=s.customer_id WHERE s.sale_status='Completed' AND s.user_id=? ORDER BY s.id DESC LIMIT 8");
     $stmt->execute([$currentUserId]);
     $recentSales = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -54,7 +57,7 @@ require_once __DIR__ . '/includes/sidebar.php';
         <?php if ($isCashierDashboard): ?>
         <article class="dashboard-kpi kpi-sales"><div class="kpi-top"><span>My sales today</span><span class="kpi-icon"><i class="fas fa-cash-register"></i></span></div><strong>KES <?= number_format($todaySales, 2) ?></strong><small>Completed sales under your login</small></article>
         <article class="dashboard-kpi"><div class="kpi-top"><span>My sales this month</span><span class="kpi-icon"><i class="fas fa-chart-line"></i></span></div><strong>KES <?= number_format($monthSales, 2) ?></strong><small>Your completed transactions</small></article>
-        <article class="dashboard-kpi"><div class="kpi-top"><span>My recent transactions</span><span class="kpi-icon"><i class="fas fa-receipt"></i></span></div><strong><?= count($recentSales) ?></strong><small>Latest transactions listed below</small></article>
+        <article class="dashboard-kpi"><div class="kpi-top"><span>My recent transactions</span><span class="kpi-icon"><i class="fas fa-receipt"></i></span></div><strong><?= number_format($myTransactionCount) ?></strong><small>Completed this month</small></article>
         <?php else: ?>
         <article class="dashboard-kpi kpi-sales"><div class="kpi-top"><span>Sales this month</span><span class="kpi-icon"><i class="fas fa-chart-line"></i></span></div><strong>KES <?= number_format($monthSales, 2) ?></strong><small>Completed transactions</small></article>
         <article class="dashboard-kpi"><div class="kpi-top"><span>Active products</span><span class="kpi-icon"><i class="fas fa-book"></i></span></div><strong><?= number_format($totalProducts) ?></strong><small>Books, stationery &amp; retail items</small></article>
