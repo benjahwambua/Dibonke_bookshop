@@ -114,3 +114,12 @@ Back up the database before migration and test these workflows with test sales a
 ### Launch operations completion migration
 
 After the initial `dibonke_launch_operations.sql` migration, apply `dibonke_launch_operations_completion.sql`. This additive extension adds explicit return settlement records and cashier cash-in/cash-out movement records. It does not send money through M-PESA or a bank; the payment must be executed through the selected channel and its reference recorded. The cash shift close calculation uses posted cash transactions and recorded shift movements. Mixed POS tenders remain excluded until the POS records tender splits separately.
+
+Completion migration details:
+- `sales_return_payments` records actual refund settlements and their payment references; approved returns first reduce the original sale/customer receivable where a balance is still due, then any remaining amount must be settled.
+- Cash refunds require an open cashier shift. Cash expenses recorded while a shift is open are linked to that shift using `expenses.cash_shift_id`. Cash-in/cash-out adjustments are recorded in `cash_shift_movements`.
+- `cash_shift_guard` and `stock_count_guard` serialize creation to prevent duplicate concurrent open shifts/count sessions.
+- Physical stock count approval is blocked until every product in the count snapshot has a counted quantity. SKU/barcode scanning increments the matching physical count by one; manual entry remains available.
+- The shared audit writer records core sales, purchase, payments, expenses, product, staff, user, role and receiving events. The audit screen also displays the legacy `activity_logs` history.
+- eTIMS queueing stores a normalized Dibonke invoice data snapshot. It is not a KRA request and does not submit, sign, or receive acknowledgements from KRA. Live integration remains disabled until KRA's current interface specification, credentials, certificate/device details and sandbox access are supplied and tested.
+- Cash shifts cannot allocate mixed POS tender because the existing POS does not persist individual tender splits. Such sales are deliberately excluded from expected cash; record each actual cash movement in the shift until tender splitting is implemented.
