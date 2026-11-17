@@ -2,6 +2,9 @@
 -- Additive migration. Requires the existing Dibonke base tables:
 -- users, products, sales, sale_items, stock_movements, customers, settings,
 -- roles and role_permissions. Back up before applying.
+-- Reference IDs are indexed but intentionally not declared as foreign keys because
+-- the inherited base schema uses inconsistent/undocumented ID definitions. The
+-- application validates referenced records before writing operational transactions.
 
 CREATE TABLE IF NOT EXISTS sales_returns (
   id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
