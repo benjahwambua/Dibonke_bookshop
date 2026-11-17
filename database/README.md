@@ -110,3 +110,7 @@ Important limitations before production:
 - The current stock-count workflow snapshots active products when a count is created. Complete and approve counts carefully; only entered quantities are posted.
 
 Back up the database before migration and test these workflows with test sales and products before launch.
+
+### Launch operations completion migration
+
+After the initial `dibonke_launch_operations.sql` migration, apply `dibonke_launch_operations_completion.sql`. This additive extension adds explicit return settlement records and cashier cash-in/cash-out movement records. It does not send money through M-PESA or a bank; the payment must be executed through the selected channel and its reference recorded. The cash shift close calculation uses posted cash transactions and recorded shift movements. Mixed POS tenders remain excluded until the POS records tender splits separately.
