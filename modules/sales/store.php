@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__.'/../../includes/auth.php'; require_once __DIR__.'/../../config/db.php';
 require_once __DIR__.'/../../config/mpesa.php';
+require_once __DIR__.'/../../includes/audit.php';
 if($_SERVER['REQUEST_METHOD']!=='POST'){header('Location: index.php');exit;} verify_csrf();
 requireModulePermission('sales','create');
 try{
@@ -27,6 +28,7 @@ if($paid>0 && $customerId){$rp=(string)($conn->query("SELECT setting_value FROM 
 $s->execute([$receipt,$customerId,$saleId,$uid,$paid,$paymentMethod,date('Y-m-d H:i:s'),'Payment for '.$invoice.' (Sale method: '.$method.')']);}
 if($customerId&&$paid>0&&$balance<=0){$s=$conn->prepare("UPDATE customers SET balance=GREATEST(0,balance) WHERE id=?");$s->execute([$customerId]);}
 $log=$conn->prepare("INSERT INTO activity_logs (user_id,action,module,description,ip_address) VALUES (?,?,?,?,?)");$log->execute([$uid,'Create','Sales','Created sale '.$invoice.' for KES '.number_format($total,2),$_SERVER['REMOTE_ADDR']??null]);
+recordAuditEvent($conn,'Create','sales','Created sale '.$invoice.' for KES '.number_format($total,2),'sale',$saleId,null,['invoice_number'=>$invoice,'total_amount'=>$total,'paid_amount'=>$paid,'balance'=>$balance,'payment_method'=>$method]);
 $conn->commit();
 if($method==='M-Pesa'){
     try{
