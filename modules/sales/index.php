@@ -188,6 +188,14 @@ body.counter-mode .vat-value{padding:3px 0;font-size:14px}
  body.counter-mode .checkout-footer{position:sticky;bottom:0;background:#fff;z-index:4;padding:10px 0 2px;border-top:1px solid #e5ebf2}
 }
 
+
+/* Counter mode reclaims the space reserved for the hidden application header. */
+@media(min-width:1001px){
+ body.counter-mode{overflow:hidden}
+ body.counter-mode .layout{height:100vh!important;min-height:100vh!important;margin-top:0!important}
+ body.counter-mode .content{height:100vh!important;min-height:0!important;box-sizing:border-box!important}
+}
+
 </style>
 
 <div class="pos-wrap">
@@ -261,7 +269,7 @@ function selectPayment(method,button){const select=document.getElementById('paym
 function money(n){return Number(n).toLocaleString('en-KE',{minimumFractionDigits:2,maximumFractionDigits:2})}function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]||m))}
 document.getElementById('customer_id').addEventListener('change',()=>{const o=document.querySelector('#customer_id option:checked');const pl=o?.dataset.priceList||'';if(pl&&document.querySelector('#price_list_id option[value="'+pl+'"]')){document.getElementById('price_list_id').value=pl;updateCatalogPrices();}});document.getElementById('productSearch').addEventListener('input',filterProducts);document.getElementById('productSearch').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();const q=normalizeLookupCode(e.target.value);const exact=products.find(x=>[x.barcode,x.isbn,x.sku].some(v=>v&&normalizeLookupCode(v)===q));const matches=products.filter(x=>normalizeLookupCode([x.name,x.sku,x.barcode,x.isbn].filter(Boolean).join(' ')).includes(q));const p=exact||(matches.length===1?matches[0]:null);if(p){addProduct(p.id);clearSearch();}else{setScanFeedback(matches.length?'More than one item matches. Select the correct item from the list.':'No matching product found. Check the name or code.','error');}}});document.getElementById('price_list_id').addEventListener('change',updateCatalogPrices);document.getElementById('discount').addEventListener('input',calc);document.getElementById('paid_amount').addEventListener('input',calc);document.getElementById('payment_method').addEventListener('change',()=>{const m=document.getElementById('payment_method').value;document.getElementById('mpesaPhoneField').style.display=m==='M-Pesa'?'block':'none';document.querySelectorAll('.payment-option').forEach(b=>b.classList.toggle('active',b.dataset.method===m));if(m==='Credit'||m==='M-Pesa')document.getElementById('paid_amount').value=0;calc()});
 document.getElementById('saleForm').addEventListener('submit',e=>{if(!cart.length){e.preventDefault();alert('Add at least one product.');return}let sub=Math.max(0,cart.reduce((a,x)=>a+x.qty*x.price,0)-Number(document.getElementById('discount').value||0)),total=vatMode==='inclusive'?sub:sub+(sub*vatRate/100),paid=Number(document.getElementById('paid_amount').value||0),method=document.getElementById('payment_method').value;if(paid>total&&method!=='Cash'){e.preventDefault();alert('Amount paid cannot exceed the sale total for '+method+'.');return}if(method==='Credit'&&!document.getElementById('customer_id').value){e.preventDefault();alert('Select a customer for Credit sales.');return}if(method==='M-Pesa'&&!document.getElementById('mpesa_phone').value.trim()){e.preventDefault();alert('Enter the customer M-PESA phone number.');return}});render();
-if(isCashierTerminal){document.body.classList.add('counter-mode');const terminalButton=document.getElementById('counterModeBtn');if(terminalButton)terminalButton.innerHTML='<i class="fas fa-compress"></i> Exit counter mode';}
+if(isCashierTerminal||window.matchMedia('(min-width: 1001px)').matches){document.body.classList.add('counter-mode');const terminalButton=document.getElementById('counterModeBtn');if(terminalButton)terminalButton.innerHTML='<i class="fas fa-compress"></i> Exit counter mode';}
 function updatePriceTierHint(){const hint=document.getElementById('priceTierHint');if(!hint)return;const select=document.getElementById('price_list_id');const code=select.options[select.selectedIndex]?.dataset.code||'';const label=select.options[select.selectedIndex]?.text||'Price list';const active=priceTiers.some(t=>t.list===Number(select.value));document.getElementById('priceTierHint').textContent=(code==='normal'?'Standard price':code==='wholesale'?'Wholesale pricing':label)+(active?' • Quantity tiers active':' • Configure product prices');}
 document.getElementById('price_list_id').addEventListener('change',updateCatalogPrices);
 updatePriceTierHint();
