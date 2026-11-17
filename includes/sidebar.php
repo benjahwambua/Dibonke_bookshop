@@ -57,28 +57,36 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <?php if (canAccessModule('price_lists')): ?><a href="<?= BASE_URL ?>/modules/price_lists/index.php" class="<?= navActive('/price_lists/') ?>"><i class="fas fa-tags icon-main"></i>Price Lists</a><?php endif; ?>
         <?php endif; ?>
 
-        <?php if (canAccessModule('customers') || canAccessModule('suppliers') || canAccessModule('purchases') || canAccessModule('sales') || canAccessModule('customer_payments') || canAccessModule('supplier_payments') || canAccessModule('deliveries') || canAccessModule('stock_movements') || canAccessModule('supply_chain')): ?>
-        <div class="menu-title">Business Operations</div>
-        <?php if (canAccessModule('customers')): ?><a href="<?= BASE_URL ?>/modules/customers/index.php" class="<?= navActive('/customers/') ?>"><i class="fas fa-users icon-main"></i>Customers</a><?php endif; ?>
+        <?php if (canAccessModule('suppliers') || canAccessModule('purchases') || canAccessModule('supply_chain')): ?>
+        <div class="menu-title">Procurement</div>
         <?php if (canAccessModule('suppliers')): ?><a href="<?= BASE_URL ?>/modules/suppliers/index.php" class="<?= navActive('/suppliers/') ?>"><i class="fas fa-truck icon-main"></i>Suppliers</a><?php endif; ?>
         <?php if (canAccessModule('purchases')): ?><a href="<?= BASE_URL ?>/modules/purchases/index.php" class="<?= navActive('/purchases/') ?>"><i class="fas fa-cart-plus icon-main"></i>Purchase Register</a><?php endif; ?>
         <?php if (canAccessModule('supply_chain')): ?><a href="<?= BASE_URL ?>/modules/supply_chain/index.php" class="<?= navActive('/supply_chain/') ?>"><i class="fas fa-diagram-project icon-main"></i>Purchase Orders &amp; Receiving</a><?php endif; ?>
-        <?php if (canAccessModule('sales')): ?><a href="<?= BASE_URL ?>/modules/sales/index.php" class="<?= navActive('/sales/') ?>"><i class="fas fa-cash-register icon-main"></i>Sales &amp; POS</a><?php endif; ?>
-        <?php if (canAccessModule('customer_payments')): ?><a href="<?= BASE_URL ?>/modules/customer_payments/index.php" class="<?= navActive('/customer_payments/') ?>"><i class="fas fa-money-check-alt icon-main"></i>Customer Payments</a><?php endif; ?>
-        <?php if (canAccessModule('supplier_payments')): ?><a href="<?= BASE_URL ?>/modules/supplier_payments/index.php" class="<?= navActive('/supplier_payments/') ?>"><i class="fas fa-file-invoice-dollar icon-main"></i>Supplier Payments</a><?php endif; ?>
-        <?php if (canAccessModule('deliveries')): ?><a href="<?= BASE_URL ?>/modules/deliveries/index.php" class="<?= navActive('/deliveries/') ?>"><i class="fas fa-shipping-fast icon-main"></i>Deliveries</a><?php endif; ?>
-        <?php if (canAccessModule('stock_movements')): ?><a href="<?= BASE_URL ?>/modules/stock_movements/index.php" class="<?= navActive('/stock_movements/') ?>"><i class="fas fa-exchange-alt icon-main"></i>Stock Movements</a><?php endif; ?>
         <?php endif; ?>
 
-        <?php if (canAccessModule('finance') || canAccessModule('billing') || canAccessModule('expenses')): ?>
+        <?php if (canAccessModule('customers') || canAccessModule('sales') || canAccessModule('customer_payments') || canAccessModule('deliveries')): ?>
+        <div class="menu-title">Sales &amp; Customer Service</div>
+        <?php if (canAccessModule('customers')): ?><a href="<?= BASE_URL ?>/modules/customers/index.php" class="<?= navActive('/customers/') ?>"><i class="fas fa-users icon-main"></i>Customers</a><?php endif; ?>
+        <?php if (canAccessModule('sales')): ?><a href="<?= BASE_URL ?>/modules/sales/index.php" class="<?= navActive('/sales/') ?>"><i class="fas fa-cash-register icon-main"></i>Sales &amp; POS</a><?php endif; ?>
+        <?php if (canAccessModule('customer_payments')): ?><a href="<?= BASE_URL ?>/modules/customer_payments/index.php" class="<?= navActive('/customer_payments/') ?>"><i class="fas fa-money-check-alt icon-main"></i>Customer Payments</a><?php endif; ?>
+        <?php if (canAccessModule('deliveries')): ?><a href="<?= BASE_URL ?>/modules/deliveries/index.php" class="<?= navActive('/deliveries/') ?>"><i class="fas fa-shipping-fast icon-main"></i>Deliveries</a><?php endif; ?>
+        <?php endif; ?>
+
+        <?php if (canAccessModule('finance') || canAccessModule('billing') || canAccessModule('expenses') || canAccessModule('supplier_payments') || canAccessModule('mpesa')): ?>
         <div class="menu-title">Finance &amp; Billing</div>
         <?php if (canAccessModule('finance')): ?>
         <a href="<?= BASE_URL ?>/modules/finance/index.php" class="<?= navActive('/finance/') ?>"><i class="fas fa-chart-pie icon-main"></i>Finance Overview</a>
         <a href="<?= BASE_URL ?>/modules/finance/ledger.php" class="<?= navActive('/finance/ledger.php') ?>"><i class="fas fa-book icon-main"></i>Ledger</a>
         <a href="<?= BASE_URL ?>/modules/finance/control.php" class="<?= navActive('/finance/control.php') ?>"><i class="fas fa-shield-alt icon-main"></i>Financial Control</a>
         <?php endif; ?>
-        <?php if (canAccessModule('expenses')): ?><a href="<?= BASE_URL ?>/modules/expenses/index.php" class="<?= navActive('/expenses/') ?>"><i class="fas fa-wallet icon-main"></i>Expenses</a><?php endif; ?>
         <?php if (canAccessModule('billing')): ?><a href="<?= BASE_URL ?>/modules/billing/index.php" class="<?= navActive('/billing/') ?>"><i class="fas fa-file-invoice icon-main"></i>Billing &amp; Invoices</a><?php endif; ?>
+        <?php if (canAccessModule('expenses')): ?><a href="<?= BASE_URL ?>/modules/expenses/index.php" class="<?= navActive('/expenses/') ?>"><i class="fas fa-wallet icon-main"></i>Expenses</a><?php endif; ?>
+        <?php if (canAccessModule('supplier_payments')): ?><a href="<?= BASE_URL ?>/modules/supplier_payments/index.php" class="<?= navActive('/supplier_payments/') ?>"><i class="fas fa-file-invoice-dollar icon-main"></i>Supplier Payments</a><?php endif; ?>
+        <?php endif; ?>
+
+        <?php if (canAccessModule('stock_movements')): ?>
+        <div class="menu-title">Inventory Control</div>
+        <a href="<?= BASE_URL ?>/modules/stock_movements/index.php" class="<?= navActive('/stock_movements/') ?>"><i class="fas fa-exchange-alt icon-main"></i>Stock Movements</a>
         <?php endif; ?>
 
         <?php if (canAccessModule('launch_controls')): ?>
