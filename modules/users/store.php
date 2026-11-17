@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__.'/../../includes/auth.php';
 require_once __DIR__.'/../../config/db.php';
+require_once __DIR__.'/../../includes/audit.php';
 
 if (!isSuperUser()) { http_response_code(403); exit('Access denied.'); }
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') { header('Location: index.php'); exit; }
@@ -42,6 +43,7 @@ try {
         $stmt->execute([$name, $username, password_hash($password, PASSWORD_DEFAULT), $role, $roleId]);
         $newUserId=(int)$conn->lastInsertId();
         if($staffId>0){$link=$conn->prepare("UPDATE staff SET user_id=? WHERE id=? AND user_id IS NULL AND status='Active'");$link->execute([$newUserId,$staffId]);if($link->rowCount()!==1)throw new RuntimeException('Selected staff profile is already linked or inactive.');}
+        recordAuditEvent($conn,'Create','users','Created user '.$username,'user',$newUserId,null,['full_name'=>$name,'role'=>$role,'status'=>'Active']);
         $conn->commit();
 
         userFlash('success', "User created successfully. Username: {$username}");
@@ -73,6 +75,7 @@ try {
             $stmt->execute([$name, $role, $roleId, $status, $id]);
         }
 
+        recordAuditEvent($conn,'Update','users','Updated user account ID '.$id,'user',$id,['full_name'=>$existing['full_name']??null],['full_name'=>$name,'role'=>$role,'status'=>$status]);
         $conn->commit();
         userFlash('success', 'User details updated successfully.');
     }
