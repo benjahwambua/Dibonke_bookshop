@@ -6,16 +6,16 @@ requireModuleAccess('finance');
 $from=$_GET['from']??date('Y-m-01');$to=$_GET['to']??date('Y-m-d');
 $valid='/^\d{4}-\d{2}-\d{2}$/';$from=preg_match($valid,$from)?$from:date('Y-m-01');$to=preg_match($valid,$to)?$to:date('Y-m-d');if($from>$to){[$from,$to]=[$to,$from];}
 $sql="SELECT transaction_date,transaction_type,reference,party,payment_method,direction,amount FROM (
- SELECT s.sale_date transaction_date,'POS Receipt' transaction_type,s.invoice_number reference,COALESCE(c.customer_name,'Walk-in Customer') party,s.payment_method,'IN' direction,s.paid_amount amount
+ SELECT s.sale_date transaction_date,CONVERT('POS Receipt' USING utf8mb4) COLLATE utf8mb4_unicode_ci transaction_type,CONVERT(s.invoice_number USING utf8mb4) COLLATE utf8mb4_unicode_ci reference,CONVERT(COALESCE(c.customer_name,'Walk-in Customer') USING utf8mb4) COLLATE utf8mb4_unicode_ci party,CONVERT(s.payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci payment_method,CONVERT('IN' USING utf8mb4) COLLATE utf8mb4_unicode_ci direction,s.paid_amount amount
  FROM sales s LEFT JOIN customers c ON c.id=s.customer_id WHERE s.sale_status='Completed' AND s.paid_amount>0 AND DATE(s.sale_date) BETWEEN ? AND ?
  UNION ALL
- SELECT cp.payment_date,'Customer Collection',cp.receipt_number,c.customer_name,cp.payment_method,'IN',cp.amount
+ SELECT cp.payment_date,CONVERT('Customer Collection' USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(cp.receipt_number USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(c.customer_name USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(cp.payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT('IN' USING utf8mb4) COLLATE utf8mb4_unicode_ci,cp.amount
  FROM customer_payments cp JOIN customers c ON c.id=cp.customer_id WHERE cp.sale_id IS NULL AND DATE(cp.payment_date) BETWEEN ? AND ?
  UNION ALL
- SELECT sp.payment_date,'Supplier Payment',sp.receipt_number,s.supplier_name,sp.payment_method,'OUT',sp.amount
+ SELECT sp.payment_date,CONVERT('Supplier Payment' USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(sp.receipt_number USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(s.supplier_name USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(sp.payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT('OUT' USING utf8mb4) COLLATE utf8mb4_unicode_ci,sp.amount
  FROM supplier_payments sp JOIN suppliers s ON s.id=sp.supplier_id WHERE DATE(sp.payment_date) BETWEEN ? AND ?
  UNION ALL
- SELECT e.expense_date,'Operating Expense',e.expense_number,e.expense_title,e.payment_method,'OUT',e.amount
+ SELECT e.expense_date,CONVERT('Operating Expense' USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(e.expense_number USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(e.expense_title USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(e.payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT('OUT' USING utf8mb4) COLLATE utf8mb4_unicode_ci,e.amount
  FROM expenses e WHERE e.expense_date BETWEEN ? AND ?
 ) ledger_rows ORDER BY transaction_date ASC,reference ASC";
 $q=$conn->prepare($sql);$q->execute([$from,$to,$from,$to,$from,$to,$from,$to]);$rows=$q->fetchAll();
