@@ -81,6 +81,11 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <?php if (canAccessModule('billing')): ?><a href="<?= BASE_URL ?>/modules/billing/index.php" class="<?= navActive('/billing/') ?>"><i class="fas fa-file-invoice icon-main"></i>Billing &amp; Invoices</a><?php endif; ?>
         <?php endif; ?>
 
+        <?php if (canAccessModule('launch_controls')): ?>
+        <div class="menu-title">Control &amp; Compliance</div>
+        <a href="<?= BASE_URL ?>/modules/launch_controls/index.php" class="<?= navActive('/launch_controls/') ?>"><i class="fas fa-clipboard-check icon-main"></i>Launch Operations</a>
+        <?php endif; ?>
+
         <?php if (canAccessModule('reports') || canAccessModule('analytics')): ?>
         <div class="menu-title">Insights</div>
         <?php if (canAccessModule('reports')): ?><a href="<?= BASE_URL ?>/modules/reports/index.php" class="<?= navActive('/reports/') ?>"><i class="fas fa-chart-bar icon-main"></i>Reports</a><?php endif; ?>
