@@ -24,6 +24,23 @@ $canStockApprove=hasModulePermission('stocktaking','edit');
 $canAudit=hasModulePermission('audit_logs','view');
 $canEtims=hasModulePermission('etims','view');
 $canEtimsCreate=hasModulePermission('etims','create');
+
+// Do not let an unapplied/partially applied SQL extension crash the whole page.
+$requiredLaunchTables=['sales_returns','sales_return_items','cash_shifts','stock_counts','stock_count_items','audit_events','etims_documents'];
+$existingLaunchTables=array_flip($conn->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN));
+$missingLaunchTables=array_values(array_filter($requiredLaunchTables,static fn($table)=>!isset($existingLaunchTables[$table])));
+if($missingLaunchTables){
+ require_once __DIR__.'/../../includes/header.php';
+ require_once __DIR__.'/../../includes/sidebar.php';
+ echo '<main class="content"><section style="background:#fff;border:1px solid #e4eaf0;border-radius:12px;padding:22px;margin:18px 0">';
+ echo '<h1>Launch Operations setup required</h1>';
+ echo '<p>The database extension has not been fully installed. No Launch Operations data has been changed.</p>';
+ echo '<p><strong>Missing tables:</strong> '.htmlspecialchars(implode(', ',$missingLaunchTables),ENT_QUOTES,'UTF-8').'</p>';
+ echo '<p>Import the latest <code>database/dibonke_launch_operations.sql</code> migration into <code>dibonke_bookshop_db</code>, then refresh this page.</p>';
+ echo '</section></main>';
+ require_once __DIR__.'/../../includes/footer.php';
+ exit;
+}
 if($_SERVER['REQUEST_METHOD']==='POST'){
  verify_csrf();$action=(string)($_POST['action']??'');
  try{
