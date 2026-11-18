@@ -138,7 +138,7 @@ body.counter-mode .cat.active{background:#1b76c0;border-color:#1b76c0;color:whit
 body.counter-mode .products{max-height:calc(100vh - 340px);min-height:320px;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:12px}
 body.counter-mode .product{min-height:155px;padding:14px;border:1px solid #e5ebf2;border-radius:12px;box-shadow:0 2px 7px rgba(24,51,78,.035);background:#fff}
 body.counter-mode .product:hover{border-color:#6ba4d4;box-shadow:0 7px 18px rgba(27,118,192,.11)}
-.product-symbol{width:34px;height:34px;display:grid;place-items:center;margin-bottom:9px;border-radius:10px;background:#eaf3fc;color:#1b76c0;font-size:15px}
+.product-symbol{width:25px;height:25px;display:grid;place-items:center;margin-bottom:6px;border-radius:7px;background:#eaf3fc;color:#1b76c0;font-size:11px}
 body.counter-mode .product .name{font-size:13px;line-height:1.35;padding-right:0;min-height:34px}
 body.counter-mode .product small{font-size:10px;margin-top:4px}
 body.counter-mode .product .price{font-size:16px;margin-top:8px}
