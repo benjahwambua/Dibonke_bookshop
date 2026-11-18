@@ -21,6 +21,7 @@ $definitions = [
  'sales_revenue'=>['Sales revenue','Income'],
  'cost_of_goods_sold'=>['Cost of goods sold','Expense'],
  'input_vat'=>['Input VAT recoverable','Asset'],
+ 'unallocated_receipts'=>['Unallocated M-Pesa receipts','Liability'],
  'default_expense'=>['Default operating expense','Expense'],
 ];
 
