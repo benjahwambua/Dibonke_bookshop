@@ -15,10 +15,10 @@ $params=[$asAt];
 if($search!==''){$where.=" AND (c.customer_name LIKE ? OR c.phone LIKE ? OR s.invoice_number LIKE ?)";$like='%'.$search.'%';array_push($params,$like,$like,$like);}
 $base=" FROM sales s LEFT JOIN customers c ON c.id=s.customer_id WHERE ".$where;
 $sql="SELECT s.id,s.invoice_number,s.sale_date,s.total_amount,s.paid_amount,s.balance,c.customer_name,c.phone,DATEDIFF(?,DATE(s.sale_date)) age_days,".$bucketSql." age_bucket".$base." ORDER BY s.sale_date ASC,s.id ASC";
-$statement=$conn->prepare($sql);$statement->execute(array_merge([$asAt,$asAt,$asAt],$params));$invoices=$statement->fetchAll(PDO::FETCH_ASSOC);
-if(in_array($bucket,['Current (0–30)','31–60 days','61–90 days','Over 90 days'],true))$invoices=array_values(array_filter($invoices,fn($r)=>$r['age_bucket']===$bucket));
+$statement=$conn->prepare($sql);$statement->execute(array_merge([$asAt,$asAt,$asAt,$asAt],$params));$allInvoices=$statement->fetchAll(PDO::FETCH_ASSOC);
 $totals=['Current (0–30)'=>0.0,'31–60 days'=>0.0,'61–90 days'=>0.0,'Over 90 days'=>0.0];$totalDue=0.0;
-foreach($invoices as $r){$totals[$r['age_bucket']]+=(float)$r['balance'];$totalDue+=(float)$r['balance'];}
+foreach($allInvoices as $r){$totals[$r['age_bucket']]+=(float)$r['balance'];$totalDue+=(float)$r['balance'];}
+$invoices=in_array($bucket,array_keys($totals),true)?array_values(array_filter($allInvoices,fn($r)=>$r['age_bucket']===$bucket)):$allInvoices;
 $customerSql="SELECT COALESCE(c.customer_name,'Walk-in / Unassigned') customer_name,COUNT(*) invoice_count,SUM(s.balance) balance".$base." GROUP BY s.customer_id,c.customer_name ORDER BY balance DESC";
 $customerQuery=$conn->prepare($customerSql);$customerQuery->execute($params);$customerTotals=$customerQuery->fetchAll(PDO::FETCH_ASSOC);
 $currency=(string)($conn->query("SELECT setting_value FROM settings WHERE setting_key='currency' LIMIT 1")->fetchColumn()?:'KES');
