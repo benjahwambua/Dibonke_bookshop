@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__.'/../../includes/auth.php';
-require_once __DIR__.'/../../config/db.php';
+require_once __DIR__.'/../../config/db.php';require_once __DIR__.'/../../includes/report_tools.php';
 requireModuleAccess('journals');
 $tables=array_flip($conn->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN));
 $ready=isset($tables['accounts'],$tables['journal_entries'],$tables['journal_lines']);
@@ -47,13 +47,14 @@ if($ready&&$_SERVER['REQUEST_METHOD']==='POST'){
 $accounts=$ready?$conn->query("SELECT id,account_code,account_name,account_type FROM accounts WHERE status='Active' ORDER BY account_code")->fetchAll(PDO::FETCH_ASSOC):[];
 $entries=$ready?$conn->query("SELECT j.*,u.full_name creator FROM journal_entries j LEFT JOIN users u ON u.id=j.created_by ORDER BY j.id DESC LIMIT 100")->fetchAll(PDO::FETCH_ASSOC):[];
 $linesByEntry=[];if($ready){$q=$conn->query("SELECT l.*,a.account_code,a.account_name FROM journal_lines l JOIN accounts a ON a.id=l.account_id ORDER BY l.id");foreach($q->fetchAll(PDO::FETCH_ASSOC) as $line)$linesByEntry[$line['journal_entry_id']][]=$line;}
+$exportRows=[];foreach($entries as $entry){$exportRows[]=[$entry['journal_number'],$entry['journal_date'],$entry['description'],$entry['reference'],$entry['status'],$entry['total_debit'],$entry['total_credit'],$entry['creator']??''];}dibonkeReportExport('journal_register',['Journal No.','Date','Description','Reference','Status','Debit','Credit','Created By'],$exportRows);
 $currency=(string)($conn->query("SELECT setting_value FROM settings WHERE setting_key='currency' LIMIT 1")->fetchColumn()?:'KES');
 require_once __DIR__.'/../../includes/header.php';require_once __DIR__.'/../../includes/sidebar.php';
 ?>
-<main class="content"><style>
+<main class="content"><?php dibonkeReportPrintStyles(); ?><style>
 .acct-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 18px}.acct-tabs a{padding:9px 12px;background:#edf2f7;border-radius:8px;text-decoration:none;color:#17324d;font-size:12px;font-weight:800}.acct-panel{background:#fff;border:1px solid #e5eaf0;border-radius:12px;padding:16px;margin:14px 0}.acct-form{display:grid;grid-template-columns:repeat(4,minmax(130px,1fr));gap:10px}.acct-form label{font-size:11px;font-weight:800;color:#475569;display:flex;flex-direction:column;gap:5px}.acct-form input,.acct-form select{padding:9px;border:1px solid #cbd5e1;border-radius:7px;min-width:0}.acct-btn{background:#174a7e;color:#fff;border:0;border-radius:7px;padding:10px 14px;font-weight:800;cursor:pointer}.acct-table{width:100%;border-collapse:collapse}.acct-table th,.acct-table td{text-align:left;padding:9px;border-bottom:1px solid #edf1f5;font-size:12px}.acct-table th{background:#f3f6fa}.acct-num{text-align:right!important;white-space:nowrap}.acct-lines{width:100%;border-collapse:collapse;margin:14px 0}.acct-lines td{padding:5px}.acct-lines input,.acct-lines select{width:100%;padding:8px;border:1px solid #d4dce5;border-radius:6px}.acct-flash{padding:12px;background:#eff6ff;border-radius:8px}.acct-muted{color:#64748b}@media(max-width:800px){.acct-form{grid-template-columns:1fr 1fr}.acct-panel{overflow:auto}}@media(max-width:520px){.acct-form{grid-template-columns:1fr}}
 </style>
-<h1>Journal Entries</h1><p class="acct-muted">Create balanced journals, review drafts and post approved entries to the accounting ledger.</p>
+<h1>Journal Entries</h1><?php dibonkeReportActions('journal_register'); ?><p class="acct-muted">Create balanced journals, review drafts and post approved entries to the accounting ledger.</p>
 <nav class="acct-tabs"><a href="chart_of_accounts.php">Chart of Accounts</a><a href="journals.php">Journal Entries</a><a href="general_ledger.php">General Ledger</a><a href="trial_balance.php">Trial Balance</a></nav>
 <?php if($flash):?><p class="acct-flash"><?=e($flash)?></p><?php endif;?>
 <?php if(!$ready):?><section class="acct-panel"><h2>Database setup required</h2><p>Import <code>database/dibonke_accounting_hr.sql</code> and <code>database/dibonke_double_entry_accounting.sql</code>.</p></section><?php else:?>
