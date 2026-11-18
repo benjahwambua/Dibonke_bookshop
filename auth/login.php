@@ -9,7 +9,7 @@ if (!empty($_SESSION['user_id'])) {
     $roleName = strtolower(trim((string)($_SESSION['role'] ?? '')));
     $landingPage = in_array($roleCode, ['CASHIER', 'SALES'], true)
         || in_array($roleName, ['cashier', 'sales'], true)
-        ? '/modules/sales/index.php'
+        ? '/modules/sales/my_shift.php'
         : '/index.php';
     header('Location: ' . BASE_URL . $landingPage);
     exit;
@@ -56,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $roleName = strtolower(trim((string)$user['role']));
             $landingPage = in_array($roleCode, ['CASHIER', 'SALES'], true)
                 || in_array($roleName, ['cashier', 'sales'], true)
-                ? '/modules/sales/index.php'
+                ? '/modules/sales/my_shift.php'
                 : '/index.php';
             header('Location: ' . BASE_URL . $landingPage);
             exit;
