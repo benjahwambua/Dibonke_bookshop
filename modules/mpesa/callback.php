@@ -13,7 +13,8 @@ try{
  if(!$cb)throw new RuntimeException('Invalid callback payload.');
  $merchant=(string)($cb['MerchantRequestID']??'');$checkout=(string)($cb['CheckoutRequestID']??'');$code=(int)($cb['ResultCode']??-1);$desc=(string)($cb['ResultDesc']??'');
  $status=$code===0?'Success':'Failed';$amount=0;$phone='';$receipt='';$date=null;
- $priorLookup=$conn->prepare("SELECT id,result_status FROM mpesa_transactions WHERE checkout_request_id=? LIMIT 1");
+ $conn->beginTransaction();
+ $priorLookup=$conn->prepare("SELECT id,result_status FROM mpesa_transactions WHERE checkout_request_id=? LIMIT 1 FOR UPDATE");
  $priorLookup->execute([$checkout]);$priorCallback=$priorLookup->fetch(PDO::FETCH_ASSOC);
  $alreadyProcessed=$code===0 && $priorCallback && $priorCallback['result_status']==='Success';
  foreach(($cb['CallbackMetadata']['Item']??[]) as $item){$name=$item['Name']??'';$value=$item['Value']??null;if($name==='Amount')$amount=(float)$value;elseif($name==='MpesaReceiptNumber')$receipt=(string)$value;elseif($name==='PhoneNumber')$phone=(string)$value;elseif($name==='TransactionDate'&&$value)$date=DateTime::createFromFormat('YmdHis',(string)$value)?->format('Y-m-d H:i:s');}
@@ -24,7 +25,6 @@ try{
    $lookup->execute([$checkout]);$tx=$lookup->fetch();
    if($tx && $tx['reference_type']==='customer_payment' && (int)$tx['reference_id']>0){
       $customerId=(int)$tx['reference_id'];
-      $conn->beginTransaction();
       $custQ=$conn->prepare("SELECT * FROM customers WHERE id=? FOR UPDATE");$custQ->execute([$customerId]);$customer=$custQ->fetch();
       if($customer && $amount>0){
          $payAmount=min($amount,(float)$customer['balance']);
@@ -40,10 +40,8 @@ try{
             }
          }
       }
-      $conn->commit();
    } elseif($tx && $tx['reference_type']==='sale' && (int)$tx['reference_id']>0){
       $saleId=(int)$tx['reference_id'];
-      $conn->beginTransaction();
       $saleQ=$conn->prepare("SELECT * FROM sales WHERE id=? FOR UPDATE");$saleQ->execute([$saleId]);$sale=$saleQ->fetch();
       $already=$conn->prepare("SELECT COUNT(*) FROM customer_payments WHERE sale_id=? AND transaction_reference=?");
       $already->execute([$saleId,$receipt]);
@@ -63,8 +61,8 @@ try{
          }
          recordAuditEvent($conn,'Receive','sales','Confirmed M-PESA payment for invoice '.$sale['invoice_number'],'sale',$saleId,['paid_amount'=>(float)$sale['paid_amount'],'balance'=>(float)$sale['balance']],['paid_amount'=>(float)$sale['paid_amount']+$payAmount,'balance'=>max(0,(float)$sale['total_amount']-(float)$sale['paid_amount']-$payAmount),'payment_method'=>'M-Pesa','reference'=>$receipt]);
       }
-      $conn->commit();
    }
  }
+ $conn->commit();
  echo json_encode(['ResultCode'=>0,'ResultDesc'=>'Accepted']);
 }catch(Throwable $e){if($conn->inTransaction())$conn->rollBack();error_log('M-PESA callback: '.$e->getMessage());http_response_code(500);echo json_encode(['ResultCode'=>1,'ResultDesc'=>'Processing failed; confirmation was not acknowledged.']);}
