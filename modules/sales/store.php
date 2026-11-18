@@ -44,7 +44,7 @@ if(dibonkeAccountingAutoPostingEnabled($conn)){
         $journalLines[]=dibonkeAccountingLine(dibonkeAccountingAccount($conn,'cost_of_goods_sold','Expense'),'Cost of goods sold', $costOfGoods,0);
         $journalLines[]=dibonkeAccountingLine(dibonkeAccountingAccount($conn,'inventory','Asset'),'Inventory relieved at cost',0,$costOfGoods);
     }
-    dibonkeAccountingPostJournal($conn,'sale',$saleId,date('Y-m-d',strtotime((string)$conn->query("SELECT sale_date FROM sales WHERE id=".(int)$saleId)->fetchColumn())),'POS sale '.$invoice,$journalLines,$uid);
+    dibonkeAccountingPostJournal($conn,'sale',$saleId,date('Y-m-d'),'POS sale '.$invoice,$journalLines,$uid);
 }
 $conn->commit();
 if($method==='M-Pesa'){
