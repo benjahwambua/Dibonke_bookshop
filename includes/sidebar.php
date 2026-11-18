@@ -72,6 +72,7 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <?php if (hasModulePermission('cash_management','view') || hasModulePermission('cash_management','create')): ?><a href="<?= BASE_URL ?>/modules/sales/my_shift.php" class="<?= navActive('/sales/my_shift.php') ?>"><i class="fas fa-cash-register icon-main"></i>My Cashier Shift</a><?php endif; ?>
         <?php if (canAccessModule('customer_payments')): ?><a href="<?= BASE_URL ?>/modules/customer_payments/index.php" class="<?= navActive('/customer_payments/') ?>"><i class="fas fa-money-check-alt icon-main"></i>Customer Payments</a><?php endif; ?>
         <?php if (canAccessModule('deliveries')): ?><a href="<?= BASE_URL ?>/modules/deliveries/index.php" class="<?= navActive('/deliveries/') ?>"><i class="fas fa-shipping-fast icon-main"></i>Deliveries</a><?php endif; ?>
+        <?php if (canAccessModule('fleet')): ?><a href="<?= BASE_URL ?>/modules/deliveries/fleet.php" class="<?= navActive('/deliveries/fleet.php') ?>"><i class="fas fa-truck icon-main"></i>Fleet Management</a><?php endif; ?>
         <?php endif; ?>
 
         <?php if (canAccessModule('finance') || canAccessModule('billing') || canAccessModule('expenses') || canAccessModule('supplier_payments') || canAccessModule('mpesa') || canAccessModule('chart_of_accounts') || canAccessModule('journals') || canAccessModule('general_ledger') || canAccessModule('trial_balance') || canAccessModule('aged_receivables')): ?>
