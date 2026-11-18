@@ -93,7 +93,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <?php if(!$products): ?><tr><td colspan="11" style="text-align:center;padding:45px;color:#64748b">No products found.</td></tr>
 <?php else: foreach($products as $p): $stock=(int)$p['stock_quantity']; ?>
 <tr>
-<td><div class="product-name"><span class="icon"><?=e($p['icon']?:'📦')?></span><div><strong><?=e($p['product_name'])?></strong><br><small class="muted"><?=e($p['sku']?:'No SKU')?></small></div></div></td>
+<td><div class="product-name"><?php if(!empty($p['image_path'])): ?><img src="<?=BASE_URL.'/'.e($p['image_path'])?>" alt="" style="width:38px;height:38px;object-fit:cover;border-radius:6px"><?php else: ?><span class="icon"><?=e($p['icon']?:'📦')?></span><?php endif; ?><div><strong><?=e($p['product_name'])?></strong><br><small class="muted"><?=e($p['sku']?:'No SKU')?></small></div></div></td>
 <td><?=e($p['product_type']??'General')?><?php if(!empty($p['isbn'])):?><br><small class="muted">ISBN: <?=e($p['isbn'])?></small><?php endif;?></td>
 <td><?=e($p['category_name']?:$p['category']?:'Uncategorized')?></td>
 <td><?=e($p['brand_name']?:'—')?></td><td><?=e($p['supplier_name']?:'—')?></td>
@@ -109,7 +109,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <div id="productModal" class="modal">
 <div class="modal-box">
 <h2>Add Product</h2><button class="modal-close" onclick="document.getElementById('productModal').classList.remove('show')">&times;</button>
-<form method="post" action="store.php">
+<form method="post" action="store.php" enctype="multipart/form-data">
 <input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>">
 <div class="form-grid">
 <label>Product Name *<input name="product_name" required maxlength="160"></label>
@@ -127,6 +127,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <label>Reorder Level<input type="number" name="reorder_level" min="0" value="10"></label>
 <label>Unit<input name="unit" value="Piece" maxlength="30"></label>
 <label>Icon<input name="icon" value="📦" maxlength="10"></label>
+<label>Product Image (PNG/JPEG, max 2 MB)<input type="file" name="product_image" accept="image/png,image/jpeg"><small>Max dimensions: 2400 x 2400 pixels.</small></label>
 </div>
 <div class="modal-actions"><button type="button" class="btn btn-light" onclick="document.getElementById('productModal').classList.remove('show')">Cancel</button><button class="btn btn-primary">Save Product</button></div>
 </form></div></div>
