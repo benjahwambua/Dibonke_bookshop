@@ -69,6 +69,7 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <div class="menu-title">Sales &amp; Customer Service</div>
         <?php if (canAccessModule('customers')): ?><a href="<?= BASE_URL ?>/modules/customers/index.php" class="<?= navActive('/customers/') ?>"><i class="fas fa-users icon-main"></i>Customers</a><?php endif; ?>
         <?php if (canAccessModule('sales')): ?><a href="<?= BASE_URL ?>/modules/sales/index.php" class="<?= navActive('/sales/') ?>"><i class="fas fa-cash-register icon-main"></i>Sales &amp; POS</a><?php endif; ?>
+        <?php if (hasModulePermission('cash_management','view') || hasModulePermission('cash_management','create')): ?><a href="<?= BASE_URL ?>/modules/sales/my_shift.php" class="<?= navActive('/sales/my_shift.php') ?>"><i class="fas fa-cash-register icon-main"></i>My Cashier Shift</a><?php endif; ?>
         <?php if (canAccessModule('customer_payments')): ?><a href="<?= BASE_URL ?>/modules/customer_payments/index.php" class="<?= navActive('/customer_payments/') ?>"><i class="fas fa-money-check-alt icon-main"></i>Customer Payments</a><?php endif; ?>
         <?php if (canAccessModule('deliveries')): ?><a href="<?= BASE_URL ?>/modules/deliveries/index.php" class="<?= navActive('/deliveries/') ?>"><i class="fas fa-shipping-fast icon-main"></i>Deliveries</a><?php endif; ?>
         <?php endif; ?>
@@ -89,6 +90,7 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <?php if (canAccessModule('launch_controls')): ?>
         <div class="menu-title">Control &amp; Compliance</div>
         <a href="<?= BASE_URL ?>/modules/launch_controls/index.php" class="<?= navActive('/launch_controls/') ?>"><i class="fas fa-clipboard-check icon-main"></i>Launch Operations</a>
+        <?php if (canAccessModule('etims')): ?><a href="<?= BASE_URL ?>/modules/etims/index.php" class="<?= navActive('/etims/') ?>"><i class="fas fa-file-invoice-dollar icon-main"></i>eTIMS Setup</a><?php endif; ?>
         <?php endif; ?>
 
         <?php if (canAccessModule('reports') || canAccessModule('analytics')): ?>
