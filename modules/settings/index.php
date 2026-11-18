@@ -3,7 +3,7 @@ declare(strict_types=1);
 require_once __DIR__.'/../../includes/auth.php';
 require_once __DIR__.'/../../config/db.php';
 if(empty($_SESSION['is_super'])){http_response_code(403);exit('Access denied.');}
-$allowed=['company_name','company_type','currency','country','low_stock_threshold','invoice_prefix','receipt_prefix','purchase_prefix','delivery_prefix','expense_prefix','timezone','vat_rate','vat_mode'];
+$allowed=['company_name','company_type','currency','country','low_stock_threshold','timezone','vat_rate','vat_mode'];
 $placeholders=implode(',',array_fill(0,count($allowed),'?'));
 $q=$conn->prepare("SELECT setting_key,setting_value FROM settings WHERE setting_key IN ($placeholders) ORDER BY setting_key");
 $q->execute($allowed);$settings=[];foreach($q->fetchAll() as $s)$settings[$s['setting_key']]=$s['setting_value'];
@@ -21,7 +21,7 @@ require_once __DIR__.'/../../includes/header.php';require_once __DIR__.'/../../i
 @media(max-width:650px){.settings-grid{grid-template-columns:1fr}}
 </style>
 <h1>System Settings</h1><p>Configure company information, currency and document numbering.</p>
-<p class="note">Payment gateway credentials are managed separately under M-PESA. VAT defaults to 16%. Choose whether selling prices include VAT or VAT is added at checkout.</p>
+<p class="note">Document numbers are generated automatically in a short date-and-sequence format. Payment gateway credentials are managed separately under M-PESA. VAT defaults to 16%. Choose whether selling prices include VAT or VAT is added at checkout.</p>
 <?php if($flash):?><div class="flash"><?=e($flash)?></div><?php endif;?>
 <div class="settings-panel"><form method="post" action="store.php"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>">
 <div class="settings-grid">
