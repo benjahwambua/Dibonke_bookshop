@@ -10,3 +10,8 @@ tmp/
 cache/
 vendor/
 node_modules/
+private/
+backups/
+uploads/products/*
+!uploads/products/.htaccess
+!uploads/products/index.html
