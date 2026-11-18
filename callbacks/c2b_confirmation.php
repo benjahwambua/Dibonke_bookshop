@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__.'/../config/app.php';
 require_once __DIR__.'/../config/db.php';
+require_once __DIR__.'/../includes/accounting_posting.php';
 header('Content-Type: application/json');
 $raw=file_get_contents('php://input')?:'';
 $data=json_decode($raw,true);
