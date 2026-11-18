@@ -176,3 +176,8 @@ After the staff/roles, HR foundation and double-entry migrations, apply `dibonke
 - **Aged Receivables:** lists completed sales with positive outstanding balances, invoice date, customer, total, amount paid, balance and invoice-age buckets. Customer totals and bucket totals are included.
 - **Ageing basis:** the current sales schema does not provide contractual invoice due dates, so this report ages from the sale/invoice date. “Current (0–30)” means issued within the last 30 days; it must not be interpreted as a definitive overdue classification until invoice due dates/payment terms are introduced.
 - **Leave-day calculation:** requested days currently count weekdays (Monday–Friday) and do not yet exclude Kenyan public holidays or configured company holidays. Leave balances/accruals are not yet automatically deducted.
+
+
+## Expense category defaults
+
+Import `dibonke_expense_categories_seed.sql` once (it is safe to re-run). It seeds common bookshop operating expense categories without duplicating existing category names. The Expenses form loads all active records from `expense_categories` automatically, so the Category dropdown is populated from the database. The expense handler still validates and stores the selected category ID; no existing expense records or posting behavior are changed.
