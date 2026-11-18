@@ -26,7 +26,7 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
 .user-avatar{width:36px;height:36px;display:grid;place-items:center;flex:0 0 36px;border-radius:50%;background:#e9c477;color:#17324d;font-size:13px;font-weight:800}
 .user-info{min-width:0}.user-info .name{display:block;overflow:hidden;color:#fff;font-size:12px;font-weight:700;text-overflow:ellipsis;white-space:nowrap}.user-info .role{display:block;margin-top:3px;color:#a9bac9;font-size:10px}
 .sidebar nav{display:block;flex:1;min-width:0;overflow:visible;padding:10px 12px 22px}.sidebar nav a:before{display:none}.menu-title{padding:17px 12px 7px;color:#d6b66f;font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase}
-.sidebar nav button.menu-title{display:flex;align-items:center;justify-content:space-between;width:100%;margin:0;border:0;background:transparent;text-align:left;font:inherit;cursor:pointer}
+.sidebar nav button.menu-title{display:flex;align-items:center;justify-content:space-between;width:100%;margin:0;border:0;background:transparent;text-align:left;font-family:inherit;font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer}
 .sidebar nav button.menu-title .nav-group-chevron{width:7px;height:7px;flex:0 0 7px;margin:0 3px 3px 10px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);transition:transform .18s ease}
 .sidebar nav button.menu-title[aria-expanded="true"] .nav-group-chevron{transform:rotate(225deg);margin-bottom:-3px}
 #appSidebar.sidebar nav [hidden]{display:none!important}
