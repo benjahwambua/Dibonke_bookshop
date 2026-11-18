@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/product_helpers.php';
 require_once __DIR__ . '/../../includes/audit.php';
+require_once __DIR__ . '/../../includes/product_image_upload.php';
 
 requireModulePermission('products', 'edit');
 
@@ -28,6 +29,7 @@ $error = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
+    $newProductImage = null;
 
     try {
         $name = trim((string)($_POST['product_name'] ?? ''));
@@ -69,6 +71,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $barcode = trim((string)($_POST['barcode'] ?? '')) ?: null;
         $unit = trim((string)($_POST['unit'] ?? 'Piece')) ?: 'Piece';
         $icon = trim((string)($_POST['icon'] ?? '📦')) ?: '📦';
+        $newProductImage = uploadProductImage();
+        $imagePath = $newProductImage ?: (string)($p['image_path'] ?? '');
+        if (!empty($_POST['remove_product_image'])) $imagePath = '';
         $status = (($_POST['status'] ?? 'Active') === 'Inactive') ? 'Inactive' : 'Active';
 
         $conn->beginTransaction();
@@ -135,13 +140,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 category_id = ?, brand_id = ?, supplier_id = ?, sku = ?,
                 barcode = ?, unit = ?, buying_price = ?, selling_price = ?,
                 wholesale_price = ?, stock_quantity = ?, reorder_level = ?,
-                icon = ?, status = ?
+                icon = ?, image_path = ?, status = ?
              WHERE id = ?"
         );
         $update->execute([
             $name, $productType, $isbn, $categoryName, $categoryId ?: null,
             $brandId ?: null, $supplierId ?: null, $sku, $barcode, $unit,
-            $buy, $sell, $wholesale, $stock, $reorder, $icon, $status, $id
+            $buy, $sell, $wholesale, $stock, $reorder, $icon, ($imagePath !== '' ? $imagePath : null), $status, $id
         ]);
 
         $priceInsert = $conn->prepare(
@@ -164,10 +169,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         recordAuditEvent($conn,'Update','products','Updated product '.$name,'product',$id,['product_name'=>$p['product_name'],'sku'=>$p['sku']??null,'barcode'=>$p['barcode']??null,'selling_price'=>$p['selling_price']??null],['product_name'=>$name,'sku'=>$sku,'barcode'=>$barcode,'selling_price'=>$sell,'status'=>$status]);
         $conn->commit();
+        if (($newProductImage || !empty($_POST['remove_product_image'])) && !empty($p['image_path'])) deleteProductImage((string)$p['image_path']);
         $_SESSION['product_flash'] = 'Product updated successfully.';
         header('Location: index.php');
         exit;
     } catch (Throwable $e) {
+        deleteProductImage($newProductImage);
         if ($conn->inTransaction()) {
             $conn->rollBack();
         }
@@ -218,7 +225,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
         <div class="flash flash-error"><?= e($error) ?></div>
     <?php endif; ?>
 
-    <form method="post" class="panel" style="max-width:980px">
+    <form method="post" enctype="multipart/form-data" class="panel" style="max-width:980px">
         <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
 
         <div class="form-grid">
@@ -286,6 +293,16 @@ require_once __DIR__ . '/../../includes/sidebar.php';
             <label>Product Icon
                 <input name="icon" maxlength="20" value="<?= e($p['icon'] ?: '📦') ?>">
             </label>
+            <label>Product Image (PNG or JPEG, max 2 MB)
+                <input type="file" name="product_image" accept="image/png,image/jpeg">
+                <small>Maximum dimensions: 2400 x 2400 pixels.</small>
+            </label>
+            <?php if (!empty($p['image_path'])): ?>
+                <div>
+                    <img src="<?= BASE_URL . '/' . e($p['image_path']) ?>" alt="Current product image" style="width:76px;height:76px;object-fit:cover;border-radius:8px">
+                    <label style="display:block;margin-top:8px"><input type="checkbox" name="remove_product_image" value="1"> Remove current image</label>
+                </div>
+            <?php endif; ?>
             <label>Status
                 <select name="status">
                     <option value="Active" <?= $p['status'] === 'Active' ? 'selected' : '' ?>>Active</option>
