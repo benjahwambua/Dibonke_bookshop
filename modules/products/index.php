@@ -58,7 +58,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 .btn{display:inline-flex;align-items:center;gap:7px;padding:10px 15px;border-radius:8px;text-decoration:none;border:0;cursor:pointer;font-weight:700;font-size:13px}.btn-primary{background:#004a99;color:#fff}.btn-primary:hover{background:#003b7a}.btn-light{background:#eef2f7;color:#334155}.btn-danger{background:#fee2e2;color:#b91c1c}.btn-edit{background:#dbeafe;color:#1d4ed8}
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:15px;margin-bottom:20px}.stat{background:#fff;border-radius:12px;padding:18px;box-shadow:0 1px 4px #00000012}.stat strong{display:block;font-size:25px}.stat span{color:#64748b;font-size:13px}
 .toolbar{background:#fff;padding:15px;border-radius:12px;margin-bottom:15px;display:flex;gap:10px;flex-wrap:wrap}.toolbar input,.toolbar select{padding:10px 12px;border:1px solid #dbe3ec;border-radius:8px;min-width:180px}.toolbar input{flex:1}
-.table-card{background:#fff;border-radius:12px;overflow:auto;box-shadow:0 1px 4px #00000012}.products-table{width:100%;border-collapse:collapse;min-width:950px}.products-table th{background:#004a99;color:#fff;text-align:left;padding:13px;font-size:12px}.products-table td{padding:13px;border-bottom:1px solid #e5e7eb;font-size:13px}.product-name{display:flex;gap:10px;align-items:center}.icon{font-size:25px}.badge{padding:5px 9px;background:#eef2ff;border-radius:20px;font-size:11px}.stock-low{color:#b45309;background:#fef3c7;padding:5px 8px;border-radius:6px}.stock-out{color:#b91c1c;background:#fee2e2;padding:5px 8px;border-radius:6px}.stock-ok{color:#047857;background:#d1fae5;padding:5px 8px;border-radius:6px}.actions{display:flex;gap:6px}.flash{padding:12px 15px;border-radius:9px;margin-bottom:18px;background:#ecfdf5;color:#166534;border:1px solid #bbf7d0}
+.table-card{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 4px #00000012}.products-table-wrap{width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;scrollbar-width:thin}.products-table{width:100%;border-collapse:collapse;min-width:1100px}.table-scroll-hint{display:none;margin:0;padding:8px 12px;background:#f8fafc;color:#64748b;font-size:11px;border-bottom:1px solid #e5e7eb}@media(max-width:1100px){.table-scroll-hint{display:block}}.products-table th{background:#004a99;color:#fff;text-align:left;padding:13px;font-size:12px}.products-table td{padding:13px;border-bottom:1px solid #e5e7eb;font-size:13px}.product-name{display:flex;gap:10px;align-items:center}.icon{font-size:25px}.badge{padding:5px 9px;background:#eef2ff;border-radius:20px;font-size:11px}.stock-low{color:#b45309;background:#fef3c7;padding:5px 8px;border-radius:6px}.stock-out{color:#b91c1c;background:#fee2e2;padding:5px 8px;border-radius:6px}.stock-ok{color:#047857;background:#d1fae5;padding:5px 8px;border-radius:6px}.actions{display:flex;gap:6px}.flash{padding:12px 15px;border-radius:9px;margin-bottom:18px;background:#ecfdf5;color:#166534;border:1px solid #bbf7d0}
 @media(max-width:900px){.stats-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:600px){.stats-grid{grid-template-columns:1fr}.content{padding:18px}}
 </style>
 
@@ -87,6 +87,8 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 </form>
 
 <div class="table-card">
+<p class="table-scroll-hint">Scroll horizontally to view all product columns, including Edit and Delete.</p>
+<div class="products-table-wrap" role="region" aria-label="Products inventory table" tabindex="0">
 <table class="table products-table">
 <thead><tr><th>Product</th><th>Type / ISBN</th><th>Category</th><th>Brand</th><th>Supplier</th><th>Buy Price</th><th>Normal Price</th><th>Wholesale Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead>
 <tbody>
@@ -103,7 +105,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <td><div class="actions"><?php if(hasModulePermission('products','edit')):?><a class="btn btn-edit" href="edit.php?id=<?=(int)$p['id']?>" title="Edit product" aria-label="Edit <?=e($p['product_name'])?>"><i class="fas fa-edit"></i> Edit</a><?php endif;?><?php if(hasModulePermission('products','delete')):?><form method="post" action="delete.php" onsubmit="return confirm('Delete this product? Products with sales, purchase or stock history must be deactivated instead.')" style="display:inline"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>"><input type="hidden" name="id" value="<?=(int)$p['id']?>"><button class="btn btn-danger" type="submit" title="Delete product"><i class="fas fa-trash"></i> Delete</button></form><?php endif;?></div></td>
 </tr>
 <?php endforeach; endif;?>
-</tbody></table></div>
+</tbody></table></div></div>
 </main>
 
 <div id="productModal" class="modal">
