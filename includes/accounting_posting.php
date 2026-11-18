@@ -5,6 +5,11 @@ declare(strict_types=1);
  * Accounting automation helpers.
  * All posting functions must be called inside the originating source transaction.
  */
+function dibonkeAccountingText(string $value, int $length): string
+{
+    return function_exists('mb_substr') ? mb_substr($value, 0, $length) : substr($value, 0, $length);
+}
+
 function dibonkeAccountingTablesReady(PDO $conn): bool
 {
     $tables = array_flip($conn->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN));
@@ -85,14 +90,14 @@ function dibonkeAccountingPostJournal(PDO $conn, string $sourceType, int $source
 
     $tmp = 'TMP-' . strtoupper(bin2hex(random_bytes(8)));
     $insert = $conn->prepare("INSERT INTO journal_entries(journal_number,journal_date,description,reference,source_type,source_id,status,total_debit,total_credit,created_by,posted_by,posted_at) VALUES(?,?,?,?,?,?,'Posted',?,?,?,?,NOW())");
-    $insert->execute([$tmp, $journalDate, mb_substr($description, 0, 255), $sourceType . ':' . $sourceId, $sourceType, $sourceId, $debit, $credit, $userId, $userId]);
+    $insert->execute([$tmp, $journalDate, dibonkeAccountingText($description, 255), $sourceType . ':' . $sourceId, $sourceType, $sourceId, $debit, $credit, $userId, $userId]);
     $journalId = (int)$conn->lastInsertId();
     $number = 'JV-' . date('ymd', strtotime($journalDate)) . '-' . str_pad((string)$journalId, 5, '0', STR_PAD_LEFT);
     $conn->prepare("UPDATE journal_entries SET journal_number=? WHERE id=?")->execute([$number, $journalId]);
 
     $insertLine = $conn->prepare("INSERT INTO journal_lines(journal_entry_id,account_id,line_description,debit,credit) VALUES(?,?,?,?,?)");
     foreach ($clean as [$accountId, $lineDescription, $d, $c]) {
-        $insertLine->execute([$journalId, $accountId, $lineDescription !== '' ? mb_substr($lineDescription, 0, 255) : null, $d, $c]);
+        $insertLine->execute([$journalId, $accountId, $lineDescription !== '' ? dibonkeAccountingText($lineDescription, 255) : null, $d, $c]);
     }
 }
 
