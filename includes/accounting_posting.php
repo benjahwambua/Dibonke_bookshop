@@ -54,7 +54,7 @@ function dibonkeAccountingPaymentAccount(PDO $conn, string $method): int
     return dibonkeAccountingAccount($conn, $key, 'Asset');
 }
 
-function dibonkeAccountingPostJournal(PDO $conn, string $sourceType, int $sourceId, string $journalDate, string $description, array $lines, int $userId): void
+function dibonkeAccountingPostJournal(PDO $conn, string $sourceType, int $sourceId, string $journalDate, string $description, array $lines, ?int $userId): void
 {
     if (!$conn->inTransaction()) throw new LogicException('Automatic journal posting must share the source transaction.');
     if ($sourceId <= 0 || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $journalDate)) throw new RuntimeException('Invalid accounting source reference or date.');
