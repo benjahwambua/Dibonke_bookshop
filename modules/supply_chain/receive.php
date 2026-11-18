@@ -3,6 +3,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/audit.php';
+require_once __DIR__ . '/../../includes/accounting_posting.php';
 requireModulePermission('supply_chain','view');
 
 if($_SERVER['REQUEST_METHOD']==='GET'){
@@ -44,6 +45,13 @@ try{
  $newStatus=$remain===0?'Fully Received':'Partially Received';$conn->prepare("UPDATE purchase_orders SET status=? WHERE id=?")->execute([$newStatus,$poId]);
  $conn->prepare("UPDATE suppliers SET balance=balance+? WHERE id=?")->execute([$total,$po['supplier_id']]);
  recordAuditEvent($conn,'Receive','supply_chain','Posted goods receipt '.$grn.' against PO '.$po['po_number'],'goods_receipt',$grnId,null,['supplier_id'=>(int)$po['supplier_id'],'total_amount'=>$total,'line_count'=>count($clean)]);
+ if(dibonkeAccountingAutoPostingEnabled($conn)){
+  $journalLines=[
+   dibonkeAccountingLine(dibonkeAccountingAccount($conn,'inventory','Asset'),'Inventory received on '.$grn,$total,0),
+   dibonkeAccountingLine(dibonkeAccountingAccount($conn,'accounts_payable','Liability'),'Supplier payable for '.$grn,0,$total)
+  ];
+  dibonkeAccountingPostJournal($conn,'goods_receipt',$grnId,date('Y-m-d',strtotime($receivedDate)),'Goods receipt '.$grn.' against PO '.$po['po_number'],$journalLines,(int)$_SESSION['user_id']);
+ }
  $conn->commit();$_SESSION['supply_flash']="Goods Receipt {$grn} posted. {$total} KES added to supplier payable and stock has been updated.";
 }catch(Throwable $e){if($conn->inTransaction())$conn->rollBack();error_log('GRN error: '.$e->getMessage());$_SESSION['supply_flash']='Goods receipt failed: '.$e->getMessage();}
 header('Location:index.php');exit;
