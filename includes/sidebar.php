@@ -74,12 +74,13 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <?php if (canAccessModule('deliveries')): ?><a href="<?= BASE_URL ?>/modules/deliveries/index.php" class="<?= navActive('/deliveries/') ?>"><i class="fas fa-shipping-fast icon-main"></i>Deliveries</a><?php endif; ?>
         <?php endif; ?>
 
-        <?php if (canAccessModule('finance') || canAccessModule('billing') || canAccessModule('expenses') || canAccessModule('supplier_payments') || canAccessModule('mpesa') || canAccessModule('chart_of_accounts') || canAccessModule('journals') || canAccessModule('general_ledger') || canAccessModule('trial_balance')): ?>
+        <?php if (canAccessModule('finance') || canAccessModule('billing') || canAccessModule('expenses') || canAccessModule('supplier_payments') || canAccessModule('mpesa') || canAccessModule('chart_of_accounts') || canAccessModule('journals') || canAccessModule('general_ledger') || canAccessModule('trial_balance') || canAccessModule('aged_receivables')): ?>
         <div class="menu-title">Finance &amp; Billing</div>
         <?php if (canAccessModule('chart_of_accounts')): ?><a href="<?= BASE_URL ?>/modules/finance/chart_of_accounts.php" class="<?= navActive('/finance/chart_of_accounts.php') ?>"><i class="fas fa-list-ol icon-main"></i>Chart of Accounts</a><?php endif; ?>
         <?php if (canAccessModule('journals')): ?><a href="<?= BASE_URL ?>/modules/finance/journals.php" class="<?= navActive('/finance/journals.php') ?>"><i class="fas fa-book-open icon-main"></i>Journal Entries</a><?php endif; ?>
         <?php if (canAccessModule('general_ledger')): ?><a href="<?= BASE_URL ?>/modules/finance/general_ledger.php" class="<?= navActive('/finance/general_ledger.php') ?>"><i class="fas fa-book icon-main"></i>General Ledger</a><?php endif; ?>
         <?php if (canAccessModule('trial_balance')): ?><a href="<?= BASE_URL ?>/modules/finance/trial_balance.php" class="<?= navActive('/finance/trial_balance.php') ?>"><i class="fas fa-balance-scale icon-main"></i>Trial Balance</a><?php endif; ?>
+        <?php if (canAccessModule('aged_receivables')): ?><a href="<?= BASE_URL ?>/modules/finance/aged_receivables.php" class="<?= navActive('/finance/aged_receivables.php') ?>"><i class="fas fa-hourglass-half icon-main"></i>Aged Receivables</a><?php endif; ?>
         <?php if (canAccessModule('finance')): ?>
         <a href="<?= BASE_URL ?>/modules/finance/index.php" class="<?= navActive('/finance/') ?>"><i class="fas fa-chart-pie icon-main"></i>Finance Overview</a>
         <a href="<?= BASE_URL ?>/modules/finance/ledger.php" class="<?= navActive('/finance/ledger.php') ?>"><i class="fas fa-book icon-main"></i>Ledger</a>
@@ -103,9 +104,10 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <?php if (canAccessModule('analytics')): ?><a href="<?= BASE_URL ?>/modules/analytics/index.php" class="<?= navActive('/analytics/') ?>"><i class="fas fa-chart-line icon-main"></i>Analytics</a><?php endif; ?>
         <?php endif; ?>
 
-        <?php if (canAccessModule('staff') || isAdministrator()): ?>
+        <?php if (canAccessModule('staff') || canAccessModule('hr_self_service') || isAdministrator()): ?>
         <div class="menu-title">Staff &amp; Access</div>
-        <?php if (canAccessModule('hr')): ?><a href="<?= BASE_URL ?>/modules/hr/index.php" class="<?= navActive('/hr/') ?>"><i class="fas fa-user-tie icon-main"></i>Human Resources</a><?php endif; ?>
+        <?php if (canAccessModule('hr_self_service')): ?><a href="<?= BASE_URL ?>/modules/hr/my.php" class="<?= navActive('/hr/my.php') ?>"><i class="fas fa-clock icon-main"></i>My HR Self-Service</a><?php endif; ?>
+        <?php if (canAccessModule('hr')): ?><a href="<?= BASE_URL ?>/modules/hr/index.php" class="<?= navActive('/hr/index.php') ?>"><i class="fas fa-user-tie icon-main"></i>Human Resources</a><?php endif; ?>
         <?php if (canAccessModule('staff')): ?><a href="<?= BASE_URL ?>/modules/staff/index.php" class="<?= navActive('/staff/') ?>"><i class="fas fa-id-badge icon-main"></i>Staff Directory</a><?php endif; ?>
         <?php if (isAdministrator()): ?>
         <a href="<?= BASE_URL ?>/modules/users/index.php" class="<?= navActive('/users/') ?>"><i class="fas fa-user-shield icon-main"></i>Users</a>
