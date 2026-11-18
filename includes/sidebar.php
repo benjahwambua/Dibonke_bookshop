@@ -55,6 +55,52 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
 .sidebar nav .nav-group-toggle[aria-expanded="true"] .nav-group-chevron{transform:rotate(225deg)}
 #appSidebar.sidebar nav [hidden]{display:none!important}#appSidebar.sidebar nav a[hidden]{display:none!important}#appSidebar.sidebar nav button[hidden]{display:none!important}
 
+
+/* Refined sidebar typography and spacing */
+#appSidebar.sidebar {
+  font-family: Inter, "Segoe UI", Roboto, Arial, sans-serif;
+  letter-spacing: 0;
+}
+#appSidebar .sidebar-brand { gap: 10px; padding: 18px 18px 16px; }
+#appSidebar .sidebar-brand-copy strong { font-size: 13px; letter-spacing: .1px; }
+#appSidebar .sidebar-brand-copy span { font-size: 9px; letter-spacing: .8px; }
+#appSidebar .user-profile { gap: 9px; margin: 13px 12px 8px; padding: 9px 10px; }
+#appSidebar .user-avatar { width: 32px; height: 32px; flex-basis: 32px; font-size: 12px; }
+#appSidebar .user-info .name { font-size: 11px; line-height: 1.3; }
+#appSidebar .user-info .role { font-size: 9px; line-height: 1.3; }
+#appSidebar nav { padding: 8px 10px 18px; }
+#appSidebar nav .menu-title.nav-group-toggle {
+  min-height: 29px;
+  padding: 12px 10px 5px;
+  font-family: inherit;
+  font-size: 8px;
+  font-weight: 750;
+  line-height: 1.2;
+  letter-spacing: 1.05px;
+}
+#appSidebar nav .nav-group-chevron { width: 6px; height: 6px; flex-basis: 6px; }
+#appSidebar nav a {
+  gap: 10px;
+  margin: 2px 0;
+  padding: 8px 10px;
+  border-radius: 7px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 550;
+  line-height: 1.35;
+  letter-spacing: 0;
+}
+#appSidebar nav a .icon-main {
+  width: 16px;
+  flex-basis: 16px;
+  font-size: 12px;
+}
+#appSidebar .sidebar-access-note { font-size: 9px; line-height: 1.45; padding: 9px; }
+@media(min-width:769px) {
+  html.sidebar-collapsed #appSidebar nav a { padding: 11px 6px; }
+  html.sidebar-collapsed #appSidebar nav a .icon-main { font-size: 15px; }
+}
+
 </style>
 
 <aside class="sidebar" id="appSidebar">
