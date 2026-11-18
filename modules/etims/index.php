@@ -15,8 +15,9 @@ $values=[
  'etims_environment'=>etimsSetting($conn,'etims_environment','sandbox')
 ];
 $flash=$_SESSION['etims_setup_flash']??null;unset($_SESSION['etims_setup_flash']);
-$queueCount=(int)$conn->query("SELECT COUNT(*) FROM etims_documents")->fetchColumn();
-$queuedCount=(int)$conn->query("SELECT COUNT(*) FROM etims_documents WHERE status='Queued'")->fetchColumn();
+$hasQueueTable=(bool)$conn->query("SHOW TABLES LIKE 'etims_documents'")->fetchColumn();
+$queueCount=$hasQueueTable?(int)$conn->query("SELECT COUNT(*) FROM etims_documents")->fetchColumn():0;
+$queuedCount=$hasQueueTable?(int)$conn->query("SELECT COUNT(*) FROM etims_documents WHERE status='Queued'")->fetchColumn():0;
 require_once __DIR__.'/../../includes/header.php';require_once __DIR__.'/../../includes/sidebar.php';
 ?>
 <main class="content">
@@ -40,6 +41,6 @@ require_once __DIR__.'/../../includes/header.php';require_once __DIR__.'/../../i
 <?php if($canEdit):?><p style="margin-top:18px"><button class="et-btn">Save eTIMS profile</button></p><?php else:?><p class="et-note">Your role has read-only access to this profile. Ask an Administrator to update it.</p><?php endif;?>
 </form></section>
 <section class="et-panel"><h2>Recommended onboarding sequence</h2><ol><li>Register the Dibonke taxpayer using the official <a href="https://etims.kra.go.ke/" target="_blank" rel="noopener">KRA eTIMS portal</a>.</li><li>Confirm the right integration route with KRA: OSCU, VSCU, or a KRA-certified third-party solution.</li><li>Obtain the current technical specifications, sandbox access and the required device / integrator onboarding details from KRA.</li><li>Complete sandbox development and KRA testing / certification before requesting production activation.</li><li>Only after credentials and approval are securely provisioned should the system-to-system sender be implemented and enabled.</li></ol><p class="et-note">A taxpayer registration PIN is not the same as API credentials or a production integration approval. The Dibonke invoice number remains its internal reference; KRA control-unit invoice identifiers and verification data will be stored separately when the official integration is built.</p></section>
-<section class="et-panel"><h2>Current Dibonke queue</h2><p><strong><?=number_format($queueCount)?></strong> prepared invoices · <strong><?=number_format($queuedCount)?></strong> awaiting integration processing.</p><p class="et-note">Queue records are internal invoice snapshots only. They are not transmitted KRA invoices and do not create KRA acknowledgements, QR codes or control-unit numbers.</p></section>
+<section class="et-panel"><h2>Current Dibonke queue</h2><p><strong><?=number_format($queueCount)?></strong> prepared invoices · <strong><?=number_format($queuedCount)?></strong> awaiting integration processing.</p><?php if(!$hasQueueTable):?><p class="et-note">The eTIMS queue table is not installed yet. Apply the Launch Operations database migration to enable invoice preparation.</p><?php endif;?><p class="et-note">Queue records are internal invoice snapshots only. They are not transmitted KRA invoices and do not create KRA acknowledgements, QR codes or control-unit numbers.</p></section>
 </div></main>
 <?php require_once __DIR__.'/../../includes/footer.php';?>
