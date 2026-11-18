@@ -65,12 +65,6 @@ try {
     if ($paidAmount > $total) throw new RuntimeException('Paid amount cannot exceed the purchase total.');
     $balance = round($total - $paidAmount, 2);
 
-    $prefix = 'SS-PUR';
-    $setting = $conn->prepare("SELECT setting_value FROM settings WHERE setting_key='purchase_prefix' LIMIT 1");
-    $setting->execute();
-    $configuredPrefix = $setting->fetchColumn();
-    if ($configuredPrefix) $prefix = (string)$configuredPrefix;
-
     $purchaseNumber = 'TMP-' . strtoupper(bin2hex(random_bytes(8)));
 
     $stmt = $conn->prepare("INSERT INTO purchases (purchase_number,supplier_id,user_id,purchase_date,subtotal,discount,tax,total_amount,paid_amount,balance,payment_method,status,notes) VALUES (?,?,?,?,?,?,?,?,?,?,?,'Received',?)");
@@ -105,12 +99,6 @@ try {
 
     // Record any amount paid at purchase time in the supplier payment ledger.
     if ($paidAmount > 0) {
-        $paymentPrefix = 'SUP-PAY';
-        $prefixStmt = $conn->prepare("SELECT setting_value FROM settings WHERE setting_key='supplier_payment_prefix' LIMIT 1");
-        $prefixStmt->execute();
-        $configuredPaymentPrefix = $prefixStmt->fetchColumn();
-        if ($configuredPaymentPrefix) $paymentPrefix = (string)$configuredPaymentPrefix;
-
         $paymentReceipt = 'TMP-' . strtoupper(bin2hex(random_bytes(8)));
         $hasCashShiftColumn=(bool)$conn->query("SHOW COLUMNS FROM supplier_payments LIKE 'cash_shift_id'")->fetch();
         $cashShiftId=null;
