@@ -16,16 +16,10 @@ $conn->exec("CREATE TABLE IF NOT EXISTS expense_categories (
 
 $defaultCategories=['Rent','Utilities','Salaries & Wages','Transport & Travel','Stationery & Office Supplies','Repairs & Maintenance','Internet & Communication','Marketing & Advertising','Licences & Permits','Bank Charges','Cleaning & Sanitation','Security','Packaging & Shopping Bags','Delivery & Courier','General & Miscellaneous'];
 $findCategory=$conn->prepare("SELECT id FROM expense_categories WHERE LOWER(category_name)=LOWER(?) LIMIT 1");
-$activateCategory=$conn->prepare("UPDATE expense_categories SET status='Active' WHERE id=?");
 $insertCategory=$conn->prepare("INSERT INTO expense_categories(category_name,status) VALUES(?,'Active')");
 foreach($defaultCategories as $category){
     $findCategory->execute([$category]);
-    $existingId=$findCategory->fetchColumn();
-    if($existingId){
-        $activateCategory->execute([(int)$existingId]);
-    }else{
-        $insertCategory->execute([$category]);
-    }
+    if(!$findCategory->fetchColumn()) $insertCategory->execute([$category]);
 }
 $cats=$conn->query("SELECT id,category_name FROM expense_categories WHERE status='Active' ORDER BY category_name")->fetchAll(PDO::FETCH_ASSOC);
 
@@ -52,13 +46,13 @@ require_once __DIR__.'/../../includes/header.php';require_once __DIR__.'/../../i
 .grid{display:grid;grid-template-columns:340px 1fr;gap:18px}.panel{background:#fff;padding:20px;border-radius:12px;box-shadow:0 1px 4px #0001}.stats{display:flex;gap:15px;margin:15px 0}.stat{background:#fff;padding:15px;border-radius:10px;flex:1}.stat strong{display:block;font-size:22px}.field{margin:10px 0}.field label{display:block;font-size:12px;font-weight:700;margin-bottom:5px}.field input,.field select{width:100%;padding:10px;box-sizing:border-box;border:1px solid #dbe3ec;border-radius:7px}.btn{border:0;border-radius:7px;padding:11px 15px;background:#004a99;color:#fff;font-weight:700;cursor:pointer}.flash{padding:12px;background:#ecfdf5;color:#166534;border-radius:8px;margin-bottom:12px}.table{width:100%;border-collapse:collapse}.table th{background:#004a99;color:#fff;padding:10px;text-align:left}.table td{padding:10px;border-bottom:1px solid #e5e7eb;font-size:13px}.filters{display:flex;gap:9px;flex-wrap:wrap;align-items:end;margin:12px 0}.filters label{font-size:11px;font-weight:700}.filters input,.filters select{display:block;padding:9px;border:1px solid #dbe3ec;border-radius:7px}@media(max-width:1000px){.grid{grid-template-columns:1fr}}@media(max-width:900px){.stats{flex-direction:column}}
 </style>
 <nav class="finance-tabs"><a href="<?=BASE_URL?>/modules/finance/index.php">Overview</a><a href="<?=BASE_URL?>/modules/finance/ledger.php">Ledger</a><a href="<?=BASE_URL?>/modules/finance/control.php">Financial Control</a><a class="active" href="<?=BASE_URL?>/modules/expenses/index.php">Expenses</a></nav>
-<h1>Expenses</h1><p>Record and monitor business operating expenses. Standard categories are maintained automatically.</p>
+<h1>Expenses</h1><p>Record and monitor business operating expenses.</p>
 <?php if($flash):?><div class="flash"><?=e($flash)?></div><?php endif;?>
 <div class="stats"><div class="stat"><strong>KES <?=number_format($today,2)?></strong><small>Today</small></div><div class="stat"><strong>KES <?=number_format($month,2)?></strong><small>This Month</small></div><div class="stat"><strong>KES <?=number_format($total,2)?></strong><small>Filtered Total</small></div></div>
 <div class="grid">
 <div class="panel"><h3>Record Expense</h3><form method="post" action="store.php"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>">
 <div class="field"><label>Expense Title</label><input name="expense_title" required maxlength="150"></div>
-<div class="field"><label>Category</label><select name="category_id" required><?php if(!$cats):?><option value="">No active categories available</option><?php else:foreach($cats as $index=>$c):?><option value="<?=(int)$c['id']?>" <?=$index===0?'selected':''?>><?=e($c['category_name'])?></option><?php endforeach;endif;?></select></div>
+<div class="field"><label>Category <a href="<?=BASE_URL?>/modules/expenses/categories.php" style="float:right;font-size:11px">Manage categories</a></label><select name="category_id" required><?php if(!$cats):?><option value="">No active categories available</option><?php else:foreach($cats as $index=>$c):?><option value="<?=(int)$c['id']?>" <?=$index===0?'selected':''?>><?=e($c['category_name'])?></option><?php endforeach;endif;?></select></div>
 <div class="field"><label>Amount</label><input type="number" name="amount" min=".01" step=".01" required></div>
 <div class="field"><label>Payment Method</label><select name="payment_method"><option>Cash</option><option>M-Pesa</option><option>Bank</option><option>Cheque</option><option>Other</option></select></div>
 <div class="field"><label>Date</label><input type="date" name="expense_date" value="<?=date('Y-m-d')?>" required></div>
