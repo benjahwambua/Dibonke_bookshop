@@ -9,6 +9,9 @@ $canClose=hasModulePermission('cash_management','edit');
 $required=['cash_shifts','cash_shift_guard','cash_shift_movements','audit_events','sales_return_payments'];
 $tables=array_flip($conn->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN));
 $missing=array_values(array_filter($required,static fn($t)=>!isset($tables[$t])));
+if(isset($tables['expenses'])){$expenseShiftColumn=$conn->query("SHOW COLUMNS FROM expenses LIKE 'cash_shift_id'")->fetch();if(!$expenseShiftColumn)$missing[]='expenses.cash_shift_id';}
+if(isset($tables['supplier_payments'])){$supplierShiftColumn=$conn->query("SHOW COLUMNS FROM supplier_payments LIKE 'cash_shift_id'")->fetch();if(!$supplierShiftColumn)$missing[]='supplier_payments.cash_shift_id';}
+
 $flash=$_SESSION['my_shift_flash']??null;unset($_SESSION['my_shift_flash']);
 function myShiftRedirect(string $message):void{$_SESSION['my_shift_flash']=$message;header('Location: my_shift.php');exit;}
 function myShiftAudit(PDO $db,string $action,string $description,?int $id=null):void{
