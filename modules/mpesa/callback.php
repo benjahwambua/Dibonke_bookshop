@@ -32,7 +32,7 @@ try{
                $ins=$conn->prepare("INSERT INTO customer_payments(receipt_number,customer_id,sale_id,user_id,amount,payment_method,transaction_reference,payment_date,notes) VALUES(?,?,?,?,?,?,?,?,?)");
                $ins->execute([$rc,$customerId,null,(int)($conn->query("SELECT id FROM users ORDER BY id LIMIT 1")->fetchColumn() ?: 1),$payAmount,'M-Pesa',$receipt,date('Y-m-d H:i:s'),'Automatic M-PESA credit payment']);$paymentId=(int)$conn->lastInsertId();$rc='CR-'.date('ymd').'-'.str_pad((string)$paymentId,5,'0',STR_PAD_LEFT);$conn->prepare("UPDATE customer_payments SET receipt_number=? WHERE id=?")->execute([$rc,$paymentId]);
                $upd=$conn->prepare("UPDATE customers SET balance=GREATEST(0,balance-?) WHERE id=?");$upd->execute([$payAmount,$customerId]);
-               if(dibonkeAccountingAutoPostingEnabled($conn)){$journalLines=[dibonkeAccountingLine(dibonkeAccountingAccount($conn,'mpesa_clearing','Asset'),'Confirmed M-Pesa customer collection',$payAmount,0),dibonkeAccountingLine(dibonkeAccountingAccount($conn,'accounts_receivable','Asset'),'Customer balance settled',0,$payAmount)];dibonkeAccountingPostJournal($conn,'mpesa_customer_collection',(int)$tx['id'],date('Y-m-d'), 'M-Pesa customer collection '.$receipt,$journalLines,(int)($conn->query("SELECT id FROM users ORDER BY id LIMIT 1")->fetchColumn()?:1));}
+               if(dibonkeAccountingAutoPostingEnabled($conn)){$journalLines=[dibonkeAccountingLine(dibonkeAccountingAccount($conn,'mpesa_clearing','Asset'),'Confirmed M-Pesa customer collection',$payAmount,0),dibonkeAccountingLine(dibonkeAccountingAccount($conn,'accounts_receivable','Asset'),'Customer balance settled',0,$payAmount)];dibonkeAccountingPostJournal($conn,'mpesa_customer_collection',(int)$tx['id'],date('Y-m-d'), 'M-Pesa customer collection '.$receipt,$journalLines,null);}
                recordAuditEvent($conn,'Receive','customer_payments','Confirmed M-PESA customer credit payment '.$receipt,'customer_payment',$paymentId,null,['customer_id'=>$customerId,'amount'=>$payAmount,'payment_method'=>'M-Pesa','reference'=>$receipt]);
             }
          }
@@ -64,4 +64,4 @@ try{
    }
  }
  echo json_encode(['ResultCode'=>0,'ResultDesc'=>'Accepted']);
-}catch(Throwable $e){error_log('M-PESA callback: '.$e->getMessage());echo json_encode(['ResultCode'=>0,'ResultDesc'=>'Accepted']);}
+}catch(Throwable $e){if($conn->inTransaction())$conn->rollBack();error_log('M-PESA callback: '.$e->getMessage());http_response_code(500);echo json_encode(['ResultCode'=>1,'ResultDesc'=>'Processing failed; confirmation was not acknowledged.']);}
