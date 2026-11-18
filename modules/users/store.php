@@ -4,7 +4,7 @@ require_once __DIR__.'/../../includes/auth.php';
 require_once __DIR__.'/../../config/db.php';
 require_once __DIR__.'/../../includes/audit.php';
 
-if (!isSuperUser()) { http_response_code(403); exit('Access denied.'); }
+if (!isAdministrator()) { http_response_code(403); exit('Access denied.'); }
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') { header('Location: index.php'); exit; }
 verify_csrf();
 
