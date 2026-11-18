@@ -13,10 +13,13 @@ try{
  if(!$cb)throw new RuntimeException('Invalid callback payload.');
  $merchant=(string)($cb['MerchantRequestID']??'');$checkout=(string)($cb['CheckoutRequestID']??'');$code=(int)($cb['ResultCode']??-1);$desc=(string)($cb['ResultDesc']??'');
  $status=$code===0?'Success':'Failed';$amount=0;$phone='';$receipt='';$date=null;
+ $priorLookup=$conn->prepare("SELECT id,result_status FROM mpesa_transactions WHERE checkout_request_id=? LIMIT 1");
+ $priorLookup->execute([$checkout]);$priorCallback=$priorLookup->fetch(PDO::FETCH_ASSOC);
+ $alreadyProcessed=$code===0 && $priorCallback && $priorCallback['result_status']==='Success';
  foreach(($cb['CallbackMetadata']['Item']??[]) as $item){$name=$item['Name']??'';$value=$item['Value']??null;if($name==='Amount')$amount=(float)$value;elseif($name==='MpesaReceiptNumber')$receipt=(string)$value;elseif($name==='PhoneNumber')$phone=(string)$value;elseif($name==='TransactionDate'&&$value)$date=DateTime::createFromFormat('YmdHis',(string)$value)?->format('Y-m-d H:i:s');}
  $st=$conn->prepare("INSERT INTO mpesa_transactions(transaction_type,direction,phone_number,amount,transaction_reference,merchant_request_id,checkout_request_id,result_code,result_description,result_status,raw_response,transaction_date) VALUES('STK Push','Incoming',?,?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE result_code=VALUES(result_code),result_description=VALUES(result_description),result_status=VALUES(result_status),transaction_reference=VALUES(transaction_reference),phone_number=VALUES(phone_number),amount=VALUES(amount),raw_response=VALUES(raw_response),transaction_date=VALUES(transaction_date)");
  $st->execute([$phone,$amount,$receipt,$merchant,$checkout,(string)$code,$desc,$status,$raw,$date]);
- if($code===0){
+ if($code===0 && !$alreadyProcessed){
    $lookup=$conn->prepare("SELECT id,reference_type,reference_id FROM mpesa_transactions WHERE checkout_request_id=? LIMIT 1");
    $lookup->execute([$checkout]);$tx=$lookup->fetch();
    if($tx && $tx['reference_type']==='customer_payment' && (int)$tx['reference_id']>0){
