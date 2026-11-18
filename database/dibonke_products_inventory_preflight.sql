@@ -110,6 +110,7 @@ FROM (
     SELECT 'sales', 'tax' UNION ALL
     SELECT 'sales', 'total_amount' UNION ALL
     SELECT 'sales', 'paid_amount' UNION ALL
+    SELECT 'sales', 'amount_tendered' UNION ALL
     SELECT 'sales', 'balance' UNION ALL
     SELECT 'sales', 'payment_method' UNION ALL
     SELECT 'sales', 'sale_status' UNION ALL
