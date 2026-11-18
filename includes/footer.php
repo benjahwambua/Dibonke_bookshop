@@ -7,7 +7,7 @@ declare(strict_types=1);
         <span class="footer-mark"><i class="fas fa-book-open"></i></span>
         <span><strong>Dibonke Bookshop</strong><small>Books, stationery &amp; general retail</small></span>
     </div>
-    <div class="footer-meta"><span>&copy; <?= date('Y') ?> Dibonke Bookshop. All rights reserved.</span><span class="footer-separator">•</span><span>Retail Management System</span><span class="footer-separator">•</span><span>Developed by <strong class="footer-credit">FlexiScriptHub</strong></span><span class="footer-separator">•</span><span>Support: <a href="tel:0705259931">0705259931</a></span></div>
+    <div class="footer-meta"><span>&copy; <?= date('Y') ?> Dibonke Bookshop. All rights reserved.</span><span class="footer-separator">•</span><span>Retail Management System</span><span class="footer-separator">•</span><span>Developed by <a class="footer-credit" href="https://www.flexiscripthub.africa" target="_blank" rel="noopener noreferrer">FlexiScriptHub</a></span><span class="footer-separator">•</span><span>Support: <a href="tel:0705259931">0705259931</a></span></div>
 </footer>
 <style>
 .app-footer{margin-left:var(--app-sidebar-width,264px);display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 30px;background:#fff;border-top:1px solid var(--app-border,#e5eaf0);color:#8491a0;font-size:11px}
