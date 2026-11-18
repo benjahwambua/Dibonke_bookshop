@@ -66,6 +66,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <div class="page-head">
  <div><h1>Products Inventory</h1><p class="muted">Manage products, pricing, stock and suppliers.</p></div>
  <button class="btn btn-primary" onclick="document.getElementById('productModal').classList.add('show')"><i class="fas fa-plus"></i> Add Product</button>
+ <div style="display:flex;gap:7px;flex-wrap:wrap"><a class="btn btn-light" href="<?=BASE_URL?>/modules/categories/index.php">Manage Categories</a><a class="btn btn-light" href="<?=BASE_URL?>/modules/brands/index.php">Manage Brands</a><a class="btn btn-light" href="<?=BASE_URL?>/modules/suppliers/index.php">Manage Suppliers</a><a class="btn btn-light" href="<?=BASE_URL?>/modules/price_lists/index.php">Manage Price Lists</a></div>
 </div>
 
 <?php if($flash): ?><div class="flash"><?=e($flash)?></div><?php endif; ?>
