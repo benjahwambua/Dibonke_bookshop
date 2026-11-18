@@ -24,10 +24,10 @@ if($hasReturnPayments){$sql.=" UNION ALL
 $sql.=") ledger_rows ORDER BY transaction_date ASC,reference ASC";
 $params=[$from,$to,$from,$to,$from,$to,$from,$to];if($hasReturnPayments){$params[]=$from;$params[]=$to;}
 $q=$conn->prepare($sql);$q->execute($params);$rows=$q->fetchAll();
-$exportRows=[];foreach($rows as $r){$exportRows[]=[$r['transaction_date'],$r['transaction_type'],$r['reference'],$r['party'],$r['payment_method'],$r['direction']==='IN'?$r['amount']:'',$r['direction']==='OUT'?$r['amount']:'',$r['running']];}
-dibonkeReportExport('cashbook_ledger_'.$from.'_to_'.$to,['Date','Type','Reference','Customer / Payee','Method','Money In','Money Out','Running Balance'],$exportRows);
 $currency=(string)($conn->query("SELECT setting_value FROM settings WHERE setting_key='currency' LIMIT 1")->fetchColumn()?:'KES');
 $in=0.0;$out=0.0;$balance=0.0;foreach($rows as &$row){$amount=(float)$row['amount'];if($row['direction']==='IN'){$in+=$amount;$balance+=$amount;}else{$out+=$amount;$balance-=$amount;}$row['running']=$balance;}unset($row);
+$exportRows=[];foreach($rows as $r){$exportRows[]=[$r['transaction_date'],$r['transaction_type'],$r['reference'],$r['party'],$r['payment_method'],$r['direction']==='IN'?$r['amount']:'',$r['direction']==='OUT'?$r['amount']:'',$r['running']];}
+dibonkeReportExport('cashbook_ledger_'.$from.'_to_'.$to,['Date','Type','Reference','Customer / Payee','Method','Money In','Money Out','Running Balance'],$exportRows);
 require_once __DIR__.'/../../includes/header.php';require_once __DIR__.'/../../includes/sidebar.php';
 ?>
 <main class="content"><?php dibonkeReportPrintStyles(); ?>
