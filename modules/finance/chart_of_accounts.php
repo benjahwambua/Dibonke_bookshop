@@ -18,7 +18,7 @@ if($ready && $_SERVER['REQUEST_METHOD']==='POST'){
    else{$q=$conn->prepare("SELECT is_system FROM accounts WHERE id=?");$q->execute([$id]);$system=$q->fetchColumn();if($system===false)throw new RuntimeException('Account not found.');$q=$conn->prepare("UPDATE accounts SET account_code=?,account_name=?,account_type=?,description=?,status=? WHERE id=?");$q->execute([$code,$name,$type,$description?:null,$status,$id]);$_SESSION['coa_flash']='Account updated successfully.';}
   }elseif($action==='delete'){
    $id=(int)($_POST['id']??0);$q=$conn->prepare("SELECT account_code,account_name,is_system FROM accounts WHERE id=?");$q->execute([$id]);$account=$q->fetch(PDO::FETCH_ASSOC);if(!$account)throw new RuntimeException('Account not found.');if((int)$account['is_system']===1)throw new RuntimeException('System accounts cannot be deleted.');
-   $q=$conn->prepare("SELECT COUNT(*) FROM journal_lines WHERE account_id=?");$q->execute([$id]);if((int)$q->fetchColumn()>0)throw new RuntimeException('This account is referenced by journal entries. Set it to Inactive instead.');
+   $journalTable=$conn->query("SHOW TABLES LIKE 'journal_lines'")->fetchColumn();if($journalTable){$q=$conn->prepare("SELECT COUNT(*) FROM journal_lines WHERE account_id=?");$q->execute([$id]);if((int)$q->fetchColumn()>0)throw new RuntimeException('This account is referenced by journal entries. Set it to Inactive instead.');}
    $conn->prepare("DELETE FROM accounts WHERE id=?")->execute([$id]);$_SESSION['coa_flash']='Account deleted.';
   }else throw new RuntimeException('Invalid account action.');
  }catch(Throwable $e){$_SESSION['coa_flash']='Account action failed: '.$e->getMessage();}
