@@ -30,7 +30,7 @@ if ($isCashierTerminal) {
     $statsStmt->execute([$currentUserId]);
     $statsRow = $statsStmt->fetch(PDO::FETCH_ASSOC) ?: [];
     $stats = ['today'=>(float)($statsRow['today']??0),'month'=>(float)($statsRow['month']??0),'credit'=>0.0];
-    $recentStmt = $conn->prepare("SELECT s.id,s.invoice_number,s.sale_date,s.total_amount,s.paid_amount,s.balance,s.payment_method,COALESCE(c.customer_name,'Walk-in Customer') customer_name FROM sales s LEFT JOIN customers c ON c.id=s.customer_id WHERE s.sale_status='Completed' AND s.user_id=? ORDER BY s.id DESC LIMIT 10");
+    $recentStmt = $conn->prepare("SELECT s.id,s.customer_id,s.invoice_number,s.sale_date,s.total_amount,s.paid_amount,s.balance,s.payment_method,COALESCE(c.customer_name,'Walk-in Customer') customer_name FROM sales s LEFT JOIN customers c ON c.id=s.customer_id WHERE s.sale_status='Completed' AND s.user_id=? ORDER BY s.id DESC LIMIT 10");
     $recentStmt->execute([$currentUserId]);
     $recent = $recentStmt->fetchAll(PDO::FETCH_ASSOC);
 } else {
@@ -208,7 +208,7 @@ body.counter-mode .vat-value{padding:3px 0;font-size:14px}
 </div>
 </form>
 
-<div class="recent"><h3>Recent Sales</h3><table class="table"><thead><tr><th>Invoice</th><th>Date</th><th>Customer</th><th>Total</th><th>Paid</th><th>Balance</th><th>Method</th><th>Receipt</th></tr></thead><tbody><?php foreach($recent as $r): ?><tr><td><strong><?=e($r['invoice_number'])?></strong></td><td><?=e($r['sale_date'])?></td><td><?=e($r['customer_name'])?></td><td>KES <?=number_format((float)$r['total_amount'],2)?></td><td>KES <?=number_format((float)$r['paid_amount'],2)?></td><td>KES <?=number_format((float)$r['balance'],2)?></td><td><?=e($r['payment_method'])?></td><td><a class="print-link" target="_blank" href="receipt.php?id=<?=$r['id']?>"><i class="fas fa-print"></i> Print</a></td></tr><?php endforeach; ?></tbody></table></div>
+<div class="recent"><h3>Recent Sales</h3><table class="table"><thead><tr><th>Invoice</th><th>Date</th><th>Customer</th><th>Total</th><th>Paid</th><th>Balance</th><th>Method</th><th>Receipt</th></tr></thead><tbody><?php foreach($recent as $r): ?><tr><td><strong><?=e($r['invoice_number'])?></strong></td><td><?=e($r['sale_date'])?></td><td><?php if(!empty($r['customer_id'])):?><a href="<?=BASE_URL?>/modules/customers/view.php?id=<?=(int)$r['customer_id']?>"><?=e($r['customer_name'])?></a><?php else:?><?=e($r['customer_name'])?><?php endif;?></td><td>KES <?=number_format((float)$r['total_amount'],2)?></td><td>KES <?=number_format((float)$r['paid_amount'],2)?></td><td>KES <?=number_format((float)$r['balance'],2)?></td><td><?=e($r['payment_method'])?></td><td><a class="print-link" target="_blank" href="receipt.php?id=<?=$r['id']?>"><i class="fas fa-print"></i> Print</a></td></tr><?php endforeach; ?></tbody></table></div>
 </div>
 </main>
 <script>
