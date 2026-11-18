@@ -190,3 +190,46 @@ Import `dibonke_expense_categories_seed.sql` once (it is safe to re-run). It see
 - Stock Movements supports date range, movement type, product and text search filters before printing/exporting.
 - Customer names link to the customer account page. The customer account page provides invoice history and a date-filtered statement showing invoices as debits and customer receipts as credits, with opening and running balances.
 - Aged Receivables links each named customer to their account and all invoice references to their receipts.
+
+## Consolidated migration order and release checks
+
+The following is a dependency guide for a development database. **Do not re-run a migration just because it appears in this list.** First check whether its tables/columns/permissions already exist. Take a backup before any DDL, and apply only the missing migrations. Some scripts are additive/re-runnable; others contain ALTER statements or seed logic that should be reviewed before repeating.
+
+1. **Existing canonical retail base schema** — must already provide the operational tables used by the application: users, products, categories, brands, customers, suppliers, sales, sale_items, purchases, purchase_items, expenses, customer_payments, supplier_payments, stock_movements, settings, activity_logs and the supporting tables used by the current handlers. The repository does not yet provide a verified complete fresh-install base schema.
+2. `dibonke_products_inventory_preflight.sql` — read-only inspection of product/POS/purchase/stock dependencies. Run before extensions and review its output.
+3. `dibonke_staff_roles.sql` — creates roles, role_permissions and staff profiles; requires the existing users table.
+4. `dibonke_products_inventory.sql` and `price_lists.sql` — apply after the base products, customers and sales tables exist.
+5. `supply_chain_mpesa.sql` — creates PO/GRN and M-Pesa support; requires users, suppliers and settings.
+6. `dibonke_goods_receiving_scanner.sql` — apply after the Supply Chain goods_receipts table and roles/permissions exist.
+7. `dibonke_finance_billing_permissions.sql` — apply after the staff/roles migration.
+8. `dibonke_accounting_hr.sql` — creates the Chart of Accounts and HR leave/attendance tables; requires roles and role_permissions.
+9. `dibonke_double_entry_accounting.sql` — creates journal headers/lines; requires accounts from the previous step and roles/role_permissions.
+10. `dibonke_launch_operations.sql` — creates returns, shifts, stock counts, audit events and eTIMS queue; requires the retail base tables plus roles/role_permissions/settings.
+11. `dibonke_launch_operations_completion.sql` — apply after Launch Operations; adds refund settlement and cash movement support.
+12. `dibonke_cashier_shift_sales_access.sql` — apply after staff roles and Launch Operations.
+13. `dibonke_hr_self_service_receivables.sql` — apply after staff roles, accounting/HR tables, and sales/customers.
+14. `dibonke_short_references_and_cash_tender.sql` — adds cash tender tracking to sales; apply after the base sales table exists.
+15. `dibonke_expense_categories_seed.sql` — creates/seeds standard expense categories. The Expenses page also ensures the standard active categories exist at runtime.
+
+The sequence above is not a substitute for checking the current database. A database that already has some or all of these extensions should not receive them again blindly. The local database is the source of truth for which migrations have already been applied.
+
+## Final acceptance tests
+
+Before production use, test the following against the actual Dibonke development database and the target PHP/MariaDB versions:
+
+- PHP syntax check for all application files and browser testing for each role.
+- Cashier login → open shift → POS sale → receipt → shift close/reconciliation.
+- Cash, credit, M-Pesa STK and customer collection workflows, including failed/pending callbacks.
+- C2B Till/PayBill callback reception, duplicate callback protection, unmatched payment review and invoice allocation.
+- PO approval → partial/full GRN → stock ledger and supplier payable checks.
+- Product opening stock, barcode/ISBN scanning, manual adjustments and stock count approval.
+- Returns/refunds, including the actual external payment settlement and customer balance.
+- Expenses and supplier cash payments against cashier shifts.
+- Customer statements and aged receivables against known test invoices/receipts.
+- HR staff linking, clock-in/out, leave requests and manager approvals.
+- Excel export content and browser Print / Save as PDF output for each report.
+- Accounting journal balancing, opening balances and reconciliation. Operational source transactions are not yet automatically posted to journals.
+- Safaricom sandbox callbacks and KRA eTIMS official onboarding/certification before any live integration.
+- Docker build, database import/restore, persistent-volume backup and restore.
+
+A migration import, a GitHub commit or a visible page is not evidence that the workflow passed these acceptance tests.
