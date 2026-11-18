@@ -48,7 +48,7 @@ function dibonkeAccountingPaymentAccount(PDO $conn, string $method): int
         'Cash' => 'cash_on_hand',
         'M-Pesa' => 'mpesa_clearing',
         'Bank', 'Cheque' => 'bank_account',
-        'Mixed', 'Other' => 'other_clearing',
+        'Mixed', 'Other', 'Credit' => 'other_clearing',
         default => throw new RuntimeException('No accounting payment mapping exists for method: ' . $method),
     };
     return dibonkeAccountingAccount($conn, $key, 'Asset');
