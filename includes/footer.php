@@ -7,13 +7,13 @@ declare(strict_types=1);
         <span class="footer-mark"><i class="fas fa-book-open"></i></span>
         <span><strong>Dibonke Bookshop</strong><small>Books, stationery &amp; general retail</small></span>
     </div>
-    <div class="footer-meta"><span>&copy; <?= date('Y') ?> Dibonke Bookshop. All rights reserved.</span><span class="footer-separator">•</span><span>Retail Management System</span></div>
+    <div class="footer-meta"><span>&copy; <?= date('Y') ?> Dibonke Bookshop. All rights reserved.</span><span class="footer-separator">•</span><span>Retail Management System</span><span class="footer-separator">•</span><span>Developed by <strong class="footer-credit">FlexiScriptHub</strong></span><span class="footer-separator">•</span><span>Support: <a href="tel:0705259931">0705259931</a></span></div>
 </footer>
 <style>
 .app-footer{margin-left:var(--app-sidebar-width,264px);display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 30px;background:#fff;border-top:1px solid var(--app-border,#e5eaf0);color:#8491a0;font-size:11px}
 .footer-brand{display:flex;align-items:center;gap:10px}.footer-mark{width:30px;height:30px;display:grid;place-items:center;border-radius:9px;background:#edf2f7;color:#17324d}
 .footer-brand strong{display:block;color:#34465a;font-size:11px}.footer-brand small{display:block;margin-top:2px;color:#8a97a5;font-size:10px}
-.footer-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.footer-separator{color:#d6a84f}
+.footer-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.footer-meta a{color:#34465a;text-decoration:none;font-weight:700}.footer-meta a:hover{text-decoration:underline}.footer-credit{color:#34465a}.footer-separator{color:#d6a84f}
 @media(max-width:768px){.app-footer{margin-left:0;padding:15px 18px;flex-direction:column;align-items:flex-start;gap:10px}.footer-meta{gap:7px}}
 </style>
 <script>
