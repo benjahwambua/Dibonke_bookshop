@@ -53,4 +53,4 @@ try{
  $ins->execute([$phone,$amount,$billRef,$transId,'0',$description,$referenceType,$referenceId,$raw,$transactionDate]);
  $conn->commit();
  echo json_encode(['ResultCode'=>0,'ResultDesc'=>'Accepted']);
-}catch(Throwable $e){if($conn->inTransaction())$conn->rollBack();error_log('Dibonke C2B confirmation: '.$e->getMessage());echo json_encode(['ResultCode'=>0,'ResultDesc'=>'Accepted']);}
+}catch(Throwable $e){if($conn->inTransaction())$conn->rollBack();error_log('Dibonke C2B confirmation: '.$e->getMessage());http_response_code(500);echo json_encode(['ResultCode'=>1,'ResultDesc'=>'Processing failed; confirmation was not acknowledged.']);}
