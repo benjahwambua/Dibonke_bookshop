@@ -51,9 +51,9 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
 }
 
 .sidebar nav .menu-title.nav-group-toggle{display:flex;align-items:center;justify-content:space-between;width:100%;border:0;background:transparent;text-align:left;cursor:pointer;font:inherit}
-.sidebar nav .nav-group-toggle .nav-group-chevron{font-size:9px;transition:transform .18s ease}
-.sidebar nav .nav-group-toggle[aria-expanded="true"] .nav-group-chevron{transform:rotate(180deg)}
-.sidebar nav [hidden]{display:none!important}
+.sidebar nav .nav-group-toggle .nav-group-chevron{display:block;width:7px;height:7px;flex:0 0 7px;margin-left:8px;border-right:2px solid #d6b66f;border-bottom:2px solid #d6b66f;transform:rotate(45deg);transition:transform .18s ease}
+.sidebar nav .nav-group-toggle[aria-expanded="true"] .nav-group-chevron{transform:rotate(225deg)}
+#appSidebar.sidebar nav [hidden]{display:none!important}#appSidebar.sidebar nav a[hidden]{display:none!important}#appSidebar.sidebar nav button[hidden]{display:none!important}
 
 </style>
 
@@ -67,7 +67,7 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <div class="user-info"><span class="name"><?= e($fullName) ?></span><span class="role"><?= e($role) ?></span></div>
     </div>
     <nav aria-label="Main navigation">
-        <button type="button" class="menu-title nav-group-toggle" aria-expanded="false">Workspace <i class="fas fa-chevron-down nav-group-chevron" aria-hidden="true"></i></button>
+        <button type="button" class="menu-title nav-group-toggle" aria-expanded="false">Workspace <span class="nav-group-chevron" aria-hidden="true"></span></button>
         <a href="<?= BASE_URL ?>/index.php" class="<?= $currentPath === BASE_URL . '/index.php' ? 'active' : '' ?>"><i class="fas fa-th-large icon-main"></i>Dashboard</a>
 
         <?php if (canAccessModule('products') || canAccessModule('categories') || canAccessModule('brands') || canAccessModule('price_lists') || canAccessModule('stock_movements')): ?>
