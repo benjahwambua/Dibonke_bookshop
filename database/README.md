@@ -18,6 +18,7 @@ Before a fresh installation can be declared ready, the project still needs to:
 | File | Purpose | Important dependency |
 |---|---|---|
 | `dibonke_products_inventory.sql` | Additive product type and ISBN extension | Requires an existing `products` table |
+| `dibonke_product_images.sql` | Adds the optional `products.image_path` column used by product image uploads and POS/catalogue thumbnails | Requires an existing `products` table; idempotent column check |
 | `price_lists.sql` | Standard/wholesale price lists and product price tiers | Requires `products`, `customers` and `sales` |
 | `supply_chain_mpesa.sql` | Purchase orders, goods receipts, supplier payments and M-PESA transaction storage | Requires base `users`, `suppliers` and `settings` tables |\n| `dibonke_goods_receiving_scanner.sql` | Adds supplier invoice date/total fields and grants Manager/Storekeeper receiving permissions | Requires `goods_receipts`, `roles` and `role_permissions` |
 | `dibonke_staff_roles.sql` | Staff profiles and unified role permissions | Requires the existing `users` table |
