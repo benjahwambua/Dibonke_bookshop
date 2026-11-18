@@ -136,3 +136,18 @@ Check the filters and totals before sharing a report. Keep customer and supplier
 - Keep receipts and supplier documents.
 - Report errors, damaged stock, missing cash or suspicious activity promptly.
 - Do not delete or alter historical transactions to correct a mistake. Ask your supervisor to use the approved correction process.
+
+
+## 12. Deliveries and fleet (where assigned)
+
+If your role includes delivery work, open **Deliveries** to review assigned delivery records. Follow the dispatcher's instructions and confirm the correct customer, delivery details and items before leaving. Drivers should report delays, failed deliveries, vehicle defects or accidents promptly. Do not change vehicle or delivery assignments without authorisation.
+
+## 13. Product photos and product record changes
+
+Where your role permits product maintenance, authorised users can add or update a product photo from the computer using a PNG or JPEG image. Keep images clear and relevant to the item. If the system rejects an image, check that it is a genuine PNG/JPEG and is within the displayed upload size limit. Do not create a duplicate product to replace a missing photo. Ask an administrator to correct the existing record.
+
+Product edits and deletion are permission-controlled. Products with sales, purchase or stock movement history should normally be deactivated rather than deleted so historical records remain intact.
+
+## 14. Help and support
+
+Use **Help & Support → General User Manual** for these instructions. Contact your supervisor or the system administrator first for access changes, incorrect business records or approval questions. For technical support covered by the service arrangement, contact FlexiScriptHub on **0705259931**.
