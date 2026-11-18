@@ -181,3 +181,12 @@ After the staff/roles, HR foundation and double-entry migrations, apply `dibonke
 ## Expense category defaults
 
 Import `dibonke_expense_categories_seed.sql` once (it is safe to re-run). It seeds common bookshop operating expense categories without duplicating existing category names. The Expenses form loads all active records from `expense_categories` automatically, so the Category dropdown is populated from the database. The expense handler still validates and stores the selected category ID; no existing expense records or posting behavior are changed.
+
+
+## Expense categories, report exports and customer statements
+
+- The Expenses page now ensures the `expense_categories` master table exists and seeds the standard active categories automatically on first visit. This removes the need to rely on a separate manual category setup step. The matching SQL migration is also available as `dibonke_expense_categories_seed.sql`.
+- Report pages provide **Print / Save as PDF** through the browser print dialog and **Export to Excel (CSV)**. CSV is UTF-8 with a BOM and opens in Excel or LibreOffice.
+- Stock Movements supports date range, movement type, product and text search filters before printing/exporting.
+- Customer names link to the customer account page. The customer account page provides invoice history and a date-filtered statement showing invoices as debits and customer receipts as credits, with opening and running balances.
+- Aged Receivables links each named customer to their account and all invoice references to their receipts.
