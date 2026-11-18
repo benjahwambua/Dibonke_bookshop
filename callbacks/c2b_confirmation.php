@@ -34,6 +34,10 @@ try{
  }
  $referenceType=null;$referenceId=null;$description='Received till/Paybill payment; awaiting invoice allocation.';
  if($sale){
+  $lock=$conn->prepare("SELECT * FROM sales WHERE id=? AND sale_status='Completed' FOR UPDATE");$lock->execute([(int)$sale['id']]);$sale=$lock->fetch();
+  if(!$sale||(float)$sale['balance']+0.001<$amount)$sale=null;
+ }
+ if($sale){
   $allocated=$amount;$referenceType='sale';$referenceId=(int)$sale['id'];
   $upd=$conn->prepare("UPDATE sales SET paid_amount=paid_amount+?,balance=GREATEST(0,balance-?) WHERE id=?");$upd->execute([$allocated,$allocated,$referenceId]);
   if(!empty($sale['customer_id'])){
