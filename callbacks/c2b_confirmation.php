@@ -58,7 +58,7 @@ try{
   }else{
    $journalLines=[dibonkeAccountingLine(dibonkeAccountingAccount($conn,'mpesa_clearing','Asset'),'Unallocated C2B payment received',$amount,0),dibonkeAccountingLine(dibonkeAccountingAccount($conn,'unallocated_receipts','Liability'),'Customer receipt awaiting allocation',0,$amount)];
   }
-  dibonkeAccountingPostJournal($conn,'mpesa_c2b_receipt',$transactionId,date('Y-m-d',strtotime($transactionDate)),'M-Pesa C2B receipt '.$transId,$journalLines,(int)($_SESSION['user_id']??1));
+  dibonkeAccountingPostJournal($conn,'mpesa_c2b_receipt',$transactionId,date('Y-m-d',strtotime($transactionDate)),'M-Pesa C2B receipt '.$transId,$journalLines,null);
  }
  $conn->commit();
  echo json_encode(['ResultCode'=>0,'ResultDesc'=>'Accepted']);
