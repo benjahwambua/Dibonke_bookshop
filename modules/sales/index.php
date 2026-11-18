@@ -168,6 +168,17 @@ body.counter-mode .vat-value{padding:3px 0;font-size:14px}
 @media(max-width:1100px){body.counter-mode .cashier{grid-template-columns:minmax(0,1fr) 390px}body.counter-mode .products{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}}
 @media(max-width:850px){body.counter-mode .cashier{grid-template-columns:1fr}body.counter-mode .checkout{height:auto;position:static}body.counter-mode .products{max-height:none;grid-template-columns:repeat(auto-fill,minmax(145px,1fr))}}
 @media(max-width:520px){body.counter-mode .content{padding:8px!important}body.counter-mode .pos-title{padding:12px}body.counter-mode .payment-options{grid-template-columns:repeat(3,1fr)}}
+
+/* Compact scan/search bar: keep the scanner workflow without wasting vertical space */
+.pos-wrap .scan-panel{padding:8px 10px!important;margin-bottom:10px!important;border:1px solid #d6e2ee!important;border-radius:10px!important;background:#f5f9fd!important;box-shadow:none!important}
+.pos-wrap .scan-panel>label{display:block;margin:0 0 4px!important;font-size:10px!important;line-height:1.2;letter-spacing:.06em;color:#526b83!important}
+.pos-wrap .scan-panel .toolbar{grid-template-columns:minmax(0,1fr) 38px;gap:6px;margin:0!important}
+.pos-wrap .scan-panel .toolbar input{height:40px!important;min-height:40px!important;padding:8px 11px!important;font-size:15px!important;font-weight:600;border:1px solid #c5d5e4!important;border-radius:7px!important}
+.pos-wrap .scan-panel .toolbar .btn{min-height:40px;padding:7px 10px}
+.pos-wrap .scan-panel .scan-help{margin-top:4px;font-size:9px;line-height:1.3;color:#718096}
+.pos-wrap .scan-panel .scan-feedback{margin-top:2px;min-height:0;font-size:10px;line-height:1.25}
+@media(max-width:520px){.pos-wrap .scan-panel{padding:7px 8px!important}.pos-wrap .scan-panel .scan-help{font-size:8px}}
+
 </style>
 
 <div class="pos-wrap">
