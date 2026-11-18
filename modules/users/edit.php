@@ -3,7 +3,7 @@ declare(strict_types=1);
 require_once __DIR__.'/../../includes/auth.php';
 require_once __DIR__.'/../../config/db.php';
 
-if (!isSuperUser()) { http_response_code(403); exit('Access denied.'); }
+if (!isAdministrator()) { http_response_code(403); exit('Access denied.'); }
 
 $id = (int)($_GET['id'] ?? 0);
 $stmt = $conn->prepare("SELECT id,full_name,username,role,role_id,status,is_super FROM users WHERE id=?");
