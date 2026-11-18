@@ -250,6 +250,18 @@ Import `dibonke_fleet_management.sql` after the base deliveries and staff/roles 
 Import `dibonke_product_images.sql` after the base products table exists and before using the product catalogue or POS version with image support. Product photos accept genuine PNG or JPEG files only, up to 2 MB and 2400 × 2400 pixels. Uploaded files are stored under `uploads/products/` using random filenames; the directory blocks script execution and directory listing. Ensure the web server can write to `uploads/products/` (the application creates it on first upload).
 
 
+## Accounting migration order
+
+For a database that does not yet have the double-entry tables, use this dependency order after the compatible Dibonke base tables exist:
+
+1. `dibonke_staff_roles.sql` — establishes roles and role permissions.
+2. `dibonke_expense_categories_seed.sql` — establishes expense categories.
+3. `dibonke_accounting_hr.sql` — creates the Chart of Accounts and HR tables.
+4. `dibonke_double_entry_accounting.sql` — creates journal headers and lines.
+5. `dibonke_automatic_accounting_posting.sql` — adds source links, posting mappings and automatic-posting controls.
+
+If some migrations are already present, inspect the schema first and apply only the missing migration(s). Do not re-import non-idempotent scripts blindly.
+
 ## Automatic double-entry posting
 
 Apply `dibonke_automatic_accounting_posting.sql` after the Chart of Accounts and Journal Entries migrations and after expense categories exist. It adds source references to journal headers so each source transaction can be posted only once, creates core account mappings, and seeds expense categories to the default operating-expense account.
