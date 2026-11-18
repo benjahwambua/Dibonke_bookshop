@@ -1,3 +1,11 @@
+CREATE TABLE IF NOT EXISTS expense_categories (
+    id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    category_name VARCHAR(100) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'Active',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_expense_category_name (category_name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Seed the standard Dibonke operating expense categories.
 -- Safe to re-run: existing category names are preserved and not duplicated.
 -- Requires the existing expense_categories(category_name, status) table.
