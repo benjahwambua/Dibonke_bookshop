@@ -4,6 +4,7 @@
 
 - PHP 8.2 with Apache, PDO MySQL and MySQLi extensions.
 - MariaDB 10.11 with a persistent Docker volume.
+- A separate persistent volume for product images and other uploaded files.
 - Africa/Nairobi timezone.
 - Environment-based database credentials and application base URL.
 - Health checks and restart policies.
@@ -42,7 +43,7 @@ docker compose exec -T db sh -c 'mariadb -u root -p"$MARIADB_ROOT_PASSWORD" "$MA
 
 Keep the dump private and delete it from the project directory after import. Never commit a database dump or place it under a publicly served uploads directory.
 
-Apply the project's SQL migrations only in their documented dependency order, after taking a backup. The exact migration set depends on which extensions are already present in the imported database; do not blindly re-import non-idempotent migrations.
+Apply the project's SQL migrations only in their documented dependency order, after taking a backup. Include `database/dibonke_product_images.sql` so the `products.image_path` column exists for product image uploads. The POS now degrades safely when that migration is pending, but image upload/save requires the column. The exact migration set depends on which extensions are already present in the imported database; do not blindly re-import non-idempotent migrations.
 
 ## Configure the application
 
@@ -65,7 +66,7 @@ Restore only after taking a second backup of the current database:
 docker compose exec -T db sh -c 'mariadb -u root -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"' < dibonke-backup.sql
 ```
 
-The database volume is persistent. `docker compose down` does not delete it. **Do not use `docker compose down -v` unless you intentionally want to permanently delete the database volume.**
+The database and uploads volumes are persistent. `docker compose down` does not delete them. Back up both the database and the uploads directory/volume before moving hosts. **Do not use `docker compose down -v` unless you intentionally want to permanently delete the database and uploads volumes.**
 
 ## Production hardening still required
 
