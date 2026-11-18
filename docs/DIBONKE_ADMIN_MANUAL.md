@@ -185,3 +185,52 @@ Customer statements and reports contain confidential business information.
 - Reconcile customer and supplier balances.
 - Review product prices and expense categories.
 - Review user roles and access.
+
+
+## 16. Master data and option-list management
+
+Use the management links provided beside the relevant forms to maintain lists rather than entering duplicate or inconsistent values.
+
+- **Products:** authorised users can edit product details and manage product records. Products with transaction or stock history should be deactivated rather than deleted.
+- **Product categories, brands and suppliers:** use the catalogue management links to add and maintain these lists.
+- **Price lists:** use the Price Lists screen to add, edit, activate/deactivate and manage applicable price lists. Protected system lists retain their required system codes and cannot be removed where the application protects them.
+- **Expense categories:** use **Expenses → Manage Categories** to add, rename, activate/deactivate or delete unused categories. A category linked to expense history must be deactivated, not deleted.
+- **Leave types:** use **Human Resources → Manage Leave Types** to configure leave options, annual day allowance and paid/unpaid status. A leave type with request history must be deactivated rather than deleted.
+- **Chart of Accounts:** authorised users can maintain account names and status. Accounts linked to journal lines and protected system accounts cannot be deleted; deactivate or retain them as appropriate.
+
+Changes to master data can affect future transactions and reports. Review the impact before deactivating an option that employees currently use.
+
+## 17. Fleet management
+
+Open **Deliveries → Fleet Management** to register and maintain vehicles. Record the registration number, vehicle type, make/model, capacity, assigned driver, insurance expiry, inspection expiry, odometer and operational status. Use the maintenance section to record service date, service type, odometer, cost, garage/supplier and next service date. Active vehicles can be selected when creating deliveries.
+
+A vehicle with delivery or maintenance history cannot be deleted; set it to **Inactive** when it is no longer in service. Keep insurance and inspection dates current and do not dispatch a vehicle that is unsafe or not legally roadworthy.
+
+## 18. Automatic double-entry posting and posting mappings
+
+The system includes automatic journal posting for supported new transactions, provided the required accounting migrations have been applied and automatic posting has been enabled.
+
+Before enabling it:
+1. Confirm that the Chart of Accounts and Journal Entries are configured.
+2. Open **Finance → Posting Mappings**.
+3. Review the mappings for cash, M-Pesa clearing, bank, other/mixed payment clearing, receivables, inventory, payables, VAT, sales revenue, cost of goods sold, input VAT, unallocated receipts and default expenses.
+4. Map individual expense categories to the correct Expense accounts where needed.
+5. Confirm the accounts are active and of the correct account type.
+6. Save the mappings and review them with the person responsible for the books.
+7. Enable automatic posting only after the mappings have been checked.
+
+When enabled, supported new POS sales, direct purchases, purchase-order goods receipts and expenses generate balanced journals in the same transaction. Supported customer collections, supplier settlements and confirmed M-Pesa STK/C2B receipts also post settlement journals. Source references prevent duplicate journals. If journal posting fails, the originating transaction is rolled back.
+
+Automatic posting does not automatically create journals for historical transactions. Opening balances and prior-period transactions must be entered or reconciled separately. Unmatched M-Pesa receipts are held in the Unallocated M-Pesa Receipts liability account until properly allocated. Mixed POS tender is subject to the tender data actually captured by the POS; do not assume unrecorded tender splits are available.
+
+The General Ledger and Trial Balance report posted journals, not a substitute for reviewing source records and reconciling bank, cash, stock, receivables and payables. Have the bookkeeper/accountant verify mappings and opening balances before relying on these reports for formal financial reporting.
+
+## 19. Backups, Docker and deployment
+
+For the current local installation, maintain separate backups of the database and the uploads directory, including product images. Store at least one backup away from the computer running the application and periodically test restoration. Do not experiment with Docker or database migrations against the live trading database.
+
+Docker deployment is optional. The repository's Docker setup packages application code in an image and uses persistent volumes for MariaDB data and uploads, but the repository documentation notes that a complete verified fresh-install base schema is not yet supplied. Do not treat a successful container start as proof that the database is correctly migrated. Follow docs/DOCKER.md and database/README.md, use a separate test database, and verify backup/restore before any production move.
+
+## 20. Support and maintenance
+
+The included maintenance period is governed by the separately signed Maintenance and Technical Support Agreement. Record the installation/handover date and maintenance expiry date. Report defects with the affected screen, steps to reproduce, exact error message and screenshot where possible. New modules, major customisations, additional branches, hardware repairs and third-party service charges may fall outside included maintenance; obtain written approval and a quotation before commissioning extra work.
