@@ -51,6 +51,15 @@ try{
  }
  $ins=$conn->prepare("INSERT INTO mpesa_transactions(transaction_type,direction,phone_number,amount,account_reference,transaction_reference,result_code,result_description,result_status,reference_type,reference_id,raw_response,transaction_date) VALUES('C2B','Incoming',?,?,?,?,? ,?,'Success',?,?,?,?)");
  $ins->execute([$phone,$amount,$billRef,$transId,'0',$description,$referenceType,$referenceId,$raw,$transactionDate]);
+ if(dibonkeAccountingAutoPostingEnabled($conn)){
+  $transactionId=(int)$conn->lastInsertId();
+  if($allocated>0){
+   $journalLines=[dibonkeAccountingLine(dibonkeAccountingAccount($conn,'mpesa_clearing','Asset'),'C2B payment received',$allocated,0),dibonkeAccountingLine(dibonkeAccountingAccount($conn,'accounts_receivable','Asset'),'Invoice receivable settled',0,$allocated)];
+  }else{
+   $journalLines=[dibonkeAccountingLine(dibonkeAccountingAccount($conn,'mpesa_clearing','Asset'),'Unallocated C2B payment received',$amount,0),dibonkeAccountingLine(dibonkeAccountingAccount($conn,'unallocated_receipts','Liability'),'Customer receipt awaiting allocation',0,$amount)];
+  }
+  dibonkeAccountingPostJournal($conn,'mpesa_c2b_receipt',$transactionId,date('Y-m-d',strtotime($transactionDate)),'M-Pesa C2B receipt '.$transId,$journalLines,(int)($_SESSION['user_id']??1));
+ }
  $conn->commit();
  echo json_encode(['ResultCode'=>0,'ResultDesc'=>'Accepted']);
 }catch(Throwable $e){if($conn->inTransaction())$conn->rollBack();error_log('Dibonke C2B confirmation: '.$e->getMessage());http_response_code(500);echo json_encode(['ResultCode'=>1,'ResultDesc'=>'Processing failed; confirmation was not acknowledged.']);}
