@@ -233,3 +233,8 @@ Before production use, test the following against the actual Dibonke development
 - Docker build, database import/restore, persistent-volume backup and restore.
 
 A migration import, a GitHub commit or a visible page is not evidence that the workflow passed these acceptance tests.
+
+
+## Fleet Management
+
+Import `dibonke_fleet_management.sql` after the base deliveries and staff/roles tables are present. It creates the fleet vehicle register and vehicle maintenance history, adds the optional `deliveries.vehicle_id` link, and grants Fleet Management access to Administrator and Manager roles. The Deliveries screen then allows dispatchers to assign an active vehicle to a delivery. Fleet Management is available under Deliveries and supports vehicle registration, driver assignment, insurance/inspection expiry tracking, odometer records, maintenance logs, and safe deletion (vehicles with delivery or service history must be marked Inactive instead).
