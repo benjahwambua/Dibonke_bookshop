@@ -1,222 +1,138 @@
-# Dibonke Bookshop — User and Operations Manual
+# Dibonke Bookshop — General User Manual
 
-**System:** Dibonke Bookshop & General Retail Management System  
-**Currency / timezone:** Configure the correct currency; application timezone defaults to Africa/Nairobi.  
-**Audience:** Administrator, Manager, Cashier, Sales, Storekeeper and Finance users.
+**For:** Cashiers, Sales Assistants, Storekeepers, Finance Staff and other everyday users.
 
-> This manual describes the workflows implemented in the current development branch. Some integrations and accounting controls remain preparation-only or require local database setup and testing. Do not treat this document as confirmation that a live KRA, Safaricom or production deployment is active.
+This guide explains the day-to-day tasks you may perform in Dibonke. The options visible to you depend on the access assigned to your account.
 
-## 1. Sign in and navigation
+## 1. Sign in and find your way around
 
-1. Open the Dibonke URL provided by your administrator.
-2. Sign in using your assigned username and password.
-3. Use the left navigation to open the modules allowed by your role.
-4. Sign out when leaving a shared workstation.
+1. Open the Dibonke system address given to you by your supervisor.
+2. Sign in with your own username and password.
+3. Use the navigation menu to open the area you need.
+4. Sign out when you finish, especially on a shared computer.
 
-Administrators should create individual accounts for staff and assign the correct role. Do not share administrator credentials. Link each user to their staff profile under Users so employee self-service can identify the correct person.
+Never share your password or use another employee's account.
 
-## 2. Administrator setup
+## 2. Find and manage products
 
-Before daily use, an administrator should:
+- Open **Products & Books** to search for an item or view its details.
+- Product records may include a SKU/barcode, ISBN, category, buying price, selling price and available quantity.
+- Books may have an ISBN; stationery and general retail products may use a SKU or barcode.
+- If you notice an incorrect description or price, report it to your supervisor rather than creating a duplicate product.
 
-1. Confirm the company profile, currency, timezone and document settings.
-2. Review Roles and Permissions and grant only the access needed for each job.
-3. Create staff profiles and user accounts, then link the user account to the staff profile.
-4. Create product categories, suppliers and customers.
-5. Set up the chart of accounts if using the manual accounting journals.
-6. Configure payment settings only with credentials issued for the correct business.
-7. Confirm that the database migrations required by enabled modules have been applied.
+## 3. Receive stock
 
-A user with business history should normally be deactivated rather than deleted. The system protects privileged accounts and prevents deletion of accounts with linked records.
+If you are assigned to receiving:
 
-## 3. Products and stock
+1. Open **Purchase Orders & Receiving** and select the relevant approved purchase order.
+2. Scan the product barcode, ISBN or SKU. A successful scan adds one unit to the matching outstanding line.
+3. Change the quantity when the delivered quantity is different.
+4. Enter the supplier invoice number, invoice date and invoice total.
+5. Check every item and quantity against the physical delivery and supplier invoice.
+6. Submit the receipt to create the Goods Received Note.
 
-### Create a product
+Only stock that has been confirmed on the receipt is added to inventory. Report shortages, damaged items and wrong deliveries to the supervisor before posting.
 
-1. Open Products and choose Add Product.
-2. Enter the product name, product type (Book, Stationery or General), category, SKU/barcode, unit, buying price, selling price and reorder level.
-3. For books, enter the ISBN if available. ISBN is optional for other product types.
-4. Enter opening stock only when this is the verified physical quantity at setup.
-5. Save the product.
+Do not enter the same delivery again in the Purchase Register.
 
-The opening stock action records an opening stock movement. Do not enter the same opening stock again as a manual adjustment.
+## 4. Make a sale at the POS
 
-### Receive stock through purchase orders
+1. If you are a cashier, sign in and open **My Cashier Shift** first. Enter the opening float and open the shift.
+2. Open **Sales & POS**.
+3. Scan a barcode or search for the product. Confirm the item and quantity.
+4. Add other items to the basket. Select a customer when the sale is being made on account.
+5. Check the total and choose the correct payment method.
+6. Complete the sale and provide the customer with the receipt.
 
-1. Create a Purchase Order for the supplier and add products and ordered quantities.
-2. Approve the purchase order according to your permissions.
-3. Open Purchase Orders & Receiving and select the order to receive.
-4. Scan a product barcode/ISBN/SKU in the receiving screen. The scanner adds one unit to the matching outstanding PO line; adjust the quantity when receiving a different number.
-5. Enter the supplier invoice number, invoice date and invoice total.
-6. Confirm actual quantities received and post the Goods Received Note (GRN).
+For cash payments, the receipt shows the amount received, the amount applied to the sale and the change due. The receipt contact number is **0706 046963**.
 
-Only the quantities posted on the GRN increase stock. Partial receipts leave the outstanding quantity on the purchase order. Do not also record the same delivery through the legacy direct Purchase Register, or stock/payables may be duplicated.
+If a product does not scan, search for it by name or code and report an unreadable barcode.
 
-### Stock adjustments and stocktaking
+## 5. Customer accounts and payments
 
-- Use Stock Movements for a controlled increase, decrease or set-to-physical-count adjustment.
-- Enter a clear reason for every manual adjustment.
-- Use Stocktaking to create a count, scan or enter counted quantities, review variances and post approved corrections.
-- Do not post a count until the physical count has been checked.
+### Record a customer payment
 
-Stock quantities currently use whole numbers. Fractional units such as kilograms or metres require a coordinated schema and application upgrade.
+1. Open **Customer Payments**.
+2. Select the correct customer.
+3. Enter the amount received and payment method.
+4. Enter the transaction reference where applicable.
+5. Save the payment and provide the customer with the receipt/reference.
 
-## 4. Point of Sale and receipts
+Always confirm the customer's identity before recording a payment. Do not allocate an unmatched M-Pesa transaction to an invoice without checking it.
 
-1. A Cashier signs in and is directed to My Cashier Shift.
-2. Enter the opening float and open the shift.
-3. Open POS from the shift page or the POS shortcut.
-4. Scan a barcode or search/select a product, confirm quantities and prices, then select the customer if the sale is on account.
-5. Select the payment method and complete the sale.
-6. Print or open the receipt and give it to the customer.
+### View a customer statement
 
-For cash sales, the receipt shows the amount received, the amount applied to the sale and change given. The receipt contact number is 0706 046963.
-
-Cashier/Sales users are restricted to their own sales and shifts where the relevant access controls apply. A browser cannot independently trigger every physical cash drawer; drawer opening depends on compatible printer hardware and configuration.
-
-## 5. Customer accounts, collections and statements
-
-### Customer credit sale
-
-Select the customer during POS checkout and complete the sale with the permitted credit/balance workflow. The customer's outstanding balance is updated by the sale process.
-
-### Record a customer collection
-
-1. Open Customer Payments.
-2. Select the customer with an outstanding balance.
-3. Enter the collection amount and payment method.
-4. Add the transaction reference where applicable.
-5. Save the payment and retain the receipt/reference.
-
-The payment register supports date, method and keyword filters. Customer names link to the customer account.
-
-### Customer statement
-
-1. Open Customers and select the customer.
-2. Open the customer account.
-3. Choose the statement start and end dates.
-4. Review the opening balance, invoices, receipts, running balance and invoice register.
-5. Use Export to Excel or Print / Save as PDF.
-
-The statement is based on recorded completed invoices and customer payments. Reconcile it to source records before sending it as a formal balance confirmation.
+1. Open **Customers** and select the customer.
+2. Open the customer account and choose the statement option.
+3. Set the required date range.
+4. Review the opening balance, invoices, receipts and running balance.
+5. Use **Export to Excel** or **Print / Save as PDF** if those controls are available.
 
 ### Aged receivables
 
-Open Finance → Aged Receivables. Filter by as-at date, customer/invoice/phone search and age bucket. Click a customer or invoice to open its account/receipt where linked.
+Users with access can open **Finance → Aged Receivables** to find unpaid invoices. Search by customer, phone or invoice and filter by age bucket. Select a customer or invoice link to view the related account or invoice.
 
-Age is calculated from the invoice/sale date because the current sales schema does not provide contractual due dates. The Current (0–30 days) bucket is an invoice-age bucket, not proof that an invoice is not overdue under agreed credit terms.
+## 6. Supplier payments
 
-## 6. Supplier purchasing and payments
+If your role allows supplier payments:
 
-- Use Purchase Orders & Receiving for controlled PO/GRN purchasing.
-- Use Purchase Register only for the separate legacy direct-purchase workflow.
-- Supplier Payments records settlement against supplier balances.
-- Add M-Pesa/bank/cheque references and retain external proof of payment.
-- Use the supplier payment date, method and search filters to locate records.
+1. Open **Supplier Payments**.
+2. Select the correct supplier.
+3. Enter the payment amount, method and transaction reference.
+4. Confirm the details before saving.
 
-Avoid entering one supplier invoice in both purchase workflows.
+Keep the supplier's payment evidence and report any mismatch to Finance.
 
-## 7. Expenses
+## 7. Record an expense
 
-1. Open Expenses.
-2. Choose an active expense category from the automatically populated list.
-3. Enter description/title, amount, payment method, date and notes.
-4. Save the expense.
+1. Open **Expenses**.
+2. Select the appropriate expense category.
+3. Enter the description, amount, payment method and date.
+4. Add a useful note or reference, then save.
 
-The category list is seeded/ensured by the application. If categories do not appear, confirm that the database user has permission to create/read the expense category table and check the PHP error log.
+Choose the closest accurate category. Do not create a duplicate category to work around a missing option; ask an administrator to review the category list.
 
-Filter expenses by the available date/category/search controls. Export to Excel or use Print / Save as PDF for a report copy.
+## 8. Cashier shift duties
 
-## 8. Cashier shifts and cash control
+- Open your own shift and enter the actual opening float before starting sales.
+- Record cash-in and cash-out using the available shift actions.
+- Keep business cash separate from personal money.
+- At the end of the shift, count the physical cash carefully.
+- Enter the counted amount and submit the shift for closing/review.
+- Report any difference immediately. Do not change figures simply to make the shift balance.
 
-Cashiers open their own shift before using POS. During the shift, use the supported cash movement actions for cash-in/cash-out where enabled. At close, count physical cash and compare it with the expected amount; record the variance and submit the close.
+## 9. Attendance and leave
 
-Managers should review shift variances. The current implementation still has limitations around split tenders and reconciliation of every non-POS cash movement. Do not rely on the shift screen as a complete till audit until all cash sources, cash drops, refunds and paid-outs have been locally tested.
-
-## 9. Human Resources self-service
+Open **My HR Self-Service**.
 
 ### Clock in and out
-
-1. Sign in using your own account.
-2. Open My HR Self-Service.
-3. Select Clock In at the start of your workday.
-4. Select Clock Out when finishing work.
-5. Review your attendance history.
-
-The system prevents duplicate daily clock-ins and clock-outs. Your login account must be linked to your staff profile.
+- Select **Clock In** when you begin work.
+- Select **Clock Out** when you finish work.
+- Check your attendance history if you need to confirm a recorded time.
 
 ### Request leave
+1. Choose the leave type and requested dates.
+2. Enter the reason.
+3. Submit the request and check its status later.
+4. You may cancel your own request while it is still pending.
 
-1. Open My HR Self-Service.
-2. Choose the leave type and requested start/end dates.
-3. Enter the reason and submit the request.
-4. Track the request status in your leave history.
-5. A pending request may be cancelled by its owner.
+Submitting a request does not mean leave has been approved. Wait for the decision from your manager or HR.
 
-Managers/HR users review requests in the HR workspace. The current working-day calculation excludes weekends but does not automatically exclude Kenyan public holidays or company-specific holidays.
+## 10. Reports and printing
 
-## 10. Finance and accounting
+Where report controls are available:
 
-### Operational finance reports
+- Use the filters to choose the correct date range, customer, supplier, category or status.
+- Select **Export to Excel** to download a spreadsheet-compatible report.
+- Select **Print / Save as PDF** and choose **Save as PDF** in the print window.
 
-Finance Overview, Ledger, Financial Control, Expenses, Aged Receivables, Chart of Accounts, Journal Entries, General Ledger and Trial Balance are available subject to permissions and migration setup.
+Check the filters and totals before sharing a report. Keep customer and supplier information confidential.
 
-### Double-entry journal workflow
+## 11. Good daily practices
 
-1. Set up the Chart of Accounts.
-2. Open Journal Entries and create a draft with a date, description and reference.
-3. Enter at least two lines, assigning an account and debit or credit amount to each.
-4. Ensure total debits equal total credits.
-5. Save the draft, review it, then post it.
-
-Posted journals are not edited through the normal draft workflow. Correct posted entries using an approved reversal/correction process.
-
-**Important accounting limitation:** the current double-entry layer is a manual journal register. Existing POS sales, purchases, collections, supplier payments, expenses, returns and stock movements are not yet automatically posted into journals. Opening balances and verified source-to-account mappings are also required. The current Trial Balance therefore reflects posted manual journals only; it is not yet a complete financial statement for the business.
-
-## 11. M-Pesa and KRA eTIMS
-
-### M-Pesa
-
-The M-Pesa settings page supports configured Daraja credentials and STK Push workflow. C2B callback registration requires valid business credentials and publicly reachable HTTPS callback URLs. A local XAMPP address is not reachable by Safaricom.
-
-For direct Till payments, Safaricom notifications may not include a reliable invoice/account reference. Such payments can remain unallocated and require reconciliation. PayBill account references or invoice-linked STK Push are more reliable for automatic allocation. Do not mark an unmatched payment as settled against a customer invoice without checking the transaction.
-
-### KRA eTIMS
-
-The eTIMS area records onboarding/configuration details and prepares invoice queue records. It is not a live KRA submission integration. Obtain the official KRA onboarding/API specifications and complete sandbox certification before relying on automated tax invoicing.
-
-## 12. Reports, Excel and PDF
-
-Where report controls are present:
-- **Export to Excel** downloads an Excel-compatible XML Spreadsheet workbook with an `.xls` extension.
-- **Print / Save as PDF** opens the browser print dialog. Choose the browser's Save as PDF destination.
-
-PDF output depends on browser print settings and may need landscape orientation for wide reports. Always check the date range and filters before exporting.
-
-## 13. Security and daily operating controls
-
-- Use one account per staff member.
-- Never share passwords or payment API secrets.
-- Lock or sign out of shared POS devices when unattended.
-- Verify supplier invoices and customer payment references before posting.
-- Do not delete historical business records to correct mistakes; use returns, adjustments or approved correction entries.
-- Back up the database before migrations and at a regular schedule.
-- Restrict access to database dumps and exported customer statements.
-- Review audit events and unusual balances regularly.
-
-## 14. Current release limitations / go-live checklist
-
-The following must be completed and verified on the actual Dibonke database before production sign-off:
-
-- Confirm all required SQL migrations have been applied in dependency order.
-- Complete a clean-database canonical base schema and test it independently; the current repository does not yet provide a verified fresh-install base schema.
-- Run PHP lint and full XAMPP/browser tests using the target PHP 8.0.30 / MariaDB environment.
-- Test POS cash, credit, M-Pesa, receipts, refunds, cash shifts and stock deduction end-to-end.
-- Test partial and full GRN receiving and ensure stock/payables are not duplicated.
-- Test customer collections, C2B unmatched receipts and manual allocation/reconciliation.
-- Configure chart-of-account mappings and opening balances, then implement and reconcile automatic source transaction posting before treating the General Ledger/Trial Balance as complete.
-- Complete KRA eTIMS technical onboarding and sandbox certification before live transmission.
-- Test printer, scanner, cash drawer and all report exports on the actual hardware.
-- Test Docker build, database restore, backups and deployment security.
-
-A feature being present in the repository does not by itself mean it has passed local acceptance testing.
+- Use your own login.
+- Check quantities, prices and payment methods before saving transactions.
+- Scan or search carefully to avoid duplicate items.
+- Keep receipts and supplier documents.
+- Report errors, damaged stock, missing cash or suspicious activity promptly.
+- Do not delete or alter historical transactions to correct a mistake. Ask your supervisor to use the approved correction process.
