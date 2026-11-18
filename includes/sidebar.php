@@ -34,6 +34,21 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
 .sidebar nav a.logout-link{margin-top:18px;border:1px solid rgba(248,113,113,.18);background:rgba(248,113,113,.08);color:#fecaca}
 .sidebar nav a.logout-link .icon-main{color:#fca5a5}
 @media(max-width:768px){#appSidebar.sidebar{position:fixed;display:flex!important;left:0;top:var(--app-topbar-height,72px);right:auto;bottom:0;width:min(290px,86vw);height:auto;display:flex;flex-direction:column;gap:0;padding:0;border:0;transform:translateX(-105%);box-shadow:12px 0 30px rgba(0,0,0,.2)}#appSidebar.sidebar.is-open{transform:translateX(0);visibility:visible!important}.sidebar nav{display:block;flex-direction:column;overflow-y:auto;overflow-x:hidden}.sidebar nav a{width:auto;white-space:normal;flex-shrink:initial}}
+
+/* Desktop compact sidebar mode */
+@media(min-width:769px){
+ html.sidebar-collapsed{--app-sidebar-width:76px}
+ html.sidebar-collapsed #appSidebar.sidebar{width:76px;flex-basis:76px}
+ html.sidebar-collapsed #appSidebar .sidebar-brand{justify-content:center;padding:18px 8px}
+ html.sidebar-collapsed #appSidebar .sidebar-brand-copy,
+ html.sidebar-collapsed #appSidebar .user-profile,
+ html.sidebar-collapsed #appSidebar .menu-title,
+ html.sidebar-collapsed #appSidebar .sidebar-access-note{display:none!important}
+ html.sidebar-collapsed #appSidebar nav{padding:12px 8px}
+ html.sidebar-collapsed #appSidebar nav a{justify-content:center;gap:0;padding:12px 6px;font-size:0;white-space:nowrap}
+ html.sidebar-collapsed #appSidebar nav a .icon-main{width:22px;flex:0 0 22px;font-size:16px}
+ html.sidebar-collapsed #appSidebar nav a.logout-link{margin-top:18px}
+}
 </style>
 
 <aside class="sidebar" id="appSidebar">
