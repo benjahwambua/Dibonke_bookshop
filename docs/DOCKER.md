@@ -44,7 +44,7 @@ docker compose exec -T db sh -c 'mariadb -u root -p"$MARIADB_ROOT_PASSWORD" "$MA
 
 Keep the dump private and delete it after import. Never commit a database dump or place it under a publicly served uploads directory.
 
-Apply the project's SQL migrations only in their documented dependency order, after taking a backup. Include `database/dibonke_product_images.sql` so the `products.image_path` column exists for product image uploads. The POS now degrades safely when that migration is pending, but image upload/save requires the column. The exact migration set depends on which extensions are already present in the imported database; do not blindly re-import non-idempotent migrations.
+Apply the project's SQL migrations only in their documented dependency order, after taking a backup. Include `database/dibonke_product_images.sql` so the `products.image_path` column exists for product image uploads. The POS now degrades safely when that migration is pending, but image upload/save requires the column. The exact migration set depends on which extensions are already present in the imported database; do not blindly re-import non-idempotent migrations. For automatic double-entry posting, apply `dibonke_automatic_accounting_posting.sql` only after the Chart of Accounts, journal tables and expense categories exist. Review Finance → Posting Mappings and enable posting only after checking the account assignments. This migration does not backfill historical transactions.
 
 ## Configure the application
 
