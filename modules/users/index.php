@@ -83,6 +83,10 @@ require_once __DIR__.'/../../includes/sidebar.php';
                     <?php if ((int)$u['id'] !== (int)$_SESSION['user_id']): ?>
                     <div class="actions">
                         <a class="btn btn-secondary" href="edit.php?id=<?=e($u['id'])?>">Manage</a>
+                        <?php if (empty($u['is_super'])): ?>
+                        <form method="post" action="store.php" onsubmit="return confirm('Change this user account status?')"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>"><input type="hidden" name="action" value="set_status"><input type="hidden" name="id" value="<?=(int)$u['id']?>"><input type="hidden" name="status" value="<?=$u['status']==='Active'?'Inactive':'Active'?>"><button class="btn btn-secondary"><?=$u['status']==='Active'?'Deactivate':'Reactivate'?></button></form>
+                        <form method="post" action="store.php" onsubmit="return confirm('Permanently delete this user account? This is allowed only when no business history is linked.')"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?=(int)$u['id']?>"><button class="btn btn-danger">Delete</button></form>
+                        <?php endif; ?>
                     </div>
                     <?php else: ?>
                         <span style="color:#64748b">Current user</span>
