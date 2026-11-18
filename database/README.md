@@ -158,3 +158,10 @@ After pulling `feature/dibonke-product-catalog`, import `database/dibonke_accoun
 The Chart of Accounts currently establishes account codes, names and account types with a starter bookshop account set. It does not yet post journals or produce a Trial Balance. Those require validated source-to-account mappings and balanced journal posting. HR currently includes the existing employee directory plus leave requests/approval and attendance recording; payroll, statutory deductions, payslips and advanced leave accruals are not included in this phase.
 
 Cashier login now routes to My Cashier Shift. Cashiers open a shift there before proceeding to the POS. Admin user management supports deactivate/reactivate and guarded deletion; accounts with linked business/audit history must be deactivated rather than deleted.
+
+
+## Double-entry accounting: journals, General Ledger and Trial Balance
+
+After importing `database/dibonke_accounting_hr.sql`, import `database/dibonke_double_entry_accounting.sql`. This creates journal headers and journal lines and grants the Admin and Manager roles access to Journal Entries, General Ledger and Trial Balance. The journal screen supports balanced draft journals and posting; posted journals are immutable through the standard screen. The General Ledger shows posted activity and brought-forward/running balances by account. The Trial Balance reports debit and credit balances from posted journals as at a selected date.
+
+Opening balances should be entered as a balanced opening journal after agreeing the balances to the business records. The current implementation is a manual double-entry accounting layer: existing POS, purchases, collections, supplier payments and expenses have not yet been automatically posted into journals. Do not treat the Trial Balance as complete for the whole business until opening balances and source transaction mappings have been configured and reconciled. Draft journals are excluded from both reports.
