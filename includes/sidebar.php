@@ -74,9 +74,12 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <?php if (canAccessModule('deliveries')): ?><a href="<?= BASE_URL ?>/modules/deliveries/index.php" class="<?= navActive('/deliveries/') ?>"><i class="fas fa-shipping-fast icon-main"></i>Deliveries</a><?php endif; ?>
         <?php endif; ?>
 
-        <?php if (canAccessModule('finance') || canAccessModule('billing') || canAccessModule('expenses') || canAccessModule('supplier_payments') || canAccessModule('mpesa')): ?>
+        <?php if (canAccessModule('finance') || canAccessModule('billing') || canAccessModule('expenses') || canAccessModule('supplier_payments') || canAccessModule('mpesa') || canAccessModule('chart_of_accounts') || canAccessModule('journals') || canAccessModule('general_ledger') || canAccessModule('trial_balance')): ?>
         <div class="menu-title">Finance &amp; Billing</div>
         <?php if (canAccessModule('chart_of_accounts')): ?><a href="<?= BASE_URL ?>/modules/finance/chart_of_accounts.php" class="<?= navActive('/finance/chart_of_accounts.php') ?>"><i class="fas fa-list-ol icon-main"></i>Chart of Accounts</a><?php endif; ?>
+        <?php if (canAccessModule('journals')): ?><a href="<?= BASE_URL ?>/modules/finance/journals.php" class="<?= navActive('/finance/journals.php') ?>"><i class="fas fa-book-open icon-main"></i>Journal Entries</a><?php endif; ?>
+        <?php if (canAccessModule('general_ledger')): ?><a href="<?= BASE_URL ?>/modules/finance/general_ledger.php" class="<?= navActive('/finance/general_ledger.php') ?>"><i class="fas fa-book icon-main"></i>General Ledger</a><?php endif; ?>
+        <?php if (canAccessModule('trial_balance')): ?><a href="<?= BASE_URL ?>/modules/finance/trial_balance.php" class="<?= navActive('/finance/trial_balance.php') ?>"><i class="fas fa-balance-scale icon-main"></i>Trial Balance</a><?php endif; ?>
         <?php if (canAccessModule('finance')): ?>
         <a href="<?= BASE_URL ?>/modules/finance/index.php" class="<?= navActive('/finance/') ?>"><i class="fas fa-chart-pie icon-main"></i>Finance Overview</a>
         <a href="<?= BASE_URL ?>/modules/finance/ledger.php" class="<?= navActive('/finance/ledger.php') ?>"><i class="fas fa-book icon-main"></i>Ledger</a>
