@@ -115,6 +115,8 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <a href="<?= BASE_URL ?>/modules/settings/index.php" class="<?= navActive('/settings/') ?>"><i class="fas fa-sliders-h icon-main"></i>Settings</a>
         <?php endif; ?>
         <?php endif; ?>
+        <div class="menu-title">Help &amp; Support</div>
+        <a href="<?= BASE_URL ?>/modules/help/manual.php" class="manual-nav"><i class="fas fa-book-reader icon-main"></i>User Manual</a>
         <a href="<?= BASE_URL ?>/auth/logout.php" class="logout-link"><i class="fas fa-sign-out-alt icon-main"></i>Sign out</a>
     </nav>
 </aside>
