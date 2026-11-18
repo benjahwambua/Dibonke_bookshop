@@ -19,7 +19,6 @@ services:
       db:
         condition: service_healthy
     volumes:
-      - ./:/var/www/html
       - dibonke_uploads:/var/www/html/uploads
     healthcheck:
       test: ["CMD", "php", "-r", "$$s=@fsockopen('127.0.0.1',80); exit($$s?0:1);"]
