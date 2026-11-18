@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/audit.php';
+require_once __DIR__ . '/../../includes/accounting_posting.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: index.php');
@@ -61,6 +62,7 @@ try {
     }
     unset($item);
 
+    if ($discount > $subtotal + 0.001) throw new RuntimeException('Purchase discount cannot exceed the item subtotal.');
     $total = round(max(0, $subtotal - $discount + $tax), 2);
     if ($paidAmount > $total) throw new RuntimeException('Paid amount cannot exceed the purchase total.');
     $balance = round($total - $paidAmount, 2);
@@ -115,6 +117,15 @@ try {
     }
 
     recordAuditEvent($conn,'Create','purchases','Created purchase '.$purchaseNumber.' for KES '.number_format($total,2),'purchase',$purchaseId,null,['supplier_id'=>$supplierId,'total_amount'=>$total,'paid_amount'=>$paidAmount,'balance'=>$balance]);
+    if(dibonkeAccountingAutoPostingEnabled($conn)){
+        $journalLines=[];
+        $inventoryCost=round($subtotal-$discount,2);
+        if($inventoryCost>0)$journalLines[]=dibonkeAccountingLine(dibonkeAccountingAccount($conn,'inventory','Asset'),'Goods purchased into inventory',$inventoryCost,0);
+        if($tax>0)$journalLines[]=dibonkeAccountingLine(dibonkeAccountingAccount($conn,'input_vat','Asset'),'Recoverable input VAT',$tax,0);
+        if($paidAmount>0)$journalLines[]=dibonkeAccountingLine(dibonkeAccountingPaymentAccount($conn,$paymentMethod),'Purchase payment made',$paidAmount,0);
+        if($balance>0)$journalLines[]=dibonkeAccountingLine(dibonkeAccountingAccount($conn,'accounts_payable','Liability'),'Supplier balance due',0,$balance);
+        dibonkeAccountingPostJournal($conn,'purchase',$purchaseId,date('Y-m-d',strtotime($purchaseDate)),'Purchase '.$purchaseNumber,$journalLines,(int)$_SESSION['user_id']);
+    }
     $conn->commit();
 
     $_SESSION['purchase_flash'] = 'Purchase '.$purchaseNumber.' completed successfully. Stock has been updated.';
