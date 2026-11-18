@@ -24,6 +24,7 @@ Before a fresh installation can be declared ready, the project still needs to:
 | `dibonke_staff_roles.sql` | Staff profiles and unified role permissions | Requires the existing `users` table |
 | `dibonke_launch_operations.sql` | Sales returns, cash shifts, stock counts, audit events and eTIMS queue | Requires the existing retail tables plus `roles`, `role_permissions` and `settings`; uses indexed references without foreign-key constraints to tolerate inherited ID definitions |
 | `dibonke_finance_billing_permissions.sql` | Adds Finance and Billing module permissions to existing roles | Requires `roles` and `role_permissions` from the staff/roles migration |
+| `dibonke_automatic_accounting_posting.sql` | Adds source-linked, duplicate-protected journal posting, core account mappings and expense-category mappings for automatic postings | Requires `accounts`, `journal_entries`, `journal_lines`, `roles`, `role_permissions`, `settings` and `expense_categories`; apply after the accounting and expense-category migrations |
 | `dibonke_products_inventory_preflight.sql` | Read-only check of product, POS, purchase and stock-ledger dependencies | Run with the target Dibonke database selected |
 
 The preflight script performs SELECTs against `information_schema` only. It does not create or alter tables and is safe to use before planning migrations. Missing columns or foreign keys must be reconciled deliberately; do not apply one-off ALTER statements to a live database.
@@ -244,3 +245,14 @@ Import `dibonke_fleet_management.sql` after the base deliveries and staff/roles 
 ## Product Images
 
 Import `dibonke_product_images.sql` after the base products table exists and before using the product catalogue or POS version with image support. Product photos accept genuine PNG or JPEG files only, up to 2 MB and 2400 × 2400 pixels. Uploaded files are stored under `uploads/products/` using random filenames; the directory blocks script execution and directory listing. Ensure the web server can write to `uploads/products/` (the application creates it on first upload).
+
+
+## Automatic double-entry posting
+
+Apply `dibonke_automatic_accounting_posting.sql` after the Chart of Accounts and Journal Entries migrations and after expense categories exist. It adds source references to journal headers so each source transaction can be posted only once, creates core account mappings, and seeds expense categories to the default operating-expense account.
+
+Open **Finance → Posting Mappings** to review the mappings. Automatic posting is initially disabled. Confirm the cash, M-Pesa, bank, clearing, receivables, inventory, payables, VAT, revenue and cost-of-sales accounts, then enable it. Map individual expense categories to more specific Expense accounts where required.
+
+Once enabled, new POS sales post revenue, output VAT, the payment/receivable split and cost of goods sold/inventory relief. Direct purchases post inventory, input VAT, payment and supplier payable. Purchase-order goods receipts post inventory and supplier payable. Expenses post to their mapped expense account and payment account. Later customer collections, supplier settlements and confirmed M-Pesa STK/C2B receipts post their settlement journals.
+
+Posting runs inside the originating transaction and uses a unique source reference to prevent duplicate journals. If journal posting fails, the source transaction is rolled back. Existing historical transactions are not automatically backfilled; opening balances and historic transaction journals must be reconciled separately before treating the Trial Balance as complete. M-Pesa receipts that cannot be matched to an invoice are held in the Unallocated M-Pesa Receipts liability account pending allocation.
