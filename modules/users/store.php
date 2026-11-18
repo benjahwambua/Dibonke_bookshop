@@ -18,10 +18,33 @@ try {
     $action = (string)($_POST['action'] ?? 'create');
     $name = trim((string)($_POST['full_name'] ?? ''));
     $password = (string)($_POST['password'] ?? '');
-    $roleId=(int)($_POST['role_id']??0);$staffId=(int)($_POST['staff_id']??0);$roleStmt=$conn->prepare("SELECT role_name FROM roles WHERE id=? AND status='Active'");$roleStmt->execute([$roleId]);$role=$roleStmt->fetchColumn();
+    $roleId=(int)($_POST['role_id']??0);$staffId=(int)($_POST['staff_id']??0);$role=null;if(in_array($action,['create','update'],true)){$roleStmt=$conn->prepare("SELECT role_name FROM roles WHERE id=? AND status='Active'");$roleStmt->execute([$roleId]);$role=$roleStmt->fetchColumn();}
 
-    if ($name === '') throw new RuntimeException('Full name is required.');
-    if (!$role) throw new RuntimeException('Select an active role.');
+    if (in_array($action,['create','update'],true) && $name === '') throw new RuntimeException('Full name is required.');
+    if (in_array($action,['create','update'],true) && !$role) throw new RuntimeException('Select an active role.');
+
+    if ($action === 'set_status') {
+        $id=(int)($_POST['id']??0);$status=(string)($_POST['status']??'');
+        if($id<1||$id===(int)$_SESSION['user_id'])throw new RuntimeException('You cannot change the status of your own account.');
+        if(!in_array($status,['Active','Inactive'],true))throw new RuntimeException('Invalid account status.');
+        $q=$conn->prepare("SELECT is_super FROM users WHERE id=?");$q->execute([$id]);$target=$q->fetch();
+        if(!$target||(int)$target['is_super']===1)throw new RuntimeException('Super User accounts are protected.');
+        $conn->prepare("UPDATE users SET status=? WHERE id=?")->execute([$status,$id]);
+        recordAuditEvent($conn,'Update','users','Set user ID '.$id.' status to '.$status,'user',$id,null,['status'=>$status]);
+        userFlash('success','User account '.$status.'.');
+    }
+
+    if ($action === 'delete') {
+        $id=(int)($_POST['id']??0);
+        if($id<1||$id===(int)$_SESSION['user_id'])throw new RuntimeException('You cannot delete your own account.');
+        $q=$conn->prepare("SELECT is_super,full_name,status FROM users WHERE id=? FOR UPDATE");
+        $conn->beginTransaction();$q->execute([$id]);$target=$q->fetch();
+        if(!$target||(int)$target['is_super']===1)throw new RuntimeException('Super User accounts are protected.');
+        $checks=['sales'=>'user_id','expenses'=>'created_by','purchases'=>'created_by','customer_payments'=>'user_id','supplier_payments'=>'user_id','audit_events'=>'user_id','cash_shifts'=>'user_id','staff'=>'user_id'];
+        foreach($checks as $table=>$column){$exists=$conn->query("SHOW TABLES LIKE ".$conn->quote($table))->fetchColumn();if($exists){$q=$conn->prepare("SELECT COUNT(*) FROM `{$table}` WHERE `{$column}`=?");$q->execute([$id]);if((int)$q->fetchColumn()>0)throw new RuntimeException('This account has linked business or audit records. Deactivate it instead to preserve history.');}}
+        $conn->prepare("DELETE FROM users WHERE id=?")->execute([$id]);
+        $conn->commit();userFlash('success','New user account deleted.');
+    }
 
     if ($action === 'create') {
         if (strlen($password) < 8) throw new RuntimeException('Password must be at least 8 characters.');
