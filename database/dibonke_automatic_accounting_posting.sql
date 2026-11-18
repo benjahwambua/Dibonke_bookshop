@@ -4,7 +4,8 @@
 
 INSERT IGNORE INTO accounts(account_code,account_name,account_type,is_system,description) VALUES
 ('1040','Other Payment Clearing','Asset',1,'Clearing account for cheque, mixed and other payment methods'),
-('1300','Input VAT Recoverable','Asset',1,'Recoverable input VAT on supplier purchases');
+('1300','Input VAT Recoverable','Asset',1,'Recoverable input VAT on supplier purchases'),
+('2050','Unallocated M-Pesa Receipts','Liability',1,'Customer funds received but not yet allocated to an invoice');
 
 SET @has_source_type := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='journal_entries' AND COLUMN_NAME='source_type');
 SET @ddl_source_type := IF(@has_source_type=0,'ALTER TABLE journal_entries ADD COLUMN source_type VARCHAR(40) NULL AFTER reference','SELECT 1');
@@ -50,6 +51,7 @@ FROM (
  SELECT 'sales_revenue','4000' UNION ALL
  SELECT 'cost_of_goods_sold','5000' UNION ALL
  SELECT 'input_vat','1300' UNION ALL
+ SELECT 'unallocated_receipts','2050' UNION ALL
  SELECT 'default_expense','5100'
 ) m JOIN accounts a ON a.account_code=m.account_code;
 
