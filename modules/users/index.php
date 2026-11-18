@@ -29,7 +29,7 @@ require_once __DIR__.'/../../includes/sidebar.php';
 </style>
 
 <h1>User Management</h1>
-<p>Create and manage staff accounts. Only Super Users can access this module.</p>
+<p>Create and manage staff accounts. Only Administrators can access this module.</p>
 
 <?php if ($flash): ?>
 <div class="flash <?=($flash['type'] ?? 'success') === 'error' ? 'error' : 'success'?>"><?=e($flash['message'] ?? '')?></div>
