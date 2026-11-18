@@ -16,6 +16,20 @@ $roleName = strtolower(trim((string)($_SESSION['role'] ?? '')));
 $roleCode = strtoupper(trim((string)($_SESSION['role_code'] ?? '')));
 $isCashierDashboard = in_array($roleName, ['cashier', 'sales'], true) || in_array($roleCode, ['CASHIER', 'SALES'], true);
 $currentUserId = (int)($_SESSION['user_id'] ?? 0);
+$todayCashSales=0.0;$todayMpesaSales=0.0;$dailyUserSales=[];
+if ($isCashierDashboard) {
+    $q=$conn->prepare("SELECT COALESCE(SUM(CASE WHEN payment_method='Cash' THEN paid_amount ELSE 0 END),0),COALESCE(SUM(CASE WHEN payment_method='M-Pesa' THEN paid_amount ELSE 0 END),0) FROM sales WHERE sale_status='Completed' AND user_id=? AND DATE(sale_date)=CURDATE()");
+    $q->execute([$currentUserId]);$methodTotals=$q->fetch(PDO::FETCH_NUM);
+    $todayCashSales=(float)($methodTotals[0]??0);$todayMpesaSales=(float)($methodTotals[1]??0);
+    $q=$conn->prepare("SELECT COALESCE(SUM(m.amount),0) FROM mpesa_transactions m JOIN sales s ON m.reference_type='sale' AND m.reference_id=s.id WHERE m.transaction_type='C2B' AND m.result_status='Success' AND s.user_id=? AND DATE(COALESCE(m.transaction_date,m.created_at))=CURDATE()");
+    $q->execute([$currentUserId]);$todayMpesaSales+=(float)$q->fetchColumn();
+} else {
+    $dailyUserSales=$conn->query("SELECT u.id,u.full_name,COALESCE(SUM(CASE WHEN s.payment_method='Cash' THEN s.paid_amount ELSE 0 END),0) cash_sales,COALESCE(SUM(CASE WHEN s.payment_method='M-Pesa' THEN s.paid_amount ELSE 0 END),0) mpesa_sales FROM users u LEFT JOIN sales s ON s.user_id=u.id AND s.sale_status='Completed' AND DATE(s.sale_date)=CURDATE() GROUP BY u.id,u.full_name ORDER BY u.full_name")->fetchAll(PDO::FETCH_ASSOC);
+    $todayCashSales=(float)scalar($conn,"SELECT COALESCE(SUM(paid_amount),0) FROM sales WHERE sale_status='Completed' AND payment_method='Cash' AND DATE(sale_date)=CURDATE()");
+    $todayMpesaSales=(float)scalar($conn,"SELECT COALESCE(SUM(paid_amount),0) FROM sales WHERE sale_status='Completed' AND payment_method='M-Pesa' AND DATE(sale_date)=CURDATE()");
+    $todayMpesaSales+=(float)scalar($conn,"SELECT COALESCE(SUM(amount),0) FROM mpesa_transactions WHERE transaction_type='C2B' AND result_status='Success' AND reference_type='sale' AND DATE(COALESCE(transaction_date,created_at))=CURDATE()");
+}
+
 
 if ($isCashierDashboard) {
     $stmt = $conn->prepare("SELECT COALESCE(SUM(total_amount),0) FROM sales WHERE sale_status='Completed' AND user_id=? AND DATE(sale_date)=CURDATE()");
@@ -66,7 +80,18 @@ require_once __DIR__ . '/includes/sidebar.php';
         <?php endif; ?>
     </section>
 
-    <section class="dashboard-shortcuts">
+    
+    <section class="dashboard-panel" style="margin:0 0 22px">
+        <div class="dashboard-section-heading"><div><h2><?= $isCashierDashboard ? 'My payment breakdown today' : 'Daily sales by payment method' ?></h2><p><?= $isCashierDashboard ? 'Your completed cash and M-Pesa collections today.' : 'Completed cash and M-Pesa sales across the bookshop.' ?></p></div></div>
+        <div class="dashboard-kpis" style="margin:0">
+            <article class="dashboard-kpi"><div class="kpi-top"><span><?= $isCashierDashboard ? 'My cash sales' : 'Total cash sales' ?></span><span class="kpi-icon"><i class="fas fa-money-bill-wave"></i></span></div><strong>KES <?=number_format($todayCashSales,2)?></strong></article>
+            <article class="dashboard-kpi"><div class="kpi-top"><span><?= $isCashierDashboard ? 'My M-Pesa sales' : 'Total M-Pesa sales' ?></span><span class="kpi-icon"><i class="fas fa-mobile-alt"></i></span></div><strong>KES <?=number_format($todayMpesaSales,2)?></strong></article>
+            <?php if(!$isCashierDashboard):?><article class="dashboard-kpi kpi-sales"><div class="kpi-top"><span>Combined daily collections</span><span class="kpi-icon"><i class="fas fa-chart-line"></i></span></div><strong>KES <?=number_format($todayCashSales+$todayMpesaSales,2)?></strong></article><?php endif;?>
+        </div>
+        <?php if(!$isCashierDashboard):?><div class="dashboard-table-wrap" style="margin-top:16px"><table class="dashboard-table"><thead><tr><th>Cashier / User</th><th class="amount-cell">Cash sales</th><th class="amount-cell">M-Pesa sales</th><th class="amount-cell">Total</th></tr></thead><tbody><?php foreach($dailyUserSales as $u):?><tr><td><?=e($u['full_name'])?></td><td class="amount-cell">KES <?=number_format((float)$u['cash_sales'],2)?></td><td class="amount-cell">KES <?=number_format((float)$u['mpesa_sales'],2)?></td><td class="amount-cell"><strong>KES <?=number_format((float)$u['cash_sales']+(float)$u['mpesa_sales'],2)?></strong></td></tr><?php endforeach;?><?php if(!$dailyUserSales):?><tr><td colspan="4">No users found.</td></tr><?php endif;?></tbody></table></div><?php endif;?>
+    </section>
+
+<section class="dashboard-shortcuts">
         <div class="dashboard-section-heading">
             <div><h2>Quick actions</h2><p>Jump straight into everyday tasks.</p></div>
         </div>
