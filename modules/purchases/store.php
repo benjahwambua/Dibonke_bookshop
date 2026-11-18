@@ -62,7 +62,6 @@ try {
     }
     unset($item);
 
-    if ($discount > $subtotal + 0.001) throw new RuntimeException('Purchase discount cannot exceed the item subtotal.');
     $total = round(max(0, $subtotal - $discount + $tax), 2);
     if ($paidAmount > $total) throw new RuntimeException('Paid amount cannot exceed the purchase total.');
     $balance = round($total - $paidAmount, 2);
@@ -120,6 +119,7 @@ try {
     if(dibonkeAccountingAutoPostingEnabled($conn)){
         $journalLines=[];
         $inventoryCost=round($subtotal-$discount,2);
+        if($inventoryCost<0)throw new RuntimeException('Purchase discount cannot exceed the item subtotal when automatic accounting is enabled.');
         if($inventoryCost>0)$journalLines[]=dibonkeAccountingLine(dibonkeAccountingAccount($conn,'inventory','Asset'),'Goods purchased into inventory',$inventoryCost,0);
         if($tax>0)$journalLines[]=dibonkeAccountingLine(dibonkeAccountingAccount($conn,'input_vat','Asset'),'Recoverable input VAT',$tax,0);
         if($paidAmount>0)$journalLines[]=dibonkeAccountingLine(dibonkeAccountingPaymentAccount($conn,$paymentMethod),'Purchase payment made',$paidAmount,0);
