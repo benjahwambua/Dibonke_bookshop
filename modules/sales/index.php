@@ -179,6 +179,51 @@ body.counter-mode .vat-value{padding:3px 0;font-size:14px}
 .pos-wrap .scan-panel .scan-feedback{margin-top:2px;min-height:0;font-size:10px;line-height:1.25}
 @media(max-width:520px){.pos-wrap .scan-panel{padding:7px 8px!important}.pos-wrap .scan-panel .scan-help{font-size:8px}}
 
+
+/* Compact Browse Products cards */
+.pos-wrap .products,
+body.counter-mode .products {
+  grid-template-columns: repeat(auto-fill, minmax(125px, 1fr)) !important;
+  gap: 8px !important;
+}
+.pos-wrap .product,
+body.counter-mode .product {
+  min-height: 96px !important;
+  padding: 9px !important;
+  border-radius: 9px !important;
+}
+.pos-wrap .product-symbol,
+body.counter-mode .product-symbol {
+  width: 21px !important;
+  height: 21px !important;
+  margin-bottom: 4px !important;
+  font-size: 10px !important;
+}
+.pos-wrap .product .name,
+body.counter-mode .product .name {
+  min-height: 0 !important;
+  font-size: 11px !important;
+  line-height: 1.25 !important;
+  padding-right: 0 !important;
+}
+.pos-wrap .product small,
+body.counter-mode .product small {
+  margin-top: 3px !important;
+  font-size: 9px !important;
+}
+.pos-wrap .product .price,
+body.counter-mode .product .price {
+  margin-top: 5px !important;
+  font-size: 13px !important;
+}
+.pos-wrap .product .badge,
+body.counter-mode .product .badge {
+  top: 6px !important;
+  right: 6px !important;
+  padding: 2px 4px !important;
+  font-size: 8px !important;
+}
+
 </style>
 
 <div class="pos-wrap">
