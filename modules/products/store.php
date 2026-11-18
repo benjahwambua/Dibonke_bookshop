@@ -5,6 +5,8 @@ require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../includes/product_helpers.php';
 require_once __DIR__ . '/../../includes/audit.php';
+require_once __DIR__ . '/../../includes/product_image_upload.php';
+$uploadedProductImage = null;
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: index.php');
@@ -83,6 +85,7 @@ try {
     $barcode = trim((string)($_POST['barcode'] ?? '')) ?: null;
     $unit = trim((string)($_POST['unit'] ?? 'Piece')) ?: 'Piece';
     $icon = trim((string)($_POST['icon'] ?? '📦')) ?: '📦';
+    $uploadedProductImage = uploadProductImage();
 
     $conn->beginTransaction();
 
@@ -109,13 +112,13 @@ try {
             product_name, product_type, isbn, category, category_id,
             brand_id, supplier_id, sku, barcode, unit, buying_price,
             selling_price, wholesale_price, stock_quantity, reorder_level,
-            icon, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active')"
+            icon, image_path, status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active')"
     );
     $insert->execute([
         $name, $productType, $isbn, $categoryName, $categoryId ?: null,
         $brandId ?: null, $supplierId ?: null, $sku, $barcode, $unit,
-        $buy, $sell, $wholesale, $stock, $reorder, $icon
+        $buy, $sell, $wholesale, $stock, $reorder, $icon, $uploadedProductImage
     ]);
     $productId = (int)$conn->lastInsertId();
 
@@ -155,6 +158,7 @@ try {
     if ($conn->inTransaction()) {
         $conn->rollBack();
     }
+    deleteProductImage($uploadedProductImage);
 
     if ($e instanceof PDOException && $e->getCode() === '23000' && strpos($e->getMessage(), 'uq_products_isbn') !== false) {
         $_SESSION['product_flash'] = 'That ISBN is already assigned to another product.';
