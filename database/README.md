@@ -238,3 +238,8 @@ A migration import, a GitHub commit or a visible page is not evidence that the w
 ## Fleet Management
 
 Import `dibonke_fleet_management.sql` after the base deliveries and staff/roles tables are present. It creates the fleet vehicle register and vehicle maintenance history, adds the optional `deliveries.vehicle_id` link, and grants Fleet Management access to Administrator and Manager roles. The Deliveries screen then allows dispatchers to assign an active vehicle to a delivery. Fleet Management is available under Deliveries and supports vehicle registration, driver assignment, insurance/inspection expiry tracking, odometer records, maintenance logs, and safe deletion (vehicles with delivery or service history must be marked Inactive instead).
+
+
+## Product Images
+
+Import `dibonke_product_images.sql` after the base products table exists and before using the product catalogue or POS version with image support. Product photos accept genuine PNG or JPEG files only, up to 2 MB and 2400 × 2400 pixels. Uploaded files are stored under `uploads/products/` using random filenames; the directory blocks script execution and directory listing. Ensure the web server can write to `uploads/products/` (the application creates it on first upload).
