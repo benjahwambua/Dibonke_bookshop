@@ -3,34 +3,54 @@ declare(strict_types=1);
 
 /**
  * Shared report output helpers.
- * Excel export is UTF-8 CSV (opens directly in Excel/LibreOffice).
- * PDF output uses the browser's print dialog so the user can Save as PDF.
+ * Excel export uses Excel 2003 XML Spreadsheet format (.xls), which opens
+ * as a workbook in Microsoft Excel and LibreOffice without extra libraries.
+ * PDF output uses the browser print dialog so the user can Save as PDF.
  */
+function dibonkeReportXmlCell($value): string
+{
+    $value = $value === null ? '' : (string)$value;
+    $type = 'String';
+    // Preserve identifiers and phone numbers with leading zeroes as text.
+    if (is_int($value) || is_float($value) || ($value !== '' && preg_match('/^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?$/', $value))) {
+        $type = 'Number';
+    }
+    $escaped = htmlspecialchars($value, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+    return '<Cell><Data ss:Type="' . $type . '">' . $escaped . '</Data></Cell>';
+}
+
 function dibonkeReportExport(string $filename, array $headers, array $rows): void
 {
     if (($_GET['export'] ?? '') !== 'excel') {
         return;
     }
+
     $safe = preg_replace('/[^A-Za-z0-9_-]/', '_', $filename) ?: 'report';
-    header('Content-Type: text/csv; charset=UTF-8');
-    header('Content-Disposition: attachment; filename="' . $safe . '.csv"');
+    $sheetName = substr(preg_replace('/[^A-Za-z0-9_]/', '_', $safe) ?: 'Report', 0, 31);
+
+    header('Content-Type: application/vnd.ms-excel; charset=UTF-8');
+    header('Content-Disposition: attachment; filename="' . $safe . '.xls"');
     header('Cache-Control: no-store, no-cache, must-revalidate');
-    $out = fopen('php://output', 'wb');
-    fwrite($out, "\xEF\xBB\xBF");
-    fputcsv($out, $headers);
-    foreach ($rows as $row) {
-        $clean = [];
-        foreach ($row as $value) {
-            $value = $value === null ? '' : (string)$value;
-            // Prevent spreadsheet formula execution for untrusted text cells.
-            if ($value !== '' && preg_match('/^[=+@\\t\\r]|^-(?![0-9])/', $value)) {
-                $value = "'" . $value;
-            }
-            $clean[] = $value;
-        }
-        fputcsv($out, $clean);
+
+    echo '<?xml version="1.0" encoding="UTF-8"?>';
+    echo '<?mso-application progid="Excel.Sheet"?>';
+    echo '<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">';
+    echo '<Worksheet ss:Name="' . htmlspecialchars($sheetName, ENT_XML1 | ENT_QUOTES, 'UTF-8') . '"><Table>';
+    echo '<Row>';
+    foreach ($headers as $header) {
+        echo dibonkeReportXmlCell($header);
     }
-    fclose($out);
+    echo '</Row>';
+
+    foreach ($rows as $row) {
+        echo '<Row>';
+        foreach ($row as $value) {
+            echo dibonkeReportXmlCell($value);
+        }
+        echo '</Row>';
+    }
+
+    echo '</Table></Worksheet></Workbook>';
     exit;
 }
 
@@ -41,7 +61,7 @@ function dibonkeReportActions(string $filename): void
     $params['export'] = 'excel';
     $excelUrl = strtok($_SERVER['REQUEST_URI'] ?? '', '?') . '?' . http_build_query($params);
     echo '<div class="report-actions" style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0">';
-    echo '<a class="report-export-btn" href="' . htmlspecialchars($excelUrl, ENT_QUOTES, 'UTF-8') . '">Export to Excel (CSV)</a>';
+    echo '<a class="report-export-btn" href="' . htmlspecialchars($excelUrl, ENT_QUOTES, 'UTF-8') . '">Export to Excel</a>';
     echo '<button class="report-export-btn" type="button" onclick="window.print()">Print / Save as PDF</button>';
     echo '</div>';
 }
