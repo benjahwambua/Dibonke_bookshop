@@ -7,7 +7,9 @@ $vatRate=(float)($conn->query("SELECT setting_value FROM settings WHERE setting_
 $vatMode=(string)($conn->query("SELECT setting_value FROM settings WHERE setting_key='vat_mode' LIMIT 1")->fetchColumn()?:'inclusive');
 if(!in_array($vatMode,['exclusive','inclusive'],true))$vatMode='inclusive';
 
-$products=$conn->query("SELECT p.id,p.product_name,p.category,p.sku,p.barcode,p.isbn,p.image_path,p.selling_price,p.wholesale_price,p.stock_quantity,p.unit,b.brand_name FROM products p LEFT JOIN brands b ON b.id=p.brand_id WHERE p.status='Active' ORDER BY p.product_name")->fetchAll();
+$productImageColumn = (bool)$conn->query("SHOW COLUMNS FROM products LIKE 'image_path'")->fetchColumn();
+$imageSelect = $productImageColumn ? 'p.image_path' : 'NULL AS image_path';
+$products=$conn->query("SELECT p.id,p.product_name,p.category,p.sku,p.barcode,p.isbn,{$imageSelect},p.selling_price,p.wholesale_price,p.stock_quantity,p.unit,b.brand_name FROM products p LEFT JOIN brands b ON b.id=p.brand_id WHERE p.status='Active' ORDER BY p.product_name")->fetchAll();
 $customers=$conn->query("SELECT id,customer_name,phone,credit_limit,balance,price_list_id FROM customers WHERE status='Active' ORDER BY customer_name")->fetchAll();
 $priceLists=$conn->query("SELECT id,name,code FROM price_lists WHERE status='Active' ORDER BY is_default DESC,name")->fetchAll();
 $productPrices=$conn->query("SELECT price_list_id,product_id,min_quantity,price FROM product_prices ORDER BY price_list_id,product_id,min_quantity")->fetchAll();
