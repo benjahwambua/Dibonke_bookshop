@@ -128,3 +128,12 @@ Completion migration details:
 
 ### Short document references and cash tender
 After the base retail schema exists, apply `dibonke_short_references_and_cash_tender.sql`. It adds `sales.amount_tendered` for recording the physical amount handed over at a cash sale. New document references use short date-and-record formats: invoices `INV-YYMMDD-#####`, purchases `PUR-YYMMDD-#####`, purchase orders `PO-YYMMDD-#####`, goods receipts `GRN-YYMMDD-#####`, deliveries `DEL-YYMMDD-#####`, returns `RET-YYMMDD-#####`, cashier shifts `CS-YYMMDD-#####`, stock counts `SC-YYMMDD-#####`, expenses `EXP-YYMMDD-#####`, customer collection receipts `CR-YYMMDD-#####`, supplier payment references `SP-YYMMDD-#####` and M-PESA request references `MP-YYMMDD-#####`. The final digits are the sequential record ID, making references short and collision-resistant. Existing historical references are not rewritten. Cash receipts show the actual amount received and change due; other payment methods continue to show the amount paid.
+
+
+## Cashier self-service and eTIMS onboarding
+
+- Sales and Cashier users can use **Sales → My Cashier Shift** to open their own shift, view their own expected-cash summary, record cash-in/cash-out movements and close/reconcile the shift. The page does not expose other cashiers' shifts or manager review controls; those remain under Launch Operations.
+- The POS provides a My Shift shortcut that opens in a separate browser tab, so an in-progress basket stays on the POS screen. When a cashier has Cash Management permission and the shift guard is installed, the POS warns when no shift is open and continues to enforce the server-side cash-sale guard.
+- Apply `dibonke_cashier_shift_sales_access.sql` after the staff/roles and Launch Operations migrations to grant Sales and Cashier roles view/open/close access to their own shift. Existing Administrator and Manager oversight remains in Launch Operations.
+- The eTIMS Setup page records the taxpayer PIN, selected integration route, branch identifier and KRA onboarding/certification references. It is a registration checklist/profile only: live transmission is forced off, no API credentials are stored in these fields, and no KRA request is sent.
+- Register the taxpayer with KRA first, confirm whether OSCU, VSCU or a certified third-party route applies, then obtain the current KRA technical specifications and sandbox/onboarding details. Implement the live sender only after the official technical and security requirements are available and sandbox/certification testing has been completed.
