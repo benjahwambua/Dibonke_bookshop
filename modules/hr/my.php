@@ -17,7 +17,8 @@ if($employee && $_SERVER['REQUEST_METHOD']==='POST'){
    requireModulePermission('hr_self_service','create');
    $type=(int)($_POST['leave_type_id']??0);$start=trim((string)($_POST['start_date']??''));$end=trim((string)($_POST['end_date']??''));$reason=trim((string)($_POST['reason']??''));
    $startDate=DateTimeImmutable::createFromFormat('!Y-m-d',$start);$endDate=DateTimeImmutable::createFromFormat('!Y-m-d',$end);
-   if(!$startDate||!$endDate||$startDate->format('Y-m-d')!==$start||$endDate->format('Y-m-d')!==$end||$endDate<$startDate)throw new RuntimeException('Enter a valid leave date range.');
+   if(!$startDate||!$endDate||$startDate->format('Y-m-d')!==$start||$endDate->format('Y-m-d')!==$end||$endDate<$startDate||$startDate<new DateTimeImmutable('today'))throw new RuntimeException('Enter a valid future leave date range.');
+   if((int)$startDate->diff($endDate)->days>366)throw new RuntimeException('A single leave request cannot exceed 366 calendar days.');
    $days=0;for($d=$startDate;$d<=$endDate;$d=$d->modify('+1 day'))if((int)$d->format('N')<6)$days++;
    if($days<1||$days>366)throw new RuntimeException('The selected range must contain at least one working day.');
    $t=$conn->prepare("SELECT id FROM hr_leave_types WHERE id=? AND status='Active'");$t->execute([$type]);if(!$t->fetchColumn())throw new RuntimeException('Select an active leave type.');
