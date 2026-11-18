@@ -165,3 +165,14 @@ Cashier login now routes to My Cashier Shift. Cashiers open a shift there before
 After importing `database/dibonke_accounting_hr.sql`, import `database/dibonke_double_entry_accounting.sql`. This creates journal headers and journal lines and grants the Admin and Manager roles access to Journal Entries, General Ledger and Trial Balance. The journal screen supports balanced draft journals and posting; posted journals are immutable through the standard screen. The General Ledger shows posted activity and brought-forward/running balances by account. The Trial Balance reports debit and credit balances from posted journals as at a selected date.
 
 Opening balances should be entered as a balanced opening journal after agreeing the balances to the business records. The current implementation is a manual double-entry accounting layer: existing POS, purchases, collections, supplier payments and expenses have not yet been automatically posted into journals. Do not treat the Trial Balance as complete for the whole business until opening balances and source transaction mappings have been configured and reconciled. Draft journals are excluded from both reports.
+
+
+## Employee HR self-service and aged receivables
+
+After the staff/roles, HR foundation and double-entry migrations, apply `dibonke_hr_self_service_receivables.sql`. It grants employees access to their own HR self-service page and grants Admin/Manager access to Aged Receivables.
+
+- **My HR Self-Service:** each login is matched to its linked `staff.user_id` profile. Employees can submit leave requests, review their own request history, cancel their own pending requests, and clock in/out once per day. Requests cannot overlap another pending or approved request for that employee. Clock actions use the server/database date and time; staff profiles must be linked and Active.
+- **HR workspace:** the existing HR directory, leave approval and workforce attendance register remain restricted to users with the HR module permission. Employee self-service does not expose other employees' records.
+- **Aged Receivables:** lists completed sales with positive outstanding balances, invoice date, customer, total, amount paid, balance and invoice-age buckets. Customer totals and bucket totals are included.
+- **Ageing basis:** the current sales schema does not provide contractual invoice due dates, so this report ages from the sale/invoice date. “Current (0–30)” means issued within the last 30 days; it must not be interpreted as a definitive overdue classification until invoice due dates/payment terms are introduced.
+- **Leave-day calculation:** requested days currently count weekdays (Monday–Friday) and do not yet exclude Kenyan public holidays or configured company holidays. Leave balances/accruals are not yet automatically deducted.
