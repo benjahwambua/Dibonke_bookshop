@@ -34,19 +34,13 @@ The app uses `DB_HOST=db` inside the Docker network. Do not set it to `localhost
 
 ## Import an existing development database
 
-Place a SQL dump outside the public web root, then import it into the database container:
+Place a SQL dump outside the public web root, then import it into the database container. This command reads the database name from the container environment and prompts for the root password:
 
 ```bash
-docker compose exec -T db mariadb -u root -p"$DB_ROOT_PASSWORD" "$DB_NAME" < ./private/dibonke_bookshop_db.sql
+docker compose exec -T db sh -c 'mariadb -u root -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"' < ./private/dibonke_bookshop_db.sql
 ```
 
-If your shell does not expand variables inside the command as expected, enter the root password interactively:
-
-```bash
-docker compose exec db mariadb -u root -p dibonke_bookshop_db
-```
-
-Then use the MariaDB client import command or pipe the SQL file from the host. Keep the dump private and delete it from the project directory after import.
+Keep the dump private and delete it from the project directory after import. Never commit a database dump or place it under a publicly served uploads directory.
 
 Apply the project's SQL migrations only in their documented dependency order, after taking a backup. The exact migration set depends on which extensions are already present in the imported database; do not blindly re-import non-idempotent migrations.
 
