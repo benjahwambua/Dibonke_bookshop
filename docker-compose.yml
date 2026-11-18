@@ -21,7 +21,7 @@ services:
     volumes:
       - ./:/var/www/html
     healthcheck:
-      test: ["CMD-SHELL", "php -r '$$s=@fsockopen("127.0.0.1",80); exit($$s?0:1);'"]
+      test: ["CMD", "php", "-r", "$$s=@fsockopen('127.0.0.1',80); exit($$s?0:1);"]
       interval: 30s
       timeout: 5s
       retries: 3
