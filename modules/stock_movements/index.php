@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../includes/report_tools.php';
 
 $pageTitle = 'Stock Movements';
 
@@ -107,13 +108,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'adjus
 
 $search = trim((string)($_GET['q'] ?? ''));
 $type = (string)($_GET['type'] ?? '');
+$from = (string)($_GET['from'] ?? date('Y-m-01'));
+$to = (string)($_GET['to'] ?? date('Y-m-d'));
+$validDate = '/^\\d{4}-\\d{2}-\\d{2}$/';
+if (!preg_match($validDate, $from)) $from = date('Y-m-01');
+if (!preg_match($validDate, $to)) $to = date('Y-m-d');
+if ($from > $to) { [$from, $to] = [$to, $from]; }
+$productId = (int)($_GET['product_id'] ?? 0);
 
 $sql = "SELECT sm.*, p.product_name, p.sku, u.full_name
         FROM stock_movements sm
         INNER JOIN products p ON p.id = sm.product_id
         LEFT JOIN users u ON u.id = sm.user_id
-        WHERE 1 = 1";
-$params = [];
+        WHERE DATE(sm.movement_date) BETWEEN :from_date AND :to_date";
+$params = [':from_date' => $from, ':to_date' => $to];
 
 if ($search !== '') {
     $sql .= " AND (p.product_name LIKE :q OR p.sku LIKE :q OR sm.notes LIKE :q OR CAST(sm.reference_id AS CHAR) LIKE :q)";
@@ -121,6 +129,8 @@ if ($search !== '') {
 }
 
 $types = ['Purchase', 'Sale', 'Return', 'Adjustment', 'Damage', 'Opening Stock'];
+if ($productId > 0) { $sql .= " AND sm.product_id = :product_id"; $params[':product_id'] = $productId; }
+
 if (in_array($type, $types, true)) {
     $sql .= " AND sm.movement_type = :type";
     $params[':type'] = $type;
@@ -130,6 +140,10 @@ $sql .= " ORDER BY sm.id DESC";
 $stmt = $conn->prepare($sql);
 $stmt->execute($params);
 $movements = $stmt->fetchAll();
+$exportRows = [];
+foreach ($movements as $m) { $exportRows[] = [$m['movement_date'],$m['product_name'],$m['sku'],$m['movement_type'],$m['quantity'],$m['stock_before'],$m['stock_after'],$m['reference_type'],$m['reference_id'],$m['full_name'],$m['notes']]; }
+dibonkeReportExport('stock_movements_'.$from.'_to_'.$to,['Date','Product','SKU','Movement Type','Quantity','Stock Before','Stock After','Reference Type','Reference ID','User','Notes'],$exportRows);
+$filterProducts = $conn->query("SELECT id, product_name FROM products ORDER BY product_name")->fetchAll(PDO::FETCH_ASSOC);
 
 $stats = [
     'entries' => (int)$conn->query("SELECT COUNT(*) FROM stock_movements")->fetchColumn(),
@@ -150,6 +164,7 @@ require_once __DIR__ . '/../../includes/header.php';
 require_once __DIR__ . '/../../includes/sidebar.php';
 ?>
 <main class="content">
+    <?php dibonkeReportPrintStyles(); ?>
     <nav class="breadcrumbs" aria-label="Breadcrumb">
         <a href="<?= BASE_URL ?>/modules/products/index.php">Inventory</a>
         <span aria-hidden="true">/</span>
@@ -185,9 +200,14 @@ require_once __DIR__ . '/../../includes/sidebar.php';
                 <option value="<?= e($movementType) ?>" <?= $type === $movementType ? 'selected' : '' ?>><?= e($movementType) ?></option>
             <?php endforeach; ?>
         </select>
+        <select name="product_id"><option value="0">All products</option><?php foreach ($filterProducts as $fp): ?><option value="<?= (int)$fp['id'] ?>" <?= $productId === (int)$fp['id'] ? 'selected' : '' ?>><?= e($fp['product_name']) ?></option><?php endforeach; ?></select>
+        <label>From <input type="date" name="from" value="<?= e($from) ?>"></label>
+        <label>To <input type="date" name="to" value="<?= e($to) ?>"></label>
         <button class="btn btn-light" type="submit"><i class="fas fa-search"></i> Filter</button>
         <a class="btn btn-light" href="<?= BASE_URL ?>/modules/stock_movements/index.php">Reset</a>
     </form>
+
+    <?php dibonkeReportActions('stock_movements'); ?>
 
     <div class="table-card">
         <div class="table-wrap">
