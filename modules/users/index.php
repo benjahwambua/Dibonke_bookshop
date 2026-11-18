@@ -3,7 +3,7 @@ declare(strict_types=1);
 require_once __DIR__.'/../../includes/auth.php';
 require_once __DIR__.'/../../config/db.php';
 
-if (!isSuperUser()) { http_response_code(403); exit('Access denied.'); }
+if (!isAdministrator()) { http_response_code(403); exit('Access denied.'); }
 
 $users = $conn->query("SELECT u.id,u.full_name,u.username,COALESCE(r.role_name,u.role) role_name,u.is_super,u.status,u.last_login FROM users u LEFT JOIN roles r ON r.id=u.role_id ORDER BY u.id DESC")->fetchAll();
 $roles = $conn->query("SELECT id,role_name FROM roles WHERE status='Active' ORDER BY role_name")->fetchAll();
