@@ -149,3 +149,12 @@ After the base retail schema exists, apply `dibonke_short_references_and_cash_te
 - Safaricom must enable external validation on the shortcode if validation is required. The validation endpoint currently accepts requests; it does not reject payments based on invoice existence. Confirm with Safaricom whether the supplied shortcode is eligible for C2B URL registration (PayBill / Buy Goods setup may differ by shortcode).
 - For fully automatic invoice allocation, prefer a payment flow that supplies the Dibonke invoice number as the account reference (for example, PayBill account reference or Dibonke STK Push). A plain Till payment with no invoice reference can be detected automatically but may need reconciliation before it is credited to a specific invoice.
 - This is callback code prepared for testing; it has not been registered against a live Safaricom shortcode or verified with a real payment.
+
+
+## Chart of Accounts and HR foundation
+
+After pulling `feature/dibonke-product-catalog`, import `database/dibonke_accounting_hr.sql` in phpMyAdmin. This migration creates the Chart of Accounts register and HR leave-type, leave-request and attendance tables, then grants the Admin and Manager roles access to Chart of Accounts and HR. Import the staff/roles migration first because this migration seeds `role_permissions`.
+
+The Chart of Accounts currently establishes account codes, names and account types with a starter bookshop account set. It does not yet post journals or produce a Trial Balance. Those require validated source-to-account mappings and balanced journal posting. HR currently includes the existing employee directory plus leave requests/approval and attendance recording; payroll, statutory deductions, payslips and advanced leave accruals are not included in this phase.
+
+Cashier login now routes to My Cashier Shift. Cashiers open a shift there before proceeding to the POS. Admin user management supports deactivate/reactivate and guarded deletion; accounts with linked business/audit history must be deactivated rather than deleted.
