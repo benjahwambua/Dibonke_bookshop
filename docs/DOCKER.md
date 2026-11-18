@@ -2,6 +2,7 @@
 
 ## What this package provides
 
+- Dibonke application code packaged inside the web image (no XAMPP or host source-code mount required).
 - PHP 8.2 with Apache, PDO MySQL and MySQLi extensions.
 - MariaDB 10.11 with a persistent Docker volume.
 - A separate persistent volume for product images and other uploaded files.
@@ -31,17 +32,17 @@
 
 5. Open `http://localhost:8080`.
 
-The app uses `DB_HOST=db` inside the Docker network. Do not set it to `localhost` from the web container.
+The application files are included in the built image. After pulling code updates, rebuild the web image with `docker compose up -d --build`. The app uses `DB_HOST=db` inside the Docker network. Do not set it to `localhost` from the web container.
 
 ## Import an existing development database
 
-Place a SQL dump outside the public web root, then import it into the database container. This command reads the database name from the container environment and prompts for the root password:
+Create a `private` folder in the project directory and place the SQL dump there. The folder is excluded from the Docker build context and must never be committed. Import it into the database container:
 
 ```bash
 docker compose exec -T db sh -c 'mariadb -u root -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"' < ./private/dibonke_bookshop_db.sql
 ```
 
-Keep the dump private and delete it from the project directory after import. Never commit a database dump or place it under a publicly served uploads directory.
+Keep the dump private and delete it after import. Never commit a database dump or place it under a publicly served uploads directory.
 
 Apply the project's SQL migrations only in their documented dependency order, after taking a backup. Include `database/dibonke_product_images.sql` so the `products.image_path` column exists for product image uploads. The POS now degrades safely when that migration is pending, but image upload/save requires the column. The exact migration set depends on which extensions are already present in the imported database; do not blindly re-import non-idempotent migrations.
 
@@ -51,6 +52,10 @@ Apply the project's SQL migrations only in their documented dependency order, af
 - Database settings are read from `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, and `DB_PASSWORD`.
 - In Docker, Compose supplies `DB_HOST=db`.
 - For local XAMPP, leave the environment variables unset to use the local defaults in `config/db.php`.
+
+## Uploaded product images
+
+Product images are stored in the persistent `dibonke_uploads` volume, separately from the application image and database. Existing images from XAMPP are not copied automatically when the database is restored. If the database contains product image paths, copy the matching files from the XAMPP `uploads/products` directory into the Docker uploads volume before relying on those thumbnails. Back up this volume whenever you back up the database.
 
 ## Backups
 
@@ -66,7 +71,7 @@ Restore only after taking a second backup of the current database:
 docker compose exec -T db sh -c 'mariadb -u root -p"$MARIADB_ROOT_PASSWORD" "$MARIADB_DATABASE"' < dibonke-backup.sql
 ```
 
-The database and uploads volumes are persistent. `docker compose down` does not delete them. Back up both the database and the uploads directory/volume before moving hosts. **Do not use `docker compose down -v` unless you intentionally want to permanently delete the database and uploads volumes.**
+The database and uploads volumes are persistent. `docker compose down` does not delete them. Back up both the database and uploads volume before moving hosts. **Do not use `docker compose down -v` unless you intentionally want to permanently delete the database and uploads volumes.**
 
 ## Production hardening still required
 
