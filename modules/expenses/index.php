@@ -5,7 +5,7 @@ require_once __DIR__.'/../../config/db.php';
 require_once __DIR__.'/../../includes/report_tools.php';
 requireModuleAccess('expenses');
 
-// Ensure the expense category master exists and is populated on first use.
+// Ensure the expense category master exists and default categories are active.
 $conn->exec("CREATE TABLE IF NOT EXISTS expense_categories (
     id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     category_name VARCHAR(100) NOT NULL,
@@ -13,9 +13,20 @@ $conn->exec("CREATE TABLE IF NOT EXISTS expense_categories (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uq_expense_category_name (category_name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
 $defaultCategories=['Rent','Utilities','Salaries & Wages','Transport & Travel','Stationery & Office Supplies','Repairs & Maintenance','Internet & Communication','Marketing & Advertising','Licences & Permits','Bank Charges','Cleaning & Sanitation','Security','Packaging & Shopping Bags','Delivery & Courier','General & Miscellaneous'];
-$seed=$conn->prepare("INSERT INTO expense_categories(category_name,status) SELECT ?, 'Active' WHERE NOT EXISTS (SELECT 1 FROM expense_categories WHERE LOWER(category_name)=LOWER(?))");
-foreach($defaultCategories as $category){$seed->execute([$category,$category]);}
+$findCategory=$conn->prepare("SELECT id FROM expense_categories WHERE LOWER(category_name)=LOWER(?) LIMIT 1");
+$activateCategory=$conn->prepare("UPDATE expense_categories SET status='Active' WHERE id=?");
+$insertCategory=$conn->prepare("INSERT INTO expense_categories(category_name,status) VALUES(?,'Active')");
+foreach($defaultCategories as $category){
+    $findCategory->execute([$category]);
+    $existingId=$findCategory->fetchColumn();
+    if($existingId){
+        $activateCategory->execute([(int)$existingId]);
+    }else{
+        $insertCategory->execute([$category]);
+    }
+}
 $cats=$conn->query("SELECT id,category_name FROM expense_categories WHERE status='Active' ORDER BY category_name")->fetchAll(PDO::FETCH_ASSOC);
 
 $from=(string)($_GET['from']??date('Y-m-01'));$to=(string)($_GET['to']??date('Y-m-d'));
@@ -47,11 +58,11 @@ require_once __DIR__.'/../../includes/header.php';require_once __DIR__.'/../../i
 <div class="grid">
 <div class="panel"><h3>Record Expense</h3><form method="post" action="store.php"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>">
 <div class="field"><label>Expense Title</label><input name="expense_title" required maxlength="150"></div>
-<div class="field"><label>Category</label><select name="category_id" required><option value="">Select category</option><?php foreach($cats as $c):?><option value="<?=(int)$c['id']?>"><?=e($c['category_name'])?></option><?php endforeach;?></select></div>
+<div class="field"><label>Category</label><select name="category_id" required><?php if(!$cats):?><option value="">No active categories available</option><?php else:foreach($cats as $index=>$c):?><option value="<?=(int)$c['id']?>" <?=$index===0?'selected':''?>><?=e($c['category_name'])?></option><?php endforeach;endif;?></select></div>
 <div class="field"><label>Amount</label><input type="number" name="amount" min=".01" step=".01" required></div>
 <div class="field"><label>Payment Method</label><select name="payment_method"><option>Cash</option><option>M-Pesa</option><option>Bank</option><option>Cheque</option><option>Other</option></select></div>
 <div class="field"><label>Date</label><input type="date" name="expense_date" value="<?=date('Y-m-d')?>" required></div>
-<div class="field"><label>Description</label><input name="description" maxlength="500"></div><button class="btn">Save Expense</button></form></div>
+<div class="field"><label>Description</label><input name="description" maxlength="500"></div><button class="btn" <?=$cats?'':'disabled'?>>Save Expense</button></form></div>
 <div class="panel"><h3>Expense Register</h3>
 <form class="filters" method="get"><label>From<input type="date" name="from" value="<?=e($from)?>"></label><label>To<input type="date" name="to" value="<?=e($to)?>"></label><label>Category<select name="category_id"><option value="0">All categories</option><?php foreach($cats as $c):?><option value="<?=(int)$c['id']?>" <?=$categoryId===(int)$c['id']?'selected':''?>><?=e($c['category_name'])?></option><?php endforeach;?></select></label><label>Search<input name="q" value="<?=e($search)?>" placeholder="Title or reference"></label><button class="btn">Filter</button><a href="index.php">Reset</a></form>
 <?php dibonkeReportActions('expenses'); ?>
