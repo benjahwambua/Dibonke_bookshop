@@ -76,6 +76,7 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
 
         <?php if (canAccessModule('finance') || canAccessModule('billing') || canAccessModule('expenses') || canAccessModule('supplier_payments') || canAccessModule('mpesa')): ?>
         <div class="menu-title">Finance &amp; Billing</div>
+        <?php if (canAccessModule('chart_of_accounts')): ?><a href="<?= BASE_URL ?>/modules/finance/chart_of_accounts.php" class="<?= navActive('/finance/chart_of_accounts.php') ?>"><i class="fas fa-list-ol icon-main"></i>Chart of Accounts</a><?php endif; ?>
         <?php if (canAccessModule('finance')): ?>
         <a href="<?= BASE_URL ?>/modules/finance/index.php" class="<?= navActive('/finance/') ?>"><i class="fas fa-chart-pie icon-main"></i>Finance Overview</a>
         <a href="<?= BASE_URL ?>/modules/finance/ledger.php" class="<?= navActive('/finance/ledger.php') ?>"><i class="fas fa-book icon-main"></i>Ledger</a>
@@ -101,6 +102,7 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
 
         <?php if (canAccessModule('staff') || isSuperUser()): ?>
         <div class="menu-title">Staff &amp; Access</div>
+        <?php if (canAccessModule('hr')): ?><a href="<?= BASE_URL ?>/modules/hr/index.php" class="<?= navActive('/hr/') ?>"><i class="fas fa-user-tie icon-main"></i>Human Resources</a><?php endif; ?>
         <?php if (canAccessModule('staff')): ?><a href="<?= BASE_URL ?>/modules/staff/index.php" class="<?= navActive('/staff/') ?>"><i class="fas fa-id-badge icon-main"></i>Staff Directory</a><?php endif; ?>
         <?php if (isSuperUser()): ?>
         <a href="<?= BASE_URL ?>/modules/users/index.php" class="<?= navActive('/users/') ?>"><i class="fas fa-user-shield icon-main"></i>Users</a>
