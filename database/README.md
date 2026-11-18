@@ -124,3 +124,7 @@ Completion migration details:
 - The shared audit writer records core sales, purchase, payments, expenses, customer, product, staff, user, role and receiving events. Older historical records remain in the legacy `activity_logs` table and are not backfilled into the structured audit register.
 - eTIMS queueing stores a normalized Dibonke invoice data snapshot. It is not a KRA request and does not submit, sign, or receive acknowledgements from KRA. Live integration remains disabled until KRA's current interface specification, credentials, certificate/device details and sandbox access are supplied and tested.
 - Cash shifts cannot allocate mixed POS tender because the existing POS does not persist individual tender splits. Such sales are deliberately excluded from expected cash; record each actual cash movement in the shift until tender splitting is implemented.
+
+
+### Short document references and cash tender
+After the base retail schema exists, apply `dibonke_short_references_and_cash_tender.sql`. It adds `sales.amount_tendered` for recording the physical amount handed over at a cash sale. New POS invoice numbers use `INV-YYMMDD-#####`; payment receipts use `RCP-YYMMDD-#####`, where the final digits are the sequential database record ID. Existing invoice/payment references are not rewritten.
