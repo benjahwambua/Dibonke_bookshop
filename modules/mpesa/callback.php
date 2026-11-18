@@ -25,14 +25,13 @@ try{
       if($customer && $amount>0){
          $payAmount=min($amount,(float)$customer['balance']);
          if($payAmount>0){
-            $prefix=(string)($conn->query("SELECT setting_value FROM settings WHERE setting_key='receipt_prefix' LIMIT 1")->fetchColumn()?:'SS-RCP');
-            $rc=$prefix.'-'.date('YmdHis').'-'.strtoupper(bin2hex(random_bytes(2)));
+            $rc='TMP-'.strtoupper(bin2hex(random_bytes(8)));
             $exists=$conn->prepare("SELECT COUNT(*) FROM customer_payments WHERE customer_id=? AND transaction_reference=?");$exists->execute([$customerId,$receipt]);
             if((int)$exists->fetchColumn()===0){
                $ins=$conn->prepare("INSERT INTO customer_payments(receipt_number,customer_id,sale_id,user_id,amount,payment_method,transaction_reference,payment_date,notes) VALUES(?,?,?,?,?,?,?,?,?)");
-               $ins->execute([$rc,$customerId,null,(int)($conn->query("SELECT id FROM users ORDER BY id LIMIT 1")->fetchColumn() ?: 1),$payAmount,'M-Pesa',$receipt,date('Y-m-d H:i:s'),'Automatic M-PESA credit payment']);
+               $ins->execute([$rc,$customerId,null,(int)($conn->query("SELECT id FROM users ORDER BY id LIMIT 1")->fetchColumn() ?: 1),$payAmount,'M-Pesa',$receipt,date('Y-m-d H:i:s'),'Automatic M-PESA credit payment']);$paymentId=(int)$conn->lastInsertId();$rc='RCP-'.date('ymd').'-'.str_pad((string)$paymentId,5,'0',STR_PAD_LEFT);$conn->prepare("UPDATE customer_payments SET receipt_number=? WHERE id=?")->execute([$rc,$paymentId]);
                $upd=$conn->prepare("UPDATE customers SET balance=GREATEST(0,balance-?) WHERE id=?");$upd->execute([$payAmount,$customerId]);
-               recordAuditEvent($conn,'Receive','customer_payments','Confirmed M-PESA customer credit payment '.$receipt,'customer_payment',(int)$conn->lastInsertId(),null,['customer_id'=>$customerId,'amount'=>$payAmount,'payment_method'=>'M-Pesa','reference'=>$receipt]);
+               recordAuditEvent($conn,'Receive','customer_payments','Confirmed M-PESA customer credit payment '.$receipt,'customer_payment',$paymentId,null,['customer_id'=>$customerId,'amount'=>$payAmount,'payment_method'=>'M-Pesa','reference'=>$receipt]);
             }
          }
       }
@@ -51,10 +50,9 @@ try{
             $cp=$conn->prepare("UPDATE customers SET balance=GREATEST(0,balance-?) WHERE id=?");$cp->execute([$payAmount,(int)$sale['customer_id']]);
             $exists=$conn->prepare("SELECT COUNT(*) FROM customer_payments WHERE sale_id=? AND transaction_reference=?");$exists->execute([$saleId,$receipt]); 
             if((int)$exists->fetchColumn()===0){
-               $prefix=(string)($conn->query("SELECT setting_value FROM settings WHERE setting_key='receipt_prefix' LIMIT 1")->fetchColumn()?:'SS-RCP');
-               $rc=$prefix.'-'.date('YmdHis').'-'.strtoupper(bin2hex(random_bytes(2)));
+               $rc='TMP-'.strtoupper(bin2hex(random_bytes(8)));
                $ins=$conn->prepare("INSERT INTO customer_payments(receipt_number,customer_id,sale_id,user_id,amount,payment_method,transaction_reference,payment_date,notes) VALUES(?,?,?,?,?,?,?,?,?)");
-               $ins->execute([$rc,(int)$sale['customer_id'],$saleId,(int)$sale['user_id'],$payAmount,'M-Pesa',$receipt,date('Y-m-d H:i:s'),'Automatic M-PESA payment for '.$sale['invoice_number']]);
+               $ins->execute([$rc,(int)$sale['customer_id'],$saleId,(int)$sale['user_id'],$payAmount,'M-Pesa',$receipt,date('Y-m-d H:i:s'),'Automatic M-PESA payment for '.$sale['invoice_number']]);$paymentId=(int)$conn->lastInsertId();$rc='RCP-'.date('ymd').'-'.str_pad((string)$paymentId,5,'0',STR_PAD_LEFT);$conn->prepare("UPDATE customer_payments SET receipt_number=? WHERE id=?")->execute([$rc,$paymentId]);
             }
          }
          recordAuditEvent($conn,'Receive','sales','Confirmed M-PESA payment for invoice '.$sale['invoice_number'],'sale',$saleId,['paid_amount'=>(float)$sale['paid_amount'],'balance'=>(float)$sale['balance']],['paid_amount'=>(float)$sale['paid_amount']+$payAmount,'balance'=>max(0,(float)$sale['total_amount']-(float)$sale['paid_amount']-$payAmount),'payment_method'=>'M-Pesa','reference'=>$receipt]);
