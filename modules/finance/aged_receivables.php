@@ -20,7 +20,7 @@ $statement=$conn->prepare($sql);$statement->execute(array_merge([$asAt,$asAt,$as
 $totals=['Current (0–30)'=>0.0,'31–60 days'=>0.0,'61–90 days'=>0.0,'Over 90 days'=>0.0];$totalDue=0.0;
 foreach($allInvoices as $r){$totals[$r['age_bucket']]+=(float)$r['balance'];$totalDue+=(float)$r['balance'];}
 $invoices=in_array($bucket,array_keys($totals),true)?array_values(array_filter($allInvoices,fn($r)=>$r['age_bucket']===$bucket)):$allInvoices;
-$customerSql="SELECT c.id customer_id,COALESCE(c.customer_name,'Walk-in / Unassigned') customer_name,COUNT(*) invoice_count,SUM(s.balance) balance".$base." GROUP BY s.customer_id,c.customer_name ORDER BY balance DESC";
+$customerSql="SELECT c.id customer_id,COALESCE(c.customer_name,'Walk-in / Unassigned') customer_name,COUNT(*) invoice_count,SUM(s.balance) balance".$base." GROUP BY s.customer_id,c.id,c.customer_name ORDER BY balance DESC";
 $customerQuery=$conn->prepare($customerSql);$customerQuery->execute($params);$customerTotals=$customerQuery->fetchAll(PDO::FETCH_ASSOC);
 $exportRows=[];foreach($invoices as $r){$exportRows[]=[$r['invoice_number'],$r['customer_name']??'Walk-in / Unassigned',$r['phone']??'',$r['sale_date'],$r['age_days'],$r['age_bucket'],$r['total_amount'],$r['paid_amount'],$r['balance']];}
 dibonkeReportExport('aged_receivables_as_at_'.$asAt,['Invoice','Customer','Phone','Invoice Date','Age Days','Age Bucket','Invoice Total','Paid','Balance'],$exportRows);
