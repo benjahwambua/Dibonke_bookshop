@@ -23,7 +23,7 @@ function dibonkeReportExport(string $filename, array $headers, array $rows): voi
         foreach ($row as $value) {
             $value = $value === null ? '' : (string)$value;
             // Prevent spreadsheet formula execution for untrusted text cells.
-            if ($value !== '' && preg_match('/^[=+@\\-\\t\\r]/', $value)) {
+            if ($value !== '' && preg_match('/^[=+@\\t\\r]|^-(?![0-9])/', $value)) {
                 $value = "'" . $value;
             }
             $clean[] = $value;
