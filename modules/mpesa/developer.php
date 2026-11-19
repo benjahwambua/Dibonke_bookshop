@@ -74,7 +74,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'mpesa_live_passkey',
             ];
 
-            mpesaDeveloperSave($conn, 'mpesa_environment', $environment);
+            if ($environment === 'live') {
+                foreach (['mpesa_live_consumer_key', 'mpesa_live_consumer_secret', 'mpesa_live_passkey'] as $key) {
+                    $submitted = trim((string)($_POST[$key] ?? ''));
+                    if ($submitted === '' && mpesaSetting($key) === '') {
+                        throw new RuntimeException('Production mode was not activated: enter all three production Daraja credentials first.');
+                    }
+                }
+                if (mpesaSetting('mpesa_shortcode') === '') {
+                    throw new RuntimeException('Production mode requires the business PayBill or Till shortcode in Business Settings.');
+                }
+                if ($liveCallback === '') {
+                    throw new RuntimeException('Production mode requires a permanent HTTPS STK callback URL.');
+                }
+            }
+
+            // Validate the requested environment before changing the active mode.
+            // This prevents an incomplete production setup from switching the live
+            // payment code away from the already-working sandbox configuration.
             mpesaDeveloperSave($conn, 'mpesa_sandbox_shortcode', $sandboxShortcode);
             mpesaDeveloperSave($conn, 'mpesa_sandbox_callback_url', $sandboxCallback);
             mpesaDeveloperSave($conn, 'mpesa_live_callback_url', $liveCallback);
@@ -87,20 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     mpesaDeveloperSave($conn, $key, $value);
                 }
             }
-
-            if ($environment === 'live') {
-                foreach (['mpesa_live_consumer_key', 'mpesa_live_consumer_secret', 'mpesa_live_passkey'] as $key) {
-                    if (mpesaSetting($key) === '') {
-                        throw new RuntimeException('Production mode was not activated: enter all three production Daraja credentials first.');
-                    }
-                }
-                if (mpesaSetting('mpesa_shortcode') === '') {
-                    throw new RuntimeException('Production mode requires the business PayBill or Till shortcode in Business Settings.');
-                }
-                if ($liveCallback === '') {
-                    throw new RuntimeException('Production mode requires a permanent HTTPS STK callback URL.');
-                }
-            }
+            mpesaDeveloperSave($conn, 'mpesa_environment', $environment);
 
             $_SESSION['mpesa_dev_flash'] = 'Developer M-PESA settings saved.';
         } catch (Throwable $e) {
