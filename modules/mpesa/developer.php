@@ -376,5 +376,12 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 
 <style>
 .mpesa-dev-wrap{max-width:1180px;margin:0 auto}.page-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}.page-heading h1{margin:0 0 6px}.page-heading p,.muted{color:#64748b}.card{background:#fff;border:1px solid #e8edf3;border-radius:14px;padding:22px;box-shadow:0 1px 5px #0001;margin-bottom:18px}.card h2{margin:0 0 7px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;margin:20px 0}.form-grid label,.action-row label{display:block;font-size:12px;font-weight:700;color:#334155}.form-grid input,.form-grid select,.action-row input{display:block;box-sizing:border-box;width:100%;margin-top:6px;padding:11px;border:1px solid #dbe3ec;border-radius:8px;background:#fff}.form-grid small{display:block;color:#64748b;font-weight:400;margin-top:5px}.full,.section-label{grid-column:1/-1}.section-label{font-size:13px;font-weight:800;color:#174a7e;padding-top:10px;border-bottom:1px solid #e8edf3;padding-bottom:8px}.status-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:16px 0}.status-item{display:flex;flex-direction:column;gap:5px;padding:10px;border:1px solid #e8edf3;border-radius:8px;font-size:11px}.configured{color:#15803d}.missing{color:#b45309}.btn{display:inline-block;padding:11px 16px;border:0;border-radius:8px;text-decoration:none;font-weight:700;cursor:pointer}.primary{background:#004a99;color:#fff}.secondary{background:#eef2f7;color:#1e293b}.flash{padding:12px;background:#ecfdf5;color:#166534;border-radius:8px;margin-bottom:18px}.action-row{display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin:14px 0}.action-row label{min-width:220px}.small{font-size:11px}@media(max-width:800px){.form-grid,.status-grid{grid-template-columns:1fr}.full,.section-label{grid-column:auto}.page-heading{align-items:flex-start;flex-direction:column}}
+
+/* Compact typography for M-PESA developer settings */
+.mpesa-dev-wrap h1{font-size:1.25rem!important;line-height:1.3;margin:0 0 5px}
+.mpesa-dev-wrap h2{font-size:1rem!important;line-height:1.35}
+.mpesa-dev-wrap p{font-size:12px;line-height:1.5}
+.mpesa-dev-wrap .form-grid label,.mpesa-dev-wrap .action-row label{font-size:12px}
+.mpesa-dev-wrap .btn{font-size:12px}
 </style>
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>
