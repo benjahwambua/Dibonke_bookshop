@@ -36,9 +36,9 @@ function mpesaNormalizePhone(string $phone): string {
     return $phone;
 }
 
-function mpesaStkPush(float $amount,string $phone,string $accountReference,string $description='Dibonke Bookshop Payment'): array {
+function mpesaStkPush(float $amount,string $phone,string $accountReference,string $description='Dibonke Bookshop Payment',?string $callbackOverride=null): array {
     global $conn;
-    $shortcode=mpesaSetting('mpesa_shortcode');$passkey=mpesaSetting('mpesa_passkey');$callback=mpesaSetting('mpesa_callback_url');
+    $shortcode=mpesaSetting('mpesa_shortcode');$passkey=mpesaSetting('mpesa_passkey');$callback=$callbackOverride??mpesaSetting('mpesa_callback_url');
     if($shortcode===''||$passkey===''||$callback==='')throw new RuntimeException('Configure M-PESA shortcode, passkey and callback URL first.');
     $phone=mpesaNormalizePhone($phone);if(!preg_match('/^2547\d{8}$/',$phone))throw new RuntimeException('Enter a valid Kenyan M-PESA phone number.');
     $timestamp=date('YmdHis');$password=base64_encode($shortcode.$passkey.$timestamp);
