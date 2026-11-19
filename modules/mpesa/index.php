@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($accountReference !== '' && !preg_match('/^[A-Za-z0-9._-]{1,20}$/', $accountReference)) {
             throw new RuntimeException('The account number/reference can contain letters, numbers, dots, underscores and hyphens only (maximum 20 characters).');
         }
-        if ($businessName === '' || mb_strlen($businessName) > 100) {
+        if ($businessName === '' || strlen($businessName) > 100) {
             throw new RuntimeException('Enter the business name (maximum 100 characters).');
         }
 
