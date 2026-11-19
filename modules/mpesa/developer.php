@@ -263,7 +263,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
                 <h1>M-PESA Developer Settings</h1>
                 <p>Daraja credentials, callbacks, environment controls and sandbox testing. This page is restricted to the system superuser.</p>
             </div>
-            <a class="btn secondary" href="index.php">Back to Business Settings</a>
+            <div><a class="btn secondary" href="<?= BASE_URL ?>/modules/developer/index.php">Developer Console</a> <a class="btn secondary" href="index.php">Business Settings</a></div>
         </div>
 
         <?php if ($flash): ?><div class="flash"><?= e($flash) ?></div><?php endif; ?>
