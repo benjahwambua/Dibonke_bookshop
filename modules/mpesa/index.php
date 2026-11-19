@@ -26,7 +26,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
    if(!filter_var($callback,FILTER_VALIDATE_URL)||parse_url($callback,PHP_URL_SCHEME)!=='https')throw new RuntimeException('Set a publicly reachable HTTPS STK callback URL before sending a test prompt. Localhost cannot receive Safaricom callbacks.');
    $host=strtolower((string)parse_url($callback,PHP_URL_HOST));
    if($host===''||in_array($host,['localhost','127.0.0.1','::1'],true)||str_contains($host,'your-domain.com'))throw new RuntimeException('Replace the callback placeholder with your real public HTTPS domain first.');
-   $result=mpesaStkPush($amount,$phone,'DBKTEST','Dibonke sandbox test');
+   $testCallback=preg_replace('~/callback\\.php(?:\\?.*)?$~i','/sandbox_test_callback.php',$callback);\n   if(!$testCallback||$testCallback===$callback)throw new RuntimeException('The STK callback URL must end in /callback.php so the isolated sandbox test callback can be generated.');\n   $result=mpesaStkPush($amount,$phone,'DBKTEST','Dibonke sandbox test',$testCallback);
    $requestId=(string)($result['CheckoutRequestID']??'');
    $customerMessage=(string)($result['CustomerMessage']??$result['ResponseDescription']??'Safaricom accepted the STK request.');
    if(($result['ResponseCode']??null)!=='0')throw new RuntimeException((string)($result['ResponseDescription']??'Safaricom did not accept the STK request.'));
