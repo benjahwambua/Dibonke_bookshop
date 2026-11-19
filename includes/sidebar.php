@@ -135,6 +135,7 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <a href="<?= BASE_URL ?>/modules/users/index.php" class="<?= navActive('/users/') ?>"><i class="fas fa-user-shield icon-main"></i>Users</a>
         <a href="<?= BASE_URL ?>/modules/roles/index.php" class="<?= navActive('/roles/') ?>"><i class="fas fa-user-lock icon-main"></i>Roles &amp; Permissions</a>
         <a href="<?= BASE_URL ?>/modules/settings/index.php" class="<?= navActive('/settings/') ?>"><i class="fas fa-sliders-h icon-main"></i>Settings</a>
+        <?php if (isSuperUser()): ?><a href="<?= BASE_URL ?>/modules/developer/index.php" class="<?= navActive('/developer/') ?>"><i class="fas fa-terminal icon-main"></i>Developer Console</a><?php endif; ?>
         <?php endif; ?>
         <?php endif; ?>
         <button type="button" class="menu-title nav-group-toggle" aria-expanded="false"><span>Help &amp; Support</span><span class="nav-group-chevron" aria-hidden="true"></span></button>
