@@ -177,5 +177,12 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 
 <style>
 .mpesa-business-wrap{max-width:1200px;margin:0 auto}.page-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}.page-heading h1{margin:0 0 6px}.page-heading p,.muted{color:#64748b}.card{background:#fff;border:1px solid #e8edf3;border-radius:14px;padding:22px;box-shadow:0 1px 5px #0001;margin-bottom:18px}.card h2{margin:0 0 7px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:20px 0}.form-grid label{display:block;font-size:12px;font-weight:700;color:#334155}.form-grid input,.form-grid select{display:block;box-sizing:border-box;width:100%;margin-top:6px;padding:12px;border:1px solid #dbe3ec;border-radius:8px;background:#fff}.form-grid small{display:block;color:#64748b;font-weight:400;margin-top:5px;line-height:1.4}.btn{display:inline-block;padding:11px 16px;border:0;border-radius:8px;text-decoration:none;font-weight:700;cursor:pointer}.primary{background:#004a99;color:#fff}.secondary{background:#eef2f7;color:#1e293b}.flash{padding:12px;background:#ecfdf5;color:#166534;border-radius:8px;margin-bottom:18px}.c2b-summary{display:flex;align-items:center;justify-content:space-between;gap:16px}.c2b-summary h2{margin:0 0 5px}.c2b-summary p{margin:0}.c2b-count{display:flex;align-items:center;gap:9px;padding:9px 13px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;white-space:nowrap}.c2b-count strong{font-size:23px;color:#0f172a}.c2b-count span{font-size:11px;color:#64748b}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse}th,td{padding:11px;border-bottom:1px solid #e5e7eb;text-align:left;font-size:12px;white-space:nowrap}th{background:#f8fafc;color:#334155}.empty{text-align:center;color:#64748b;padding:24px}@media(max-width:800px){.form-grid{grid-template-columns:1fr}.page-heading{align-items:flex-start;flex-direction:column}.c2b-summary{align-items:flex-start;flex-direction:column}}
+
+/* Compact typography for M-PESA business settings */
+.mpesa-business-wrap h1{font-size:1.25rem!important;line-height:1.3;margin:0 0 5px}
+.mpesa-business-wrap h2{font-size:1rem!important;line-height:1.35}
+.mpesa-business-wrap p{font-size:12px;line-height:1.5}
+.mpesa-business-wrap .form-grid label{font-size:12px}
+.mpesa-business-wrap th,.mpesa-business-wrap td{font-size:11px}
 </style>
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>
