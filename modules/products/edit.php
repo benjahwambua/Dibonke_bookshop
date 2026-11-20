@@ -74,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $barcode = trim((string)($_POST['barcode'] ?? '')) ?: null;
         $unit = trim((string)($_POST['unit'] ?? 'Piece')) ?: 'Piece';
         $purchaseUnit = trim((string)($_POST['purchase_unit'] ?? ''));
-        $allowedUnits = ['Piece','Pack','Box','Carton','Dozen','Ream','Set','Pair','Bottle','Roll','Bundle','Packet','Kilogram','Gram','Litre','Millilitre','Metre','Unit'];
+        $allowedUnits = ['Piece','Pack','Box','Carton','Dozen','Ream','Set','Pair','Bottle','Roll','Bundle','Packet','Kilogram','Gram','Litre','Millilitre','Metre','Centimetre','Unit'];
         if (!in_array($unit, $allowedUnits, true) || ($purchaseUnit !== '' && !in_array($purchaseUnit, $allowedUnits, true))) throw new RuntimeException('Choose a sale and purchase unit from the available unit list.');
         $unitsPerPurchase = (int)($_POST['units_per_purchase'] ?? 1);
         $bulkPriceRaw = trim((string)($_POST['bulk_selling_price'] ?? ''));
@@ -271,7 +271,7 @@ foreach ($suppliers as $supplierOption) {
 }
 
 $pageTitle = 'Edit Product';
-$unitOptions=['Piece','Pack','Box','Carton','Dozen','Ream','Set','Pair','Bottle','Roll','Bundle','Packet','Kilogram','Gram','Litre','Millilitre','Metre','Unit'];
+$unitOptions=['Piece','Pack','Box','Carton','Dozen','Ream','Set','Pair','Bottle','Roll','Bundle','Packet','Kilogram','Gram','Litre','Millilitre','Metre','Centimetre','Unit'];
 require_once __DIR__ . '/../../includes/header.php';
 require_once __DIR__ . '/../../includes/sidebar.php';
 ?>
