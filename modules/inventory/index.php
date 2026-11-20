@@ -15,7 +15,7 @@ if (!in_array($stockFilter, ['all', 'low', 'out', 'healthy'], true)) {
 $summary = $conn->query("
     SELECT
         COUNT(*) AS product_count,
-        COALESCE(SUM(stock_quantity), 0) AS total_units,
+        COUNT(CASE WHEN stock_quantity > 0 THEN 1 END) AS stocked_products,
         COALESCE(SUM(stock_quantity * buying_price), 0) AS stock_value,
         SUM(CASE WHEN stock_quantity <= 0 THEN 1 ELSE 0 END) AS out_of_stock,
         SUM(CASE WHEN stock_quantity > 0 AND stock_quantity <= reorder_level THEN 1 ELSE 0 END) AS low_stock
@@ -94,7 +94,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 
     <section class="inventory-stats" aria-label="Inventory summary">
         <div class="inventory-stat"><span>Active products</span><strong><?= number_format((int)$summary['product_count']) ?></strong></div>
-        <div class="inventory-stat"><span>Total units in stock</span><strong><?= number_format((int)$summary['total_units']) ?></strong></div>
+        <div class="inventory-stat"><span>Products with stock</span><strong><?= number_format((int)$summary['stocked_products']) ?></strong></div>
         <div class="inventory-stat"><span>Stock cost value</span><strong>KES <?= number_format((float)$summary['stock_value'], 2) ?></strong></div>
         <div class="inventory-stat"><span>Low stock</span><strong><?= number_format((int)$summary['low_stock']) ?></strong></div>
         <div class="inventory-stat"><span>Out of stock</span><strong><?= number_format((int)$summary['out_of_stock']) ?></strong></div>
@@ -138,6 +138,6 @@ require_once __DIR__ . '/../../includes/sidebar.php';
             </table>
         </div>
     </div>
-    <p class="inventory-note">Stock cost values are estimates based on each product's recorded buying price. To receive stock, record a purchase; use a stock adjustment only for counts or corrections.</p>
+    <p class="inventory-note">Stock cost values use each product's recorded weighted-average buying cost. Product quantities are shown in their own stock units and are not added together across different units. To receive stock, record a purchase; use a stock adjustment only for counts or corrections.</p>
 </main>
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>
