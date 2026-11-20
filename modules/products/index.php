@@ -127,7 +127,10 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <label>Wholesale Price<input type="number" name="wholesale_price" min="0" step=".01"></label>
 <label>Opening Stock<input type="number" name="stock_quantity" min="0" value="0"></label>
 <label>Reorder Level<input type="number" name="reorder_level" min="0" value="10"></label>
-<label>Unit<input name="unit" value="Piece" maxlength="30"></label>
+<label>Stock / Selling Unit<input name="unit" value="Piece" maxlength="30" required><small>The smallest unit counted in stock.</small></label>
+<label>Purchase Unit<input name="purchase_unit" value="Carton" maxlength="50"><small>Leave blank if purchased in the stock unit.</small></label>
+<label>Units per Purchase Unit<input type="number" name="units_per_purchase" min="1" step="1" value="1" required><small>Example: 50 pieces in one carton.</small></label>
+<label>Bulk Selling Price (KES)<input type="number" name="bulk_selling_price" min="0" step=".01"><small>Optional price for one full purchase unit.</small></label>
 <label>Icon<input name="icon" value="📦" maxlength="10"></label>
 <label>Product Image (PNG/JPEG, max 2 MB)<input type="file" name="product_image" accept="image/png,image/jpeg"><small>Max dimensions: 2400 x 2400 pixels.</small></label>
 </div>
