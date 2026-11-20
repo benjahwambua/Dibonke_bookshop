@@ -26,13 +26,13 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
     }catch(Throwable $e){$_SESSION['book_covering_flash']='Could not save rule: '.$e->getMessage();}
     header('Location: book_covering.php');exit;
 }
-if(isset($_GET['deactivate'])){
+if($_SERVER['REQUEST_METHOD']==='POST' && ($_POST['action']??'')==='deactivate'){
     verify_csrf();
     $q=$conn->prepare("UPDATE book_covering_rules SET status='Inactive',updated_by=? WHERE id=?");
-    $q->execute([(int)$_SESSION['user_id'],(int)$_GET['deactivate']]);
+    $q->execute([(int)$_SESSION['user_id'],(int)($_POST['rule_id']??0)]);
     header('Location: book_covering.php');exit;
 }
-$books=$conn->query("SELECT id,product_name,sku FROM products WHERE status='Active' ORDER BY product_name")->fetchAll(PDO::FETCH_ASSOC);
+$books=$conn->query("SELECT id,product_name,sku FROM products WHERE status='Active' AND product_type='Book' ORDER BY product_name")->fetchAll(PDO::FETCH_ASSOC);
 $materials=$conn->query("SELECT id,product_name,sku,stock_quantity,unit FROM products WHERE status='Active' ORDER BY product_name")->fetchAll(PDO::FETCH_ASSOC);
 $rules=$conn->query("SELECT r.*,b.product_name book_name,m.product_name material_name,m.stock_quantity material_stock FROM book_covering_rules r JOIN products b ON b.id=r.book_product_id JOIN products m ON m.id=r.cover_product_id ORDER BY b.product_name")->fetchAll(PDO::FETCH_ASSOC);
 require_once __DIR__.'/../../includes/header.php';require_once __DIR__.'/../../includes/sidebar.php';
@@ -46,5 +46,5 @@ require_once __DIR__.'/../../includes/header.php';require_once __DIR__.'/../../i
 <label>Roll used per book (cm)<input type="number" name="material_cm_per_book" min="1" step="1" required placeholder="e.g. 28"></label>
 <label>Extra covering charge per book (KES)<input type="number" name="charge_per_book" min="0" step="0.01" required placeholder="e.g. 10.00"></label></div>
 <button class="btn btn-primary" type="submit">Save covering rule</button></form></div>
-<div class="card" style="padding:20px"><h2>Configured book sizes</h2><div class="table-responsive"><table class="table"><thead><tr><th>Exercise book</th><th>Roll material</th><th>Usage per book</th><th>Extra charge</th><th>Roll stock</th><th>Status</th><th></th></tr></thead><tbody><?php foreach($rules as $r):?><tr><td><?=e($r['book_name'])?></td><td><?=e($r['material_name'])?></td><td><?=number_format((int)$r['material_cm_per_book'])?> cm</td><td>KES <?=number_format((float)$r['charge_per_book'],2)?></td><td><?=number_format((float)$r['material_stock'])?> cm</td><td><?=e($r['status'])?></td><td><?php if($r['status']==='Active'):?><a href="?deactivate=<?=$r['id']?>&csrf_token=<?=e(csrf_token())?>" onclick="return confirm('Deactivate this covering rule?')">Deactivate</a><?php endif;?></td></tr><?php endforeach;?><?php if(!$rules):?><tr><td colspan="7">No covering rules configured yet.</td></tr><?php endif;?></tbody></table></div></div></main>
+<div class="card" style="padding:20px"><h2>Configured book sizes</h2><div class="table-responsive"><table class="table"><thead><tr><th>Exercise book</th><th>Roll material</th><th>Usage per book</th><th>Extra charge</th><th>Roll stock</th><th>Status</th><th></th></tr></thead><tbody><?php foreach($rules as $r):?><tr><td><?=e($r['book_name'])?></td><td><?=e($r['material_name'])?></td><td><?=number_format((int)$r['material_cm_per_book'])?> cm</td><td>KES <?=number_format((float)$r['charge_per_book'],2)?></td><td><?=number_format((float)$r['material_stock'])?> cm</td><td><?=e($r['status'])?></td><td><?php if($r['status']==='Active'):?><form method="post" style="display:inline" onsubmit="return confirm('Deactivate this covering rule?')"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>"><input type="hidden" name="action" value="deactivate"><input type="hidden" name="rule_id" value="<?=$r['id']?>"><button type="submit" class="btn btn-light">Deactivate</button></form><?php endif;?></td></tr><?php endforeach;?><?php if(!$rules):?><tr><td colspan="7">No covering rules configured yet.</td></tr><?php endif;?></tbody></table></div></div></main>
 <?php require_once __DIR__.'/../../includes/footer.php'; ?>
