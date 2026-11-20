@@ -297,3 +297,11 @@ Workflow:
 5. Print the confirmed customer invoice from the order.
 
 POS is intended for walk-in counter sales and no longer offers customer credit or mixed-payment sales. Existing POS invoice history remains in the sales register.
+
+## Product packaging units and retail/wholesale price matrix
+
+Import `dibonke_packaging_price_matrix.sql` after `dibonke_bulk_unit_conversion.sql`. It adds the optional `bulk_wholesale_price` field and preserves existing product prices.
+
+Product setup now uses dropdowns for the sale/stock unit and supplier purchase unit. The smallest unit (for example Piece) remains the stock unit. The purchase unit (for example Box or Carton) is converted using Units per Purchase Unit. Example: Sale/Stock Unit = Piece, Purchase Unit = Box, Units per Purchase Unit = 12. One box is 12 pieces; staff can sell either one box or individual pieces.
+
+The Price Lists screen displays four prices per product: Retail per stock unit, Retail per purchase unit, Wholesale per stock unit and Wholesale per purchase unit. When a package-specific price is blank, the screen and sales workflow calculate it from the relevant per-piece price multiplied by the conversion factor. Set explicit package prices on the product form when a different package price is required. POS and Customer Sales Orders use the package price for the selected Retail or Wholesale list.
