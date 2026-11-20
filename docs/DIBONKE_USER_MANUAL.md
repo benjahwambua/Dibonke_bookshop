@@ -256,3 +256,14 @@ A count captures the system quantities at the time it is started. If sales, rece
 
 
 If stock is sold, received or adjusted after an individual product has been counted, Dibonke carries forward the later recorded stock movements when the count is approved. If you physically recount an item, tick **Recounted** for that item before saving so its count time is refreshed. This helps prevent transactions made during a long stocktake from being overwritten by an earlier physical count.
+
+
+### QZ Tray trusted printing setup (Windows)
+
+Dibonke uses QZ Tray message signing so the local receipt printer can be accessed without repeated anonymous-website prompts. On the computer running XAMPP, create the QZ Tray Demo Cert from QZ Tray > Advanced > Site Manager > + > Create New. Keep the private key private.
+
+Create the folder `C:\\xampp\\private\\dibonke_qz` (outside `htdocs`) and copy these two files into it:
+- `digital-certificate.txt`
+- `private-key.pem`
+
+The expected paths are `C:\\xampp\\private\\dibonke_qz\\digital-certificate.txt` and `C:\\xampp\\private\\dibonke_qz\\private-key.pem`. The certificate is served to the signed-in Dibonke POS page; the private key stays outside the web root and is used only by the authenticated PHP signing endpoint. Never upload the private key to GitHub, place it under `htdocs`, or share it in chat. Restart Apache after placing the files if PHP cannot read them, then refresh the POS. The demo certificate is specific to the QZ Tray installation/computer where it was generated.
