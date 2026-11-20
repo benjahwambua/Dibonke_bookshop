@@ -17,8 +17,11 @@ try{
  $conn->beginTransaction();
  $priorLookup=$conn->prepare("SELECT id,result_status,merchant_request_id FROM mpesa_transactions WHERE checkout_request_id=? LIMIT 1 FOR UPDATE");
  $priorLookup->execute([$checkout]);$priorCallback=$priorLookup->fetch(PDO::FETCH_ASSOC);
- $alreadyProcessed=$code===0 && $priorCallback && $priorCallback['result_status']==='Success';
+  if(!$priorCallback)throw new RuntimeException('Callback does not match a stored Dibonke STK request.');
+  if((string)$priorCallback['merchant_request_id']!==$merchant)throw new RuntimeException('Callback merchant request ID does not match the stored STK request.');
+ $alreadyProcessed=$priorCallback['result_status']==='Success';
  foreach(($cb['CallbackMetadata']['Item']??[]) as $item){$name=$item['Name']??'';$value=$item['Value']??null;if($name==='Amount')$amount=(float)$value;elseif($name==='MpesaReceiptNumber')$receipt=(string)$value;elseif($name==='PhoneNumber')$phone=(string)$value;elseif($name==='TransactionDate'&&$value)$date=DateTime::createFromFormat('YmdHis',(string)$value)?->format('Y-m-d H:i:s');}
+  if($alreadyProcessed){$conn->commit();echo json_encode(['ResultCode'=>0,'ResultDesc'=>'Duplicate confirmation already processed']);exit;}
  $st=$conn->prepare("INSERT INTO mpesa_transactions(transaction_type,direction,phone_number,amount,transaction_reference,merchant_request_id,checkout_request_id,result_code,result_description,result_status,raw_response,transaction_date) VALUES('STK Push','Incoming',?,?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE result_code=VALUES(result_code),result_description=VALUES(result_description),result_status=VALUES(result_status),transaction_reference=VALUES(transaction_reference),phone_number=VALUES(phone_number),amount=VALUES(amount),raw_response=VALUES(raw_response),transaction_date=VALUES(transaction_date)");
  $st->execute([$phone,$amount,$receipt,$merchant,$checkout,(string)$code,$desc,$status,$raw,$date]);
  if($code===0 && !$alreadyProcessed){
