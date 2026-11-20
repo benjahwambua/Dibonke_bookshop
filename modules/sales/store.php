@@ -72,6 +72,7 @@ if(dibonkeAccountingAutoPostingEnabled($conn)){
     dibonkeAccountingPostJournal($conn,'sale',$saleId,date('Y-m-d'),'POS sale '.$invoice,$journalLines,$uid);
 }
 $conn->commit();
+if($method==='Cash'&&$amountTendered>0){$_SESSION['cash_drawer_sale_id']=$saleId;}else{unset($_SESSION['cash_drawer_sale_id']);}
 if($method==='M-Pesa'){
     try{
         $response=mpesaStkPush($total,$mpesaPhone,$invoice,'Payment '.$invoice);
