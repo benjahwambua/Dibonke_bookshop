@@ -215,6 +215,7 @@ The following is a dependency guide for a development database. **Do not re-run 
 13. `dibonke_hr_self_service_receivables.sql` — apply after staff roles, accounting/HR tables, and sales/customers.
 14. `dibonke_short_references_and_cash_tender.sql` — adds cash tender tracking to sales; apply after the base sales table exists.
 15. `dibonke_expense_categories_seed.sql` — creates/seeds standard expense categories. The Expenses page also ensures the standard active categories exist at runtime.
+16. `dibonke_bulk_unit_conversion.sql` — adds bulk purchase/sale unit conversion fields. Apply before using the updated product, purchase and POS screens.
 
 The sequence above is not a substitute for checking the current database. A database that already has some or all of these extensions should not receive them again blindly. The local database is the source of truth for which migrations have already been applied.
 
@@ -244,6 +245,18 @@ A migration import, a GitHub commit or a visible page is not evidence that the w
 
 Import `dibonke_fleet_management.sql` after the base deliveries and staff/roles tables are present. It creates the fleet vehicle register and vehicle maintenance history, adds the optional `deliveries.vehicle_id` link, and grants Fleet Management access to Administrator and Manager roles. The Deliveries screen then allows dispatchers to assign an active vehicle to a delivery. Fleet Management is available under Deliveries and supports vehicle registration, driver assignment, insurance/inspection expiry tracking, odometer records, maintenance logs, and safe deletion (vehicles with delivery or service history must be marked Inactive instead).
 
+
+## Bulk purchasing and bulk / individual sales
+
+After pulling the application changes, back up the database and import `dibonke_bulk_unit_conversion.sql`. This additive, re-runnable migration adds product purchase-unit settings and optional bulk selling prices, plus transaction detail columns that preserve the entered quantity, unit, conversion factor and entered unit price. It does not rewrite existing stock balances or historical transaction rows.
+
+In Product Setup, set the smallest stock-counting unit (for example Piece), the purchase unit (for example Carton), and how many stock units make one purchase unit (for example 50). The optional bulk selling price is the price for one full purchase unit; if left blank, the POS calculates it from the selected price list's per-stock-unit price.
+
+Purchases can then be recorded either in the stock unit or in the configured purchase unit. POS sales can be entered as individual stock units or as full purchase units. The products table, stock movements, sale-item quantity and purchase-item quantity continue to use the smallest stock unit; transaction detail columns retain the unit staff entered. Existing products default to a conversion factor of 1, so their stock balances and old transactions remain unchanged.
+
+Product buying price is maintained per smallest stock unit for inventory valuation and cost of goods sold. When receiving bulk purchases, staff enter the total price for the selected bulk unit; the handler converts it to a per-stock-unit cost before updating the product.
+
+Test with a disposable product: configure Piece / Carton / 50, receive 3 Cartons, confirm stock increases by 150 Pieces, sell 2 Cartons and 7 Pieces, and confirm stock decreases by 107 Pieces to 43. Also test a base-unit purchase and sale, insufficient stock, optional bulk price, and printed receipts. Do not use a live stock item for the first test.
 
 ## Product Images
 
