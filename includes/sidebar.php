@@ -85,17 +85,16 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <?php if (canAccessModule('supply_chain')): ?><a href="<?= BASE_URL ?>/modules/supply_chain/index.php" class="<?= navActive('/supply_chain/') ?>"><i class="fas fa-diagram-project icon-main"></i>Purchase Orders &amp; Receiving</a><?php endif; ?>
         <?php endif; ?>
 
-        <?php if (canAccessModule('customers') || canAccessModule('sales') || canAccessModule('customer_payments') || canAccessModule('deliveries')): ?>
+        <?php if (canAccessModule('customers') || canAccessModule('sales') || canAccessModule('deliveries')): ?>
         <button type="button" class="menu-title nav-group-toggle" aria-expanded="false"><span>Sales &amp; Customer Service</span><span class="nav-group-chevron" aria-hidden="true"></span></button>
         <?php if (canAccessModule('customers')): ?><a href="<?= BASE_URL ?>/modules/customers/index.php" class="<?= navActive('/customers/') ?>"><i class="fas fa-users icon-main"></i>Customers</a><?php endif; ?>
         <?php if (canAccessModule('sales')): ?><a href="<?= BASE_URL ?>/modules/sales/index.php" class="<?= navActive('/sales/') ?>"><i class="fas fa-cash-register icon-main"></i>Sales &amp; POS</a><?php endif; ?>
         <?php if (hasModulePermission('cash_management','view') || hasModulePermission('cash_management','create')): ?><a href="<?= BASE_URL ?>/modules/sales/my_shift.php" class="<?= navActive('/sales/my_shift.php') ?>"><i class="fas fa-cash-register icon-main"></i>My Cashier Shift</a><?php endif; ?>
-        <?php if (canAccessModule('customer_payments')): ?><a href="<?= BASE_URL ?>/modules/customer_payments/index.php" class="<?= navActive('/customer_payments/') ?>"><i class="fas fa-money-check-alt icon-main"></i>Customer Payments</a><?php endif; ?>
         <?php if (canAccessModule('deliveries')): ?><a href="<?= BASE_URL ?>/modules/deliveries/index.php" class="<?= $currentPath === BASE_URL . '/modules/deliveries/index.php' ? 'active' : '' ?>"><i class="fas fa-shipping-fast icon-main"></i>Deliveries</a><?php endif; ?>
         <?php if (canAccessModule('fleet')): ?><a href="<?= BASE_URL ?>/modules/deliveries/fleet.php" class="<?= navActive('/deliveries/fleet.php') ?>"><i class="fas fa-truck icon-main"></i>Fleet Management</a><?php endif; ?>
         <?php endif; ?>
 
-        <?php if (canAccessModule('finance') || canAccessModule('billing') || canAccessModule('expenses') || canAccessModule('supplier_payments') || canAccessModule('mpesa') || canAccessModule('chart_of_accounts') || canAccessModule('journals') || canAccessModule('general_ledger') || canAccessModule('trial_balance') || canAccessModule('aged_receivables') || canAccessModule('accounting_mappings')): ?>
+        <?php if (canAccessModule('finance') || canAccessModule('chart_of_accounts') || canAccessModule('journals') || canAccessModule('general_ledger') || canAccessModule('trial_balance') || canAccessModule('aged_receivables') || canAccessModule('accounting_mappings')): ?>
         <button type="button" class="menu-title nav-group-toggle" aria-expanded="false"><span>Finance &amp; Billing</span><span class="nav-group-chevron" aria-hidden="true"></span></button>
         <?php if (canAccessModule('accounting_mappings')): ?><a href="<?= BASE_URL ?>/modules/finance/posting_mappings.php" class="<?= navActive('/finance/posting_mappings.php') ?>"><i class="fas fa-random icon-main"></i>Posting Mappings</a><?php endif; ?>
         <?php if (canAccessModule('chart_of_accounts')): ?><a href="<?= BASE_URL ?>/modules/finance/chart_of_accounts.php" class="<?= navActive('/finance/chart_of_accounts.php') ?>"><i class="fas fa-list-ol icon-main"></i>Chart of Accounts</a><?php endif; ?>
@@ -108,13 +107,27 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <a href="<?= BASE_URL ?>/modules/finance/ledger.php" class="<?= navActive('/finance/ledger.php') ?>"><i class="fas fa-book icon-main"></i>Ledger</a>
         <a href="<?= BASE_URL ?>/modules/finance/control.php" class="<?= navActive('/finance/control.php') ?>"><i class="fas fa-shield-alt icon-main"></i>Financial Control</a>
         <?php endif; ?>
-        <?php if (canAccessModule('billing')): ?><a href="<?= BASE_URL ?>/modules/billing/index.php" class="<?= navActive('/billing/') ?>"><i class="fas fa-file-invoice icon-main"></i>Billing &amp; Invoices</a><?php endif; ?>
-        <?php if (canAccessModule('expenses')): ?><a href="<?= BASE_URL ?>/modules/expenses/index.php" class="<?= navActive('/expenses/') ?>"><i class="fas fa-wallet icon-main"></i>Expenses</a><?php endif; ?>
+        <?php endif; ?>
+
+        <?php if (canAccessModule('billing')): ?>
+        <button type="button" class="menu-title nav-group-toggle" aria-expanded="false"><span>Billing &amp; Invoicing</span><span class="nav-group-chevron" aria-hidden="true"></span></button>
+        <a href="<?= BASE_URL ?>/modules/billing/index.php" class="<?= navActive('/billing/') ?>"><i class="fas fa-file-invoice icon-main"></i>Billing &amp; Invoices</a>
+        <?php endif; ?>
+
+        <?php if (canAccessModule('expenses')): ?>
+        <button type="button" class="menu-title nav-group-toggle" aria-expanded="false"><span>Expenses</span><span class="nav-group-chevron" aria-hidden="true"></span></button>
+        <a href="<?= BASE_URL ?>/modules/expenses/index.php" class="<?= navActive('/expenses/index.php') ?>"><i class="fas fa-wallet icon-main"></i>Expense Register</a>
+        <a href="<?= BASE_URL ?>/modules/expenses/categories.php" class="<?= navActive('/expenses/categories.php') ?>"><i class="fas fa-tags icon-main"></i>Expense Categories</a>
+        <?php endif; ?>
+
+        <?php if (canAccessModule('customer_payments') || canAccessModule('supplier_payments') || canAccessModule('mpesa')): ?>
+        <button type="button" class="menu-title nav-group-toggle" aria-expanded="false"><span>Payments &amp; Reconciliation</span><span class="nav-group-chevron" aria-hidden="true"></span></button>
+        <?php if (canAccessModule('customer_payments')): ?><a href="<?= BASE_URL ?>/modules/customer_payments/index.php" class="<?= navActive('/customer_payments/') ?>"><i class="fas fa-money-check-alt icon-main"></i>Customer Payments</a><?php endif; ?>
         <?php if (canAccessModule('supplier_payments')): ?><a href="<?= BASE_URL ?>/modules/supplier_payments/index.php" class="<?= navActive('/supplier_payments/') ?>"><i class="fas fa-file-invoice-dollar icon-main"></i>Supplier Payments</a><?php endif; ?>
         <?php if (canAccessModule('mpesa')): ?><a href="<?= BASE_URL ?>/modules/mpesa/index.php" class="<?= navActive('/mpesa/') ?>"><i class="fas fa-mobile-alt icon-main"></i>M-PESA</a><?php endif; ?>
         <?php endif; ?>
 
-        <?php if (canAccessModule('launch_controls')): ?>
+        <?php if (canAccessModule('launch_controls') || canAccessModule('etims')): ?>
         <button type="button" class="menu-title nav-group-toggle" aria-expanded="false"><span>Control &amp; Compliance</span><span class="nav-group-chevron" aria-hidden="true"></span></button>
         <a href="<?= BASE_URL ?>/modules/launch_controls/index.php" class="<?= navActive('/launch_controls/') ?>"><i class="fas fa-clipboard-check icon-main"></i>Launch Operations</a>
         <?php if (canAccessModule('etims')): ?><a href="<?= BASE_URL ?>/modules/etims/index.php" class="<?= navActive('/etims/') ?>"><i class="fas fa-file-invoice-dollar icon-main"></i>eTIMS Setup</a><?php endif; ?>
@@ -134,10 +147,18 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <?php if (isAdministrator()): ?>
         <a href="<?= BASE_URL ?>/modules/users/index.php" class="<?= navActive('/users/') ?>"><i class="fas fa-user-shield icon-main"></i>Users</a>
         <a href="<?= BASE_URL ?>/modules/roles/index.php" class="<?= navActive('/roles/') ?>"><i class="fas fa-user-lock icon-main"></i>Roles &amp; Permissions</a>
-        <a href="<?= BASE_URL ?>/modules/settings/index.php" class="<?= navActive('/settings/') ?>"><i class="fas fa-sliders-h icon-main"></i>Settings</a>
-        <?php if (isSuperUser()): ?><a href="<?= BASE_URL ?>/modules/developer/index.php" class="<?= navActive('/developer/') ?>"><i class="fas fa-terminal icon-main"></i>Developer Console</a><?php endif; ?>
         <?php endif; ?>
         <?php endif; ?>
+        <?php if (isAdministrator()): ?>
+        <button type="button" class="menu-title nav-group-toggle" aria-expanded="false"><span>Settings</span><span class="nav-group-chevron" aria-hidden="true"></span></button>
+        <a href="<?= BASE_URL ?>/modules/settings/index.php" class="<?= navActive('/settings/') ?>"><i class="fas fa-sliders-h icon-main"></i>System Settings</a>
+        <?php endif; ?>
+
+        <?php if (isSuperUser()): ?>
+        <button type="button" class="menu-title nav-group-toggle" aria-expanded="false"><span>Developer &amp; Integrations</span><span class="nav-group-chevron" aria-hidden="true"></span></button>
+        <a href="<?= BASE_URL ?>/modules/developer/index.php" class="<?= navActive('/developer/') ?>"><i class="fas fa-terminal icon-main"></i>Developer Console</a>
+        <?php endif; ?>
+
         <button type="button" class="menu-title nav-group-toggle" aria-expanded="false"><span>Help &amp; Support</span><span class="nav-group-chevron" aria-hidden="true"></span></button>
         <a href="<?= BASE_URL ?>/modules/help/manual.php" class="manual-nav"><i class="fas fa-book-reader icon-main"></i>User Manual</a>
         <a href="<?= BASE_URL ?>/auth/logout.php" class="logout-link"><i class="fas fa-sign-out-alt icon-main"></i>Sign out</a>
