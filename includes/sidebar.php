@@ -95,7 +95,7 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <?php endif; ?>
 
         <?php if (canAccessModule('finance') || canAccessModule('chart_of_accounts') || canAccessModule('journals') || canAccessModule('general_ledger') || canAccessModule('trial_balance') || canAccessModule('aged_receivables') || canAccessModule('accounting_mappings')): ?>
-        <button type="button" class="menu-title nav-group-toggle" aria-expanded="false"><span>Finance &amp; Billing</span><span class="nav-group-chevron" aria-hidden="true"></span></button>
+        <button type="button" class="menu-title nav-group-toggle" aria-expanded="false"><span>Finance &amp; Accounting</span><span class="nav-group-chevron" aria-hidden="true"></span></button>
         <?php if (canAccessModule('accounting_mappings')): ?><a href="<?= BASE_URL ?>/modules/finance/posting_mappings.php" class="<?= navActive('/finance/posting_mappings.php') ?>"><i class="fas fa-random icon-main"></i>Posting Mappings</a><?php endif; ?>
         <?php if (canAccessModule('chart_of_accounts')): ?><a href="<?= BASE_URL ?>/modules/finance/chart_of_accounts.php" class="<?= navActive('/finance/chart_of_accounts.php') ?>"><i class="fas fa-list-ol icon-main"></i>Chart of Accounts</a><?php endif; ?>
         <?php if (canAccessModule('journals')): ?><a href="<?= BASE_URL ?>/modules/finance/journals.php" class="<?= navActive('/finance/journals.php') ?>"><i class="fas fa-book-open icon-main"></i>Journal Entries</a><?php endif; ?>
