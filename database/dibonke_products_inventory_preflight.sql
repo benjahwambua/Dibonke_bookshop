@@ -54,6 +54,9 @@ FROM (
     SELECT 'products', 'sku' UNION ALL
     SELECT 'products', 'barcode' UNION ALL
     SELECT 'products', 'unit' UNION ALL
+    SELECT 'products', 'purchase_unit' UNION ALL
+    SELECT 'products', 'units_per_purchase' UNION ALL
+    SELECT 'products', 'bulk_selling_price' UNION ALL
     SELECT 'products', 'buying_price' UNION ALL
     SELECT 'products', 'selling_price' UNION ALL
     SELECT 'products', 'wholesale_price' UNION ALL
@@ -141,6 +144,18 @@ FROM (
     SELECT 'purchase_items', 'quantity' UNION ALL
     SELECT 'purchase_items', 'buying_price' UNION ALL
     SELECT 'purchase_items', 'subtotal' UNION ALL
+    SELECT 'purchase_items', 'entered_quantity' UNION ALL
+    SELECT 'purchase_items', 'purchase_unit' UNION ALL
+    SELECT 'purchase_items', 'conversion_factor' UNION ALL
+    SELECT 'purchase_items', 'entered_unit_price' UNION ALL
+    SELECT 'sale_items', 'entered_quantity' UNION ALL
+    SELECT 'sale_items', 'sale_unit' UNION ALL
+    SELECT 'sale_items', 'conversion_factor' UNION ALL
+    SELECT 'sale_items', 'entered_unit_price' UNION ALL
+    SELECT 'purchase_order_items', 'entered_quantity' UNION ALL
+    SELECT 'purchase_order_items', 'purchase_unit' UNION ALL
+    SELECT 'purchase_order_items', 'conversion_factor' UNION ALL
+    SELECT 'purchase_order_items', 'entered_unit_cost' UNION ALL
     SELECT 'customer_payments', 'receipt_number' UNION ALL
     SELECT 'customer_payments', 'customer_id' UNION ALL
     SELECT 'customer_payments', 'sale_id' UNION ALL
