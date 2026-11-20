@@ -70,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new RuntimeException('Prices cannot be negative.');
         }
 
-        $sku = trim((string)($_POST['sku'] ?? '')) ?: null;
+        $skuInput = trim((string)($_POST['sku'] ?? ''));
         $barcode = trim((string)($_POST['barcode'] ?? '')) ?: null;
         $unit = trim((string)($_POST['unit'] ?? 'Piece')) ?: 'Piece';
         $icon = trim((string)($_POST['icon'] ?? '📦')) ?: '📦';
@@ -90,6 +90,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new RuntimeException('Product not found.');
         }
         $stock = (int)$lockedProduct['stock_quantity'];
+
+        // Keep an existing/manual SKU; generate one only when this field is blank.
+        $sku = $skuInput !== '' ? $skuInput : generateProductSku($conn, $productType, $name, $id);
+        $skuCheck = $conn->prepare('SELECT id FROM products WHERE sku = ? AND id <> ? LIMIT 1');
+        $skuCheck->execute([$sku, $id]);
+        if ($skuCheck->fetchColumn()) {
+            throw new RuntimeException('That SKU is already in use. Enter a different SKU or leave the field blank for automatic generation.');
+        }
 
         // Resolve category, publisher and supplier from the names typed by the user.
         // New records are created inside the same transaction as the product update.
@@ -292,7 +300,8 @@ require_once __DIR__ . '/../../includes/sidebar.php';
                 <input name="isbn" maxlength="20" value="<?= e($p['isbn'] ?? '') ?>" placeholder="ISBN-10 or ISBN-13">
             </label>
             <label>SKU
-                <input name="sku" maxlength="80" value="<?= e($p['sku'] ?? '') ?>">
+                <input name="sku" maxlength="80" value="<?= e($p['sku'] ?? '') ?>" placeholder="Generated automatically if left blank">
+                <small>Leave blank to generate a unique SKU when you save.</small>
             </label>
             <label>Barcode
                 <input name="barcode" maxlength="100" value="<?= e($p['barcode'] ?? '') ?>">
