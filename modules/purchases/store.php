@@ -37,9 +37,11 @@ try {
         $productId = (int)($item['product_id'] ?? 0);
         $qty = (int)($item['quantity'] ?? 0);
         $price = (float)($item['buying_price'] ?? 0);
+        $unitMode = (string)($item['unit_mode'] ?? 'base');
         if ($productId <= 0 || $qty <= 0) throw new RuntimeException('Each purchase item must have a valid product and quantity.');
         if ($price < 0) throw new RuntimeException('Buying price cannot be negative.');
-        $cleanItems[] = ['product_id'=>$productId, 'quantity'=>$qty, 'buying_price'=>$price];
+        if (!in_array($unitMode, ['base','bulk'], true)) throw new RuntimeException('Invalid purchase unit selected.');
+        $cleanItems[] = ['product_id'=>$productId, 'entered_quantity'=>$qty, 'entered_unit_price'=>$price, 'unit_mode'=>$unitMode];
     }
 
     $conn->beginTransaction();
@@ -51,13 +53,19 @@ try {
 
     $subtotal = 0.0;
     foreach ($cleanItems as &$item) {
-        $stmt = $conn->prepare("SELECT id, product_name, stock_quantity FROM products WHERE id=? AND status='Active' FOR UPDATE");
+        $stmt = $conn->prepare("SELECT id, product_name, stock_quantity, unit, purchase_unit, units_per_purchase FROM products WHERE id=? AND status='Active' FOR UPDATE");
         $stmt->execute([$item['product_id']]);
         $product = $stmt->fetch();
         if (!$product) throw new RuntimeException('One of the selected products is missing or inactive.');
         $item['product_name'] = $product['product_name'];
         $item['stock_before'] = (int)$product['stock_quantity'];
-        $item['line_total'] = round($item['quantity'] * $item['buying_price'], 2);
+        $factor = $item['unit_mode'] === 'bulk' ? max(1, (int)$product['units_per_purchase']) : 1;
+        if ($item['unit_mode'] === 'bulk' && $factor <= 1) throw new RuntimeException('This product has no bulk purchase conversion configured.');
+        $item['quantity'] = $item['entered_quantity'] * $factor;
+        $item['conversion_factor'] = $factor;
+        $item['purchase_unit'] = $item['unit_mode'] === 'bulk' ? (string)$product['purchase_unit'] : (string)$product['unit'];
+        $item['buying_price'] = round($item['entered_unit_price'] / $factor, 4);
+        $item['line_total'] = round($item['entered_quantity'] * $item['entered_unit_price'], 2);
         $subtotal += $item['line_total'];
     }
     unset($item);
@@ -75,7 +83,7 @@ try {
     ]);
     $purchaseId = (int)$conn->lastInsertId();$purchaseNumber='PUR-'.date('ymd').'-'.str_pad((string)$purchaseId,5,'0',STR_PAD_LEFT);$conn->prepare("UPDATE purchases SET purchase_number=? WHERE id=?")->execute([$purchaseNumber,$purchaseId]);
 
-    $itemStmt = $conn->prepare("INSERT INTO purchase_items (purchase_id,product_id,quantity,buying_price,subtotal) VALUES (?,?,?,?,?)");
+    $itemStmt = $conn->prepare("INSERT INTO purchase_items (purchase_id,product_id,quantity,buying_price,subtotal,entered_quantity,purchase_unit,conversion_factor,entered_unit_price) VALUES (?,?,?,?,?,?,?,?,?)");
     $stockStmt = $conn->prepare("UPDATE products SET stock_quantity=stock_quantity+?, buying_price=? WHERE id=?");
     $movementStmt = $conn->prepare("INSERT INTO stock_movements (product_id,user_id,movement_type,quantity,stock_before,stock_after,reference_type,reference_id,notes,movement_date) VALUES (?,?,?,?,?,?,?,?,?,?)");
 
@@ -84,7 +92,7 @@ try {
         $stockBefore = $runningStock[$item['product_id']] ?? $item['stock_before'];
         $stockAfter = $stockBefore + $item['quantity'];
         $runningStock[$item['product_id']] = $stockAfter;
-        $itemStmt->execute([$purchaseId,$item['product_id'],$item['quantity'],$item['buying_price'],$item['line_total']]);
+        $itemStmt->execute([$purchaseId,$item['product_id'],$item['quantity'],$item['buying_price'],$item['line_total'],$item['entered_quantity'],$item['purchase_unit'],$item['conversion_factor'],$item['entered_unit_price']]);
         $stockStmt->execute([$item['quantity'],$item['buying_price'],$item['product_id']]);
         $movementStmt->execute([
             $item['product_id'],(int)$_SESSION['user_id'],'Purchase',$item['quantity'],
