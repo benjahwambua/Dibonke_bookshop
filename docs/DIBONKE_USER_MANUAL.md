@@ -249,3 +249,6 @@ Stocktaking is used to compare the quantity physically in the shop with the quan
 Do not guess a quantity to complete a count. If no stock is found, enter zero. If the count is wrong, correct and save it before approval. An active count can be cancelled by an authorised user; cancellation does not change inventory. Once approved, the count is a historical record and its posted stock movements should not be deleted. Report any correction through the approved stock adjustment process.
 
 A count captures the system quantities at the time it is started. If sales, receiving or other stock movements continue during counting, the approver should investigate significant variances before posting the count.
+
+
+If stock is sold, received or adjusted after an individual product has been counted, Dibonke carries forward the later recorded stock movements when the count is approved. If you physically recount an item, tick **Recounted** for that item before saving so its count time is refreshed. This helps prevent transactions made during a long stocktake from being overwritten by an earlier physical count.
