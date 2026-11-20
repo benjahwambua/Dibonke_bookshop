@@ -294,7 +294,7 @@ function focusScanner(){const el=document.getElementById('productSearch');if(el)
 function toggleCounterMode(){document.body.classList.toggle('counter-mode');const active=document.body.classList.contains('counter-mode');const btn=document.getElementById('counterModeBtn');btn.innerHTML=active?'<i class="fas fa-compress"></i> Exit counter mode':'<i class="fas fa-expand"></i> Counter mode';if(active){if(document.documentElement.requestFullscreen)document.documentElement.requestFullscreen().catch(()=>{});}else if(document.fullscreenElement&&document.exitFullscreen){document.exitFullscreen().catch(()=>{});}focusScanner();}
 
 let activeCategory='all';
-function normalizeCategory(value){return String(value??'').trim().toLocaleLowerCase().replace(/\\s+/g,' ');}
+function normalizeCategory(value){return String(value??'').trim().toLocaleLowerCase().replace(/\s+/g,' ');}
 function applyCategoryFilter(){
  const cards=[...document.querySelectorAll('#productGrid .product')];
  let visible=0;
