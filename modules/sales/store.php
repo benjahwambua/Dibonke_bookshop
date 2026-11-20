@@ -9,7 +9,7 @@ requireModulePermission('sales','create');
 try{
 $cart=json_decode((string)($_POST['cart_json']??''),true); if(!is_array($cart)||!$cart)throw new RuntimeException('Add at least one product.');
 $customerId=null;
-$method=(string)($_POST['payment_method']??'Cash');$priceListId=(int)($_POST['price_list_id']??0);if($priceListId<=0)$priceListId=(int)($conn->query("SELECT id FROM price_lists WHERE is_default=1 AND status='Active' LIMIT 1")->fetchColumn()?:0);$pl=$conn->prepare("SELECT id FROM price_lists WHERE id=? AND status='Active'");$pl->execute([$priceListId]);if(!$pl->fetchColumn())throw new RuntimeException('Selected price list is not active.');
+$method=(string)($_POST['payment_method']??'Cash');$priceListId=(int)($_POST['price_list_id']??0);if($priceListId<=0)$priceListId=(int)($conn->query("SELECT id FROM price_lists WHERE is_default=1 AND status='Active' LIMIT 1")->fetchColumn()?:0);$pl=$conn->prepare("SELECT code FROM price_lists WHERE id=? AND status='Active'");$pl->execute([$priceListId]);$priceListCode=$pl->fetchColumn();if(!$priceListCode)throw new RuntimeException('Selected price list is not active.');
 $mpesaPhone=trim((string)($_POST['mpesa_phone']??''));if(!in_array($method,['Cash','M-Pesa','Bank'],true))throw new RuntimeException('Invalid payment method.');if($method==='Cash'&&hasModulePermission('cash_management','create')&&(bool)$conn->query("SHOW TABLES LIKE 'cash_shift_guard'")->fetchColumn()){$shiftQ=$conn->prepare("SELECT id FROM cash_shifts WHERE user_id=? AND status='Open' LIMIT 1");$shiftQ->execute([(int)$_SESSION['user_id']]);if(!$shiftQ->fetchColumn())throw new RuntimeException('Open your cashier shift before accepting a cash sale.');}
 $discount=0.0;$vatRate=(float)($conn->query("SELECT setting_value FROM settings WHERE setting_key='vat_rate' LIMIT 1")->fetchColumn()?:16);$vatMode=(string)($conn->query("SELECT setting_value FROM settings WHERE setting_key='vat_mode' LIMIT 1")->fetchColumn()?:'inclusive');if(!in_array($vatMode,['exclusive','inclusive'],true))$vatMode='exclusive';$amountTendered=max(0,(float)($_POST['paid_amount']??0));$paid=$amountTendered;$notes=trim((string)($_POST['notes']??''));
 $conn->beginTransaction();
@@ -26,7 +26,8 @@ $reservedStock[$pid]=($reservedStock[$pid]??0)+$baseQty;
 if((float)$p['stock_quantity']<$reservedStock[$pid])throw new RuntimeException('Insufficient stock for '.$p['product_name'].'. Available: '.$p['stock_quantity'].' '.$p['unit'].'.');
 $priceStmt=$conn->prepare("SELECT price FROM product_prices WHERE price_list_id=? AND product_id=? AND min_quantity<=? ORDER BY min_quantity DESC LIMIT 1");
 $priceStmt->execute([$priceListId,$pid,(int)$baseQty]);$basePrice=$priceStmt->fetchColumn();
-if($saleUnit==='bulk'&&!empty($p['bulk_selling_price'])&&(float)$p['bulk_selling_price']>0){$enteredPrice=(float)$p['bulk_selling_price'];}
+if($saleUnit==='bulk'&&$priceListCode==='wholesale'&&!empty($p['bulk_wholesale_price'])&&(float)$p['bulk_wholesale_price']>0){$enteredPrice=(float)$p['bulk_wholesale_price'];}
+ elseif($saleUnit==='bulk'&&$priceListCode!=='wholesale'&&!empty($p['bulk_selling_price'])&&(float)$p['bulk_selling_price']>0){$enteredPrice=(float)$p['bulk_selling_price'];}
 else{if($basePrice===false)throw new RuntimeException('No price is configured for '.$p['product_name'].' in the selected price list.');$basePrice=(float)$basePrice;if($basePrice<=0)throw new RuntimeException('No valid price is configured for '.$p['product_name'].'.');$enteredPrice=$basePrice*$factor;}
 if($saleUnit==='base'){$enteredPrice=(float)$basePrice;$factor=1;$baseQty=$enteredQty;}
 $line=round($enteredPrice*$enteredQty,2);$baseUnitPrice=round($enteredPrice/$factor,4);$subtotal+=$line;
