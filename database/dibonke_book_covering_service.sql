@@ -16,3 +16,10 @@ CREATE TABLE IF NOT EXISTS book_covering_service_rules (
 
 -- Existing sale_items covering fields are provided by dibonke_book_covering.sql.
 -- Legacy book_covering_rules may remain in the database but are no longer used by the POS.
+
+-- Dedicated expense account and mapping for internal cover-roll usage.
+INSERT IGNORE INTO accounts(account_code,account_name,account_type,is_system,description)
+VALUES('5150','Internal Inventory Use Expense','Expense',1,'Cost of inventory issued for internal business use');
+
+INSERT IGNORE INTO accounting_mappings(mapping_key,account_id)
+SELECT 'internal_inventory_use',id FROM accounts WHERE account_code='5150' LIMIT 1;
