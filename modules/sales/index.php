@@ -48,10 +48,12 @@ if ($isCashierTerminal) {
     $recent=$conn->query("SELECT s.id,s.invoice_number,s.sale_date,s.total_amount,s.paid_amount,s.balance,s.payment_method,COALESCE(c.customer_name,'Walk-in Customer') customer_name FROM sales s LEFT JOIN customers c ON c.id=s.customer_id WHERE s.sale_status='Completed' ORDER BY s.id DESC LIMIT 10")->fetchAll(PDO::FETCH_ASSOC);
 }
 $flash=$_SESSION['sale_flash']??null; unset($_SESSION['sale_flash']);
+$printReceiptId=(int)($_GET['print_receipt']??0);
 require_once __DIR__.'/../../includes/header.php';
 require_once __DIR__.'/../../includes/sidebar.php';
 ?>
 <main class="content">
+<?php if ($printReceiptId > 0): ?><iframe title="Automatic receipt printing" src="receipt.php?id=<?= $printReceiptId ?>&amp;autoprint=1" aria-hidden="true" tabindex="-1" style="position:fixed;width:1px;height:1px;left:-10px;bottom:0;border:0;opacity:0;pointer-events:none"></iframe><script>window.addEventListener('load',function(){const u=new URL(window.location.href);u.searchParams.delete('print_receipt');window.history.replaceState({},document.title,u.pathname+(u.search?u.search:''));});</script><?php endif; ?>
 <style>
 body.counter-mode .top-header,body.counter-mode #appSidebar,body.counter-mode .mobile-sidebar-backdrop,body.counter-mode .kpis,body.counter-mode .recent,body.counter-mode .pos-actions>a:not(.shift-shortcut){display:none!important}body.counter-mode .content{margin-left:0!important;padding:14px!important}body.counter-mode .pos-wrap{max-width:none}body.counter-mode .pos-title{margin-bottom:8px}body.counter-mode .cashier{grid-template-columns:minmax(0,1.8fr) minmax(390px,.8fr);gap:12px}body.counter-mode .products{max-height:calc(100vh - 250px);grid-template-columns:repeat(auto-fill,minmax(170px,1fr))}body.counter-mode .product{min-height:118px;padding:14px}body.counter-mode .checkout{position:sticky;top:12px}body.counter-mode .cart{max-height:35vh}
 .pos-wrap{--blue:#004a99;--green:#047857;--border:#e2e8f0;max-width:1600px;margin:auto;font-size:15px}
