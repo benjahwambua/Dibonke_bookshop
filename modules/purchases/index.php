@@ -38,7 +38,7 @@ $stats = [
 ];
 
 $suppliers = $conn->query("SELECT id, supplier_name, credit_limit, balance FROM suppliers WHERE status='Active' ORDER BY supplier_name")->fetchAll();
-$products = $conn->query("SELECT id, product_name, sku, buying_price, stock_quantity, unit FROM products WHERE status='Active' ORDER BY product_name")->fetchAll();
+$products = $conn->query("SELECT id, product_name, sku, buying_price, stock_quantity, unit, purchase_unit, units_per_purchase FROM products WHERE status='Active' ORDER BY product_name")->fetchAll();
 
 $flash = $_SESSION['purchase_flash'] ?? null;
 unset($_SESSION['purchase_flash']);
@@ -140,7 +140,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <h3>Items</h3>
 <div class="table-wrap">
 <table class="items-table">
-<thead><tr><th style="width:40%">Product *</th><th>Quantity *</th><th>Buying Price *</th><th>Line Total</th><th></th></tr></thead>
+<thead><tr><th style="width:40%">Product *</th><th>Quantity *</th><th>Purchase As</th><th>Price per selected unit *</th><th>Line Total</th><th></th></tr></thead>
 <tbody id="purchaseItems"></tbody>
 </table>
 </div>
@@ -183,6 +183,7 @@ function addPurchaseRow() {
     row.dataset.row = rowNumber;
     row.innerHTML = '<td><select name="items['+rowNumber+'][product_id]" required onchange="updateRow('+rowNumber+')">' + productOptions() + '</select></td>' +
         '<td><input class="qty" type="number" name="items['+rowNumber+'][quantity]" min="1" step="1" value="1" required oninput="updateRow('+rowNumber+')"></td>' +
+        '<td><select name="items['+rowNumber+'][unit_mode]" onchange="updateRow('+rowNumber+')"><option value="base">Stock unit</option><option value="bulk">Purchase unit</option></select><small class="unit-hint"></small></td>' +
         '<td><input class="price" type="number" name="items['+rowNumber+'][buying_price]" min="0" step="0.01" value="0" required oninput="updateRow('+rowNumber+')"></td>' +
         '<td class="line-total">KES <span id="line_'+rowNumber+'">0.00</span></td>' +
         '<td><button type="button" class="remove-row" onclick="removePurchaseRow('+rowNumber+')"><i class="fas fa-trash"></i></button></td>';
@@ -191,8 +192,14 @@ function addPurchaseRow() {
 function updateRow(id) {
     const row = document.querySelector('[data-row="'+id+'"]');
     if (!row) return;
+    const product = products.find(p => p.id === Number(row.querySelector('[name$="[product_id]"]').value));
+    const mode = row.querySelector('[name$="[unit_mode]"]');
     const qty = parseFloat(row.querySelector('[name$="[quantity]"]').value) || 0;
     const price = parseFloat(row.querySelector('[name$="[buying_price]"]').value) || 0;
+    const bulkAllowed = product && Number(product.units_per_purchase) > 1 && product.purchase_unit;
+    mode.querySelector('option[value="bulk"]').disabled = !bulkAllowed;
+    if (!bulkAllowed) mode.value = 'base';
+    row.querySelector('.unit-hint').textContent = product ? (mode.value === 'bulk' ? '1 '+product.purchase_unit+' = '+product.units_per_purchase+' '+product.unit : 'Unit: '+product.unit) : '';
     document.getElementById('line_'+id).textContent = (qty * price).toFixed(2);
     updateTotals();
 }
