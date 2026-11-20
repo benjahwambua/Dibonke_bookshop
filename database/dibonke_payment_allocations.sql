@@ -33,6 +33,16 @@ SET u.role_id = r.id
 WHERE u.role_id IS NULL;
 
 
+-- Accounts used to post approved returns and refund settlements.
+INSERT IGNORE INTO accounts(account_code,account_name,account_type,is_system,description) VALUES
+('2060','Customer Refunds Payable','Liability',1,'Approved customer refunds awaiting settlement'),
+('4050','Sales Returns and Allowances','Income',1,'Contra-revenue account for approved customer returns');
+
+INSERT IGNORE INTO accounting_mappings(mapping_key,account_id)
+SELECT 'refund_payable',id FROM accounts WHERE account_code='2060';
+INSERT IGNORE INTO accounting_mappings(mapping_key,account_id)
+SELECT 'sales_returns',id FROM accounts WHERE account_code='4050';
+
 -- Preserve the existing role-based view access as explicit database permissions.
 INSERT INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete)
 SELECT DISTINCT r.id, m.module_key, 1, 0, 0, 0
