@@ -21,6 +21,24 @@ Never share your password or use another employee's account.
 - Books may have an ISBN; stationery and general retail products may use a SKU or barcode.
 - If you notice an incorrect description or price, report it to your supervisor rather than creating a duplicate product.
 
+## Product barcodes and ISBNs
+
+- **ISBN** means International Standard Book Number. It identifies a book edition and is usually printed near the barcode on the back cover. Modern ISBNs have 13 digits; older books may have 10 digits.
+- **Barcode** is the number scanned by the scanner at the POS or when receiving stock. A book's barcode often represents its ISBN. When the barcode is the ISBN, you do not need to enter the same number twice: scan or enter it in the product's Barcode field and use the ISBN field for the book's ISBN only when it is separately available or required for catalogue records.
+- **SKU** is Dibonke's internal product code. If you leave SKU blank when creating a product, the system generates one automatically.
+- Stationery and other general products do not need an ISBN. A barcode is optional for products without one; they can still be found by product name or SKU.
+
+### Add a product by scanning its barcode
+
+1. Open **Products & Books** and select **Add Product**.
+2. The Barcode field is focused automatically. Connect a standard USB barcode scanner configured as a keyboard (HID mode) to the computer before scanning.
+3. Scan the barcode on the product. The scanner enters its digits into the Barcode field. You can also type the number manually.
+4. Many scanners send Enter after a scan. In Dibonke, this moves the cursor to Product Name; it does not save the incomplete product.
+5. Fill in the product name and any other required details, such as item type, category, buying and selling prices, units and opening stock.
+6. Save the product. Check that the barcode is correct and is not already assigned to another product.
+
+A scanner normally behaves like a keyboard, so no separate POS pairing is required for a standard USB HID scanner. If it does not type into the field, check its USB connection and scanner mode, then try typing into the field manually. A barcode scan does not fill in product descriptions or prices; enter any missing details yourself.
+
 ## 3. Receive stock
 
 If you are assigned to receiving:
