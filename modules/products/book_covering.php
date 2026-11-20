@@ -80,7 +80,24 @@ $rolls=$conn->query("SELECT id,product_name,sku,stock_quantity,unit FROM product
 $rules=$conn->query("SELECT r.*,b.product_name book_name FROM book_covering_service_rules r JOIN products b ON b.id=r.book_product_id ORDER BY b.product_name")->fetchAll(PDO::FETCH_ASSOC);
 require_once __DIR__.'/../../includes/header.php'; require_once __DIR__.'/../../includes/sidebar.php';
 ?>
-<main class="content">
+<style>
+/* Keep this setup screen compact and consistent with everyday operational forms. */
+.book-covering-page{font-size:13px;line-height:1.45}
+.book-covering-page .page-head h1{font-size:21px;margin:0 0 4px}
+.book-covering-page .page-head p,.book-covering-page .muted{font-size:12px}
+.book-covering-page .card{padding:16px!important;margin-bottom:14px!important}
+.book-covering-page h2{font-size:16px;margin:0 0 7px;font-weight:600}
+.book-covering-page p{margin:0 0 12px}
+.book-covering-page label{font-size:12px;font-weight:600;gap:5px}
+.book-covering-page input,.book-covering-page select{font-size:13px;min-height:36px;padding:7px 9px}
+.book-covering-page .form-grid{gap:12px}
+.book-covering-page .btn{font-size:12px;padding:7px 12px;min-height:32px}
+.book-covering-page .table{font-size:12px}
+.book-covering-page .table th,.book-covering-page .table td{padding:8px 10px}
+.book-covering-page .flash{font-size:12px;padding:9px 12px;margin-bottom:12px}
+@media(max-width:700px){.book-covering-page .card{padding:12px!important}.book-covering-page .page-head h1{font-size:19px}}
+</style>
+<main class="content book-covering-page">
 <div class="page-head"><div><h1>Book Covering Setup</h1><p class="muted">Set the extra covering charge for each exercise-book product. Cover rolls are sold separately as whole rolls.</p></div></div>
 <?php if($flash):?><div class="flash"><?=e($flash)?></div><?php endif;?>
 <div class="card" style="padding:20px;margin-bottom:20px">
