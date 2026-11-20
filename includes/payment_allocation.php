@@ -51,14 +51,22 @@ function dibonkeAllocateSupplierPayment(PDO $db, int $supplierId, int $paymentId
 
     $g = $db->prepare("SELECT id, received_date document_date, total_amount FROM goods_receipts WHERE supplier_id=? ORDER BY received_date ASC, id ASC FOR UPDATE");
     $g->execute([$supplierId]);
-    $grnAllocation = $db->prepare("SELECT COALESCE(SUM(amount),0) FROM supplier_payment_allocations WHERE goods_receipt_id=?");
+    $grnAllocation = $db->prepare("SELECT
+        COALESCE((SELECT SUM(amount) FROM supplier_payment_allocations WHERE goods_receipt_id=?),0)
+        + COALESCE((SELECT SUM(amount) FROM supplier_payments WHERE goods_receipt_id=?),0)");
     foreach ($g->fetchAll(PDO::FETCH_ASSOC) as $row) {
-        $grnAllocation->execute([(int)$row['id']]);
+        $grnAllocation->execute([(int)$row['id'],(int)$row['id']]);
         $outstanding = round((float)$row['total_amount']-(float)$grnAllocation->fetchColumn(),2);
         if ($outstanding > 0.009) $items[] = ['type'=>'grn','id'=>(int)$row['id'],'date'=>(string)$row['document_date'],'balance'=>$outstanding];
     }
     usort($items, static fn($a,$b) => [$a['date'],$a['type'],$a['id']] <=> [$b['date'],$b['type'],$b['id']]);
-    $available = array_sum(array_column($items,'balance'));
+    $available = round(array_sum(array_column($items,'balance')),2);
+    $supplierBalanceQ=$db->prepare("SELECT balance FROM suppliers WHERE id=? FOR UPDATE");
+    $supplierBalanceQ->execute([$supplierId]);
+    $supplierBalance=(float)$supplierBalanceQ->fetchColumn();
+    if (abs($available-$supplierBalance)>0.01) {
+        throw new RuntimeException('Supplier summary balance does not reconcile to outstanding purchases and goods receipts. Reconcile historical supplier payments before recording another payment.');
+    }
     if ($amount > $available + 0.009) {
         throw new RuntimeException('The payment exceeds outstanding supplier purchases and goods receipts. Reconcile the supplier account before posting this payment.');
     }
