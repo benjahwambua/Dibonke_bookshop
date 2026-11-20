@@ -39,5 +39,5 @@ function requireModuleAccess(string $module): void {
 }
 $requestPath=parse_url($_SERVER['REQUEST_URI']??'',PHP_URL_PATH)?:'';
 $markerPosition=strpos($requestPath,'/modules/');
-if($markerPosition!==false){$afterMarker=substr($requestPath,$markerPosition+strlen('/modules/'));$module=strtolower((string)strtok($afterMarker,'/'));if($module==='hr' && preg_match('~^hr/my\\.php$~i',$afterMarker))$module='hr_self_service';if($module!=='')requireModuleAccess($module);}
+if($markerPosition!==false){$afterMarker=substr($requestPath,$markerPosition+strlen('/modules/'));$module=strtolower((string)strtok($afterMarker,'/'));if($module==='hr' && preg_match('~^hr/my\\.php$~i',$afterMarker))$module='hr_self_service';if($module==='inventory')$module='products';if($module!=='')requireModuleAccess($module);}
 ?>
