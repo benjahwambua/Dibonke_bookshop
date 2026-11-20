@@ -246,7 +246,7 @@ body.counter-mode .product .badge {
 <div class="section-heading"><div><h2>Browse products</h2><p>Find books, stationery and everyday essentials</p></div><span class="catalog-count" id="catalogCount"><?=count($products)?> items</span></div><div class="categories"><button type="button" class="cat active" data-category="all">All Products</button><?php foreach($categories as $cat): ?><button type="button" class="cat" data-category="<?=e(strtolower(trim($cat)))?>"><?=e($cat)?></button><?php endforeach; ?></div>
 <div id="productGrid" class="products">
 <?php foreach($products as $p): $category=strtolower(trim((string)$p['category'])); ?>
-<div class="product <?=$p['stock_quantity']<=0?'out':''?>" data-id="<?=$p['id']?>" data-category="<?=e($category)?>" data-search="<?=e(strtolower($p['product_name'].' '.$p['sku'].' '.$p['barcode'].' '.$p['isbn'].' '.$p['brand_name']))?>" onclick="<?=$p['stock_quantity']>0?'addProduct('.(int)$p['id'].')':'void(0)'?>">
+<div class="product <?=$p['stock_quantity']<=0?'out':''?>" data-id="<?=$p['id']?>" data-category="<?=e($category)?>" data-search="<?=e(strtolower($p['product_name'].' '.$p['sku'].' '.$p['barcode'].' '.$p['isbn'].' '.$p['brand_name']))?>">
 <span class="badge"><?=number_format((float)$p['stock_quantity'],0).' '.e($p['unit']?:'units')?></span><?php if(!empty($p['image_path'])): ?><img class="product-image" src="<?=BASE_URL.'/'.e($p['image_path'])?>" alt=""><?php else: ?><div class="product-symbol"><i class="fas <?=stripos((string)$p['category'],'station')!==false?'fa-pen-ruler':(stripos((string)$p['category'],'book')!==false?'fa-book-open':'fa-box-open')?>"></i></div><?php endif; ?><div class="name"><?=e($p['product_name'])?></div><small><?=e($p['brand_name']?:'Generic')?> · <?=e($p['sku']?:'No SKU')?></small><div class="price">KES <span class="price-value"><?=number_format((float)$p['selling_price'],2)?></span></div>
 </div>
 <?php endforeach; ?>
@@ -307,18 +307,26 @@ function filterCategory(cat,btn){
  const search=document.getElementById('productSearch');if(search)search.value='';
  const grid=document.getElementById('productGrid'),results=document.getElementById('searchResults');
  if(grid)grid.style.display='grid';if(results){results.style.display='none';results.innerHTML='';}
- applyCategoryFilter();
+ filterProducts();
 }
 function updateCatalogPrices(){document.querySelectorAll('.product').forEach(card=>{const p=products.find(x=>x.id===Number(card.dataset.id));if(p){const price=selectedPrice(p,1);card.querySelector('.price-value').textContent=price===null?"Not set":money(price);}});cart=cart.filter(x=>{const p=products.find(y=>y.id===x.id);const price=p?unitPrice(p,x.saleUnit):null;if(price===null)return false;x.price=price;return true;});updatePriceTierHint();render();}
 function normalizeLookupCode(value){return String(value??'').toLowerCase().replace(/[\s-]+/g,'');}
 function filterProducts(){
- const raw=document.getElementById('productSearch').value.trim(),q=normalizeLookupCode(raw),grid=document.getElementById('productGrid'),results=document.getElementById('searchResults');
- if(!q){grid.style.display='grid';results.style.display='none';results.innerHTML='';applyCategoryFilter();return;}
- const matches=products.filter(p=>(activeCategory==='all'||normalizeCategory(p.category)===activeCategory)&&normalizeLookupCode([p.name,p.sku,p.barcode,p.isbn].filter(Boolean).join(' ')).includes(q)).sort((a,b)=>{const ac=[a.barcode,a.isbn,a.sku].some(v=>v&&normalizeLookupCode(v)===q),bc=[b.barcode,b.isbn,b.sku].some(v=>v&&normalizeLookupCode(v)===q);return Number(bc)-Number(ac)||a.name.localeCompare(b.name);});
- grid.style.display='none';results.style.display='block';
- if(!matches.length){results.innerHTML='<div class="search-empty">No matching products in this category. Try another name or choose All Products.</div>';return;}
- results.innerHTML=matches.slice(0,30).map(p=>'<div class="search-result" role="option" tabindex="0" data-product-id="'+p.id+'"><div><strong>'+esc(p.name)+'</strong><small>'+esc(p.sku||'No SKU')+(p.barcode?' · '+esc(p.barcode):'')+(p.isbn?' · ISBN '+esc(p.isbn):'')+'</small></div><span class="result-stock">'+money(p.stock)+' in stock</span><span class="result-price">KES '+money(selectedPrice(p,1)??p.price)+'</span></div>').join('');
- results.querySelectorAll('.search-result').forEach(row=>{const choose=()=>{const id=Number(row.dataset.productId);addProduct(id);document.getElementById('productSearch').value='';filterProducts();focusScanner();};row.addEventListener('click',choose);row.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();choose();}});});
+ const q=normalizeLookupCode(document.getElementById('productSearch').value);
+ const cards=[...document.querySelectorAll('#productGrid .product')];
+ let visible=0;
+ cards.forEach(card=>{
+  const inCategory=activeCategory==='all'||normalizeCategory(card.dataset.category)===activeCategory;
+  const matches=!q||normalizeLookupCode(card.dataset.search||'').includes(q);
+  const show=inCategory&&matches;
+  card.style.display=show?'':'none';
+  if(show)visible++;
+ });
+ const count=document.getElementById('catalogCount');
+ if(count)count.textContent=visible+' items';
+ const grid=document.getElementById('productGrid'),results=document.getElementById('searchResults');
+ if(grid)grid.style.display='grid';
+ if(results){results.style.display='none';results.innerHTML='';}
 }
 function clearSearch(){document.getElementById('productSearch').value='';filterProducts();document.getElementById('productSearch').focus();}
 function clearCart(){if(!cart.length)return;if(!confirm('Clear all items from this sale?'))return;cart=[];render();setScanFeedback('Basket cleared. Ready for the next items.');focusScanner();}
@@ -326,6 +334,7 @@ function selectPayment(method,button){const select=document.getElementById('paym
 
 function money(n){return Number(n).toLocaleString('en-KE',{minimumFractionDigits:2,maximumFractionDigits:2})}function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]||m))}
 document.querySelector('.categories').addEventListener('click',e=>{const button=e.target.closest('.cat');if(button)filterCategory(button.dataset.category,button);});
+document.getElementById('productGrid').addEventListener('click',e=>{const card=e.target.closest('.product');if(!card||card.classList.contains('out'))return;addProduct(Number(card.dataset.id));});
 document.getElementById('productSearch').addEventListener('input',filterProducts);document.getElementById('productSearch').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();const q=normalizeLookupCode(e.target.value);const exact=products.find(x=>[x.barcode,x.isbn,x.sku].some(v=>v&&normalizeLookupCode(v)===q));const matches=products.filter(x=>normalizeLookupCode([x.name,x.sku,x.barcode,x.isbn].filter(Boolean).join(' ')).includes(q));const p=exact||(matches.length===1?matches[0]:null);if(p){addProduct(p.id);clearSearch();}else{setScanFeedback(matches.length?'More than one item matches. Select the correct item from the list.':'No matching product found. Check the name or code.','error');}}});document.getElementById('price_list_id').addEventListener('change',updateCatalogPrices);document.getElementById('discount').addEventListener('input',calc);document.getElementById('paid_amount').addEventListener('input',calc);document.getElementById('payment_method').addEventListener('change',()=>{const m=document.getElementById('payment_method').value;document.getElementById('mpesaPhoneField').style.display=m==='M-Pesa'?'block':'none';document.querySelectorAll('.payment-option').forEach(b=>b.classList.toggle('active',b.dataset.method===m));if(m==='M-Pesa')document.getElementById('paid_amount').value=0;calc()});
 document.getElementById('saleForm').addEventListener('submit',e=>{if(!cart.length){e.preventDefault();alert('Add at least one product.');return}let sub=Math.max(0,cart.reduce((a,x)=>a+x.qty*x.price,0)-Number(document.getElementById('discount').value||0)),total=vatMode==='inclusive'?sub:sub+(sub*vatRate/100),paid=Number(document.getElementById('paid_amount').value||0),method=document.getElementById('payment_method').value;if(paid>total&&method!=='Cash'){e.preventDefault();alert('Amount paid cannot exceed the sale total for '+method+'.');return}// Cash shift availability is checked live by sales/store.php at submission time.if(method==='M-Pesa'&&!document.getElementById('mpesa_phone').value.trim()){e.preventDefault();alert('Enter the customer M-PESA phone number.');return}});render();
 if(isCashierTerminal){document.body.classList.add('counter-mode');const terminalButton=document.getElementById('counterModeBtn');if(terminalButton)terminalButton.innerHTML='<i class="fas fa-compress"></i> Exit counter mode';}
