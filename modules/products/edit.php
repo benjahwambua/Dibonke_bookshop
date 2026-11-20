@@ -40,9 +40,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $productType = normalizeProductType($_POST['product_type'] ?? 'General');
         $isbn = normalizeProductIsbn($_POST['isbn'] ?? '');
 
-        $categoryId = (int)($_POST['category_id'] ?? 0);
-        $brandId = (int)($_POST['brand_id'] ?? 0);
-        $supplierId = (int)($_POST['supplier_id'] ?? 0);
+        $categoryNameInput = trim((string)($_POST['category_name'] ?? ''));
+        $brandNameInput = trim((string)($_POST['brand_name'] ?? ''));
+        $supplierNameInput = trim((string)($_POST['supplier_name'] ?? ''));
+        $categoryId = 0;
+        $brandId = 0;
+        $supplierId = 0;
 
         $buyRaw = trim((string)($_POST['buying_price'] ?? ''));
         $sellRaw = trim((string)($_POST['selling_price'] ?? ''));
@@ -88,32 +91,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $stock = (int)$lockedProduct['stock_quantity'];
 
+        // Resolve category, publisher and supplier from the names typed by the user.
+        // New records are created inside the same transaction as the product update.
         $categoryName = null;
-        if ($categoryId > 0) {
-            $lookup = $conn->prepare("SELECT category_name, status FROM categories WHERE id = ? LIMIT 1");
-            $lookup->execute([$categoryId]);
-            $category = $lookup->fetch();
-            if (!$category || ($category['status'] !== 'Active' && $categoryId !== (int)$p['category_id'])) {
-                throw new RuntimeException('Choose an active category. An existing inactive category may be retained until you select another.');
+        if ($categoryNameInput !== '') {
+            if (strlen($categoryNameInput) > 120) throw new RuntimeException('Category name must be 120 characters or fewer.');
+            $lookup = $conn->prepare("SELECT id, category_name, status FROM categories WHERE LOWER(category_name) = LOWER(?) LIMIT 1");
+            $lookup->execute([$categoryNameInput]);
+            $existing = $lookup->fetch(PDO::FETCH_ASSOC);
+            if ($existing) {
+                if ($existing['status'] !== 'Active' && (int)$existing['id'] !== (int)$p['category_id']) {
+                    throw new RuntimeException('That category is inactive. Activate it in Categories before using it.');
+                }
+                $categoryId = (int)$existing['id'];
+                $categoryName = (string)$existing['category_name'];
+            } else {
+                if (!hasModulePermission('categories', 'create')) throw new RuntimeException('Your role cannot create categories. Ask an administrator for category creation access.');
+                $create = $conn->prepare("INSERT INTO categories (category_name, description, status) VALUES (?, NULL, 'Active')");
+                $create->execute([$categoryNameInput]);
+                $categoryId = (int)$conn->lastInsertId();
+                $categoryName = $categoryNameInput;
             }
-            $categoryName = $category['category_name'];
         }
 
-        if ($brandId > 0) {
-            $lookup = $conn->prepare("SELECT status FROM brands WHERE id = ? LIMIT 1");
-            $lookup->execute([$brandId]);
-            $brandStatus = $lookup->fetchColumn();
-            if ($brandStatus === false || ($brandStatus !== 'Active' && $brandId !== (int)$p['brand_id'])) {
-                throw new RuntimeException('Choose an active brand or publisher.');
+        if ($brandNameInput !== '') {
+            if (strlen($brandNameInput) > 120) throw new RuntimeException('Brand or publisher name must be 120 characters or fewer.');
+            $lookup = $conn->prepare("SELECT id, status FROM brands WHERE LOWER(brand_name) = LOWER(?) LIMIT 1");
+            $lookup->execute([$brandNameInput]);
+            $existing = $lookup->fetch(PDO::FETCH_ASSOC);
+            if ($existing) {
+                if ($existing['status'] !== 'Active' && (int)$existing['id'] !== (int)$p['brand_id']) {
+                    throw new RuntimeException('That brand or publisher is inactive. Activate it in Brands before using it.');
+                }
+                $brandId = (int)$existing['id'];
+            } else {
+                if (!hasModulePermission('brands', 'create')) throw new RuntimeException('Your role cannot create brands or publishers. Ask an administrator for brand creation access.');
+                $create = $conn->prepare("INSERT INTO brands (brand_name, description, status) VALUES (?, NULL, 'Active')");
+                $create->execute([$brandNameInput]);
+                $brandId = (int)$conn->lastInsertId();
             }
         }
 
-        if ($supplierId > 0) {
-            $lookup = $conn->prepare("SELECT status FROM suppliers WHERE id = ? LIMIT 1");
-            $lookup->execute([$supplierId]);
-            $supplierStatus = $lookup->fetchColumn();
-            if ($supplierStatus === false || ($supplierStatus !== 'Active' && $supplierId !== (int)$p['supplier_id'])) {
-                throw new RuntimeException('Choose an active supplier.');
+        if ($supplierNameInput !== '') {
+            if (strlen($supplierNameInput) > 160) throw new RuntimeException('Supplier name must be 160 characters or fewer.');
+            $lookup = $conn->prepare("SELECT id, status FROM suppliers WHERE LOWER(supplier_name) = LOWER(?) LIMIT 1");
+            $lookup->execute([$supplierNameInput]);
+            $existing = $lookup->fetch(PDO::FETCH_ASSOC);
+            if ($existing) {
+                if ($existing['status'] !== 'Active' && (int)$existing['id'] !== (int)$p['supplier_id']) {
+                    throw new RuntimeException('That supplier is inactive. Activate it in Suppliers before using it.');
+                }
+                $supplierId = (int)$existing['id'];
+            } else {
+                if (!hasModulePermission('suppliers', 'create')) throw new RuntimeException('Your role cannot create suppliers. Ask an administrator for supplier creation access.');
+                $create = $conn->prepare(
+                    "INSERT INTO suppliers (supplier_name, contact_person, phone, email, address, tax_pin, credit_limit, balance, status, notes)
+                     VALUES (?, NULL, NULL, NULL, NULL, NULL, 0, 0, 'Active', NULL)"
+                );
+                $create->execute([$supplierNameInput]);
+                $supplierId = (int)$conn->lastInsertId();
             }
         }
 
@@ -202,6 +238,19 @@ $supplierStmt = $conn->prepare("SELECT id, supplier_name FROM suppliers WHERE st
 $supplierStmt->execute([(int)$p['supplier_id']]);
 $suppliers = $supplierStmt->fetchAll();
 
+$selectedCategoryName = '';
+foreach ($categories as $categoryOption) {
+    if ((int)$categoryOption['id'] === (int)$p['category_id']) { $selectedCategoryName = (string)$categoryOption['category_name']; break; }
+}
+$selectedBrandName = '';
+foreach ($brands as $brandOption) {
+    if ((int)$brandOption['id'] === (int)$p['brand_id']) { $selectedBrandName = (string)$brandOption['brand_name']; break; }
+}
+$selectedSupplierName = '';
+foreach ($suppliers as $supplierOption) {
+    if ((int)$supplierOption['id'] === (int)$p['supplier_id']) { $selectedSupplierName = (string)$supplierOption['supplier_name']; break; }
+}
+
 $pageTitle = 'Edit Product';
 require_once __DIR__ . '/../../includes/header.php';
 require_once __DIR__ . '/../../includes/sidebar.php';
@@ -249,28 +298,19 @@ require_once __DIR__ . '/../../includes/sidebar.php';
                 <input name="barcode" maxlength="100" value="<?= e($p['barcode'] ?? '') ?>">
             </label>
             <label>Category
-                <select name="category_id">
-                    <option value="">Uncategorised</option>
-                    <?php foreach ($categories as $category): ?>
-                        <option value="<?= (int)$category['id'] ?>" <?= (int)$p['category_id'] === (int)$category['id'] ? 'selected' : '' ?>><?= e($category['category_name']) ?></option>
-                    <?php endforeach; ?>
-                </select>
+                <input name="category_name" list="editProductCategoryOptions" maxlength="120" value="<?= e($selectedCategoryName) ?>" placeholder="Type or choose a category" autocomplete="off">
+                <datalist id="editProductCategoryOptions"><?php foreach ($categories as $category): ?><option value="<?= e($category['category_name']) ?>"><?php endforeach; ?></datalist>
+                <small>Choose an existing category or type a new one.</small>
             </label>
             <label>Brand / Publisher
-                <select name="brand_id">
-                    <option value="">Not specified</option>
-                    <?php foreach ($brands as $brand): ?>
-                        <option value="<?= (int)$brand['id'] ?>" <?= (int)$p['brand_id'] === (int)$brand['id'] ? 'selected' : '' ?>><?= e($brand['brand_name']) ?></option>
-                    <?php endforeach; ?>
-                </select>
+                <input name="brand_name" list="editProductBrandOptions" maxlength="120" value="<?= e($selectedBrandName) ?>" placeholder="Type or choose a brand / publisher" autocomplete="off">
+                <datalist id="editProductBrandOptions"><?php foreach ($brands as $brand): ?><option value="<?= e($brand['brand_name']) ?>"><?php endforeach; ?></datalist>
+                <small>Choose an existing brand or type a new one.</small>
             </label>
             <label>Preferred Supplier
-                <select name="supplier_id">
-                    <option value="">Not specified</option>
-                    <?php foreach ($suppliers as $supplier): ?>
-                        <option value="<?= (int)$supplier['id'] ?>" <?= (int)$p['supplier_id'] === (int)$supplier['id'] ? 'selected' : '' ?>><?= e($supplier['supplier_name']) ?></option>
-                    <?php endforeach; ?>
-                </select>
+                <input name="supplier_name" list="editProductSupplierOptions" maxlength="160" value="<?= e($selectedSupplierName) ?>" placeholder="Type or choose a supplier" autocomplete="off">
+                <datalist id="editProductSupplierOptions"><?php foreach ($suppliers as $supplier): ?><option value="<?= e($supplier['supplier_name']) ?>"><?php endforeach; ?></datalist>
+                <small>Choose an existing supplier or type a new one.</small>
             </label>
             <label>Purchase Price (KES) *
                 <input type="number" step=".01" min="0" name="buying_price" value="<?= e($p['buying_price']) ?>" required>
