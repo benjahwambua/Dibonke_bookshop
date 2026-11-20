@@ -17,7 +17,7 @@ if($_SERVER['REQUEST_METHOD']==='GET'){
    echo json_encode(['ok'=>true,'grn'=>$gr,'items'=>$q->fetchAll()]);
   }else{
    $id=(int)($_GET['id']??0);
-   $st=$conn->prepare("SELECT poi.id,poi.product_id,p.product_name,p.sku,p.barcode,p.isbn,poi.ordered_quantity,poi.received_quantity,poi.unit_cost,(poi.ordered_quantity-poi.received_quantity) outstanding FROM purchase_order_items poi JOIN products p ON p.id=poi.product_id WHERE poi.purchase_order_id=? AND poi.ordered_quantity>poi.received_quantity ORDER BY poi.id");$st->execute([$id]);
+   $st=$conn->prepare("SELECT poi.id,poi.product_id,p.product_name,p.sku,p.barcode,p.isbn,p.unit,poi.ordered_quantity,poi.received_quantity,poi.unit_cost,(poi.ordered_quantity-poi.received_quantity) outstanding FROM purchase_order_items poi JOIN products p ON p.id=poi.product_id WHERE poi.purchase_order_id=? AND poi.ordered_quantity>poi.received_quantity ORDER BY poi.id");$st->execute([$id]);
    echo json_encode(['ok'=>true,'items'=>$st->fetchAll()]);
   }
  }catch(Throwable $e){http_response_code(404);echo json_encode(['ok'=>false,'message'=>$e->getMessage()]);}exit;
