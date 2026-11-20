@@ -43,7 +43,7 @@ require_once __DIR__.'/../../includes/sidebar.php';
 <a href="<?=BASE_URL?>/modules/finance/general_ledger.php">General Ledger</a>
 <a href="<?=BASE_URL?>/modules/finance/trial_balance.php">Trial Balance</a>
 <a href="<?=BASE_URL?>/modules/finance/aged_receivables.php">Aged Receivables</a>
-<a href="<?=BASE_URL?>/modules/finance/aged_payables.php">Aged Payables</a>
+<?php if(canAccessModule('aged_payables')): ?><a href="<?=BASE_URL?>/modules/finance/aged_payables.php">Aged Payables</a><?php endif; ?>
 <a href="<?=BASE_URL?>/modules/expenses/index.php">Expenses</a>
 </nav>
 <div class="finance-head"><div><h1>Finance</h1><p class="muted">A consolidated view of sales collections, supplier payments, expenses and working balances.</p></div></div>
