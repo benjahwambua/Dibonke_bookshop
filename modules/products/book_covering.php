@@ -97,7 +97,7 @@ require_once __DIR__.'/../../includes/header.php'; require_once __DIR__.'/../../
 </tbody></table></div></div>
 <div class="card" style="padding:20px">
 <h2>Record cover rolls used internally</h2>
-<p class="muted">Use this when the shop takes a complete roll from stock for its own covering work instead of selling that roll to a customer. This records whole rolls only.</p>
+<p class="muted">Use this when the shop takes a complete roll from stock for its own covering work instead of selling that roll to a customer. Stock is reduced at buying cost; when automatic accounting is enabled, the cost is posted to Internal Inventory Use Expense. This records whole rolls only.</p>
 <form method="post"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>"><input type="hidden" name="action" value="internal_use">
 <div class="form-grid">
 <label>Cover roll product<select name="roll_product_id" required><option value="">Select a roll</option><?php foreach($rolls as $r):?><option value="<?=(int)$r['id']?>"><?=e($r['product_name'].' · Stock: '.number_format((int)$r['stock_quantity']).' rolls')?></option><?php endforeach;?></select></label>
