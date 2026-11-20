@@ -284,3 +284,16 @@ Open **Finance → Posting Mappings** to review the mappings. Automatic posting 
 Once enabled, new POS sales post revenue, output VAT, the payment/receivable split and cost of goods sold/inventory relief. Direct purchases post inventory, input VAT, payment and supplier payable. Purchase-order goods receipts post inventory and supplier payable. Expenses post to their mapped expense account and payment account. Later customer collections, supplier settlements and confirmed M-Pesa STK/C2B receipts post their settlement journals.
 
 Posting runs inside the originating transaction and uses a unique source reference to prevent duplicate journals. If journal posting fails, the source transaction is rolled back. Existing historical transactions are not automatically backfilled; opening balances and historic transaction journals must be reconciled separately before treating the Trial Balance as complete. M-Pesa receipts that cannot be matched to an invoice are held in the Unallocated M-Pesa Receipts liability account pending allocation.
+
+## Customer sales orders and invoice approval
+
+Apply `dibonke_customer_sales_orders.sql` after the existing base schema, role tables and Dibonke role migrations. It creates separate customer order headers and lines and grants the Customer Sales Orders module to Admin, Manager and Sales roles without overwriting existing permissions.
+
+Workflow:
+1. Create an order for an active registered customer. Product lines support stock units and configured bulk purchase units.
+2. Review the saved Draft order and validate it. Validation checks current stock but does not deduct stock or create a sale.
+3. Validated orders appear in Pending Invoices.
+4. Confirming an order rechecks stock and the customer's available credit, creates one completed credit invoice, updates the customer balance, deducts stock in base units, records stock movements and posts accounting entries when automatic posting is enabled.
+5. Print the confirmed customer invoice from the order.
+
+POS is intended for walk-in counter sales and no longer offers customer credit or mixed-payment sales. Existing POS invoice history remains in the sales register.
