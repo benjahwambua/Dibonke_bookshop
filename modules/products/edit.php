@@ -73,6 +73,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $skuInput = trim((string)($_POST['sku'] ?? ''));
         $barcode = trim((string)($_POST['barcode'] ?? '')) ?: null;
         $unit = trim((string)($_POST['unit'] ?? 'Piece')) ?: 'Piece';
+        $purchaseUnit = trim((string)($_POST['purchase_unit'] ?? ''));
+        $unitsPerPurchase = (int)($_POST['units_per_purchase'] ?? 1);
+        $bulkPriceRaw = trim((string)($_POST['bulk_selling_price'] ?? ''));
+        $bulkSellingPrice = $bulkPriceRaw === '' ? null : (float)$bulkPriceRaw;
+        if ($unitsPerPurchase < 1 || ($purchaseUnit === '' && $unitsPerPurchase !== 1)) throw new RuntimeException('Enter a purchase unit and a valid units-per-purchase quantity.');
+        if ($bulkSellingPrice !== null && $bulkSellingPrice < 0) throw new RuntimeException('Bulk selling price cannot be negative.');
+        if ($purchaseUnit === '') { $purchaseUnit = $unit; $unitsPerPurchase = 1; }
         $icon = trim((string)($_POST['icon'] ?? '📦')) ?: '📦';
         $newProductImage = uploadProductImage();
         $imagePath = $newProductImage ?: (string)($p['image_path'] ?? '');
@@ -182,15 +189,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             "UPDATE products SET
                 product_name = ?, product_type = ?, isbn = ?, category = ?,
                 category_id = ?, brand_id = ?, supplier_id = ?, sku = ?,
-                barcode = ?, unit = ?, buying_price = ?, selling_price = ?,
-                wholesale_price = ?, stock_quantity = ?, reorder_level = ?,
+                barcode = ?, unit = ?, purchase_unit = ?, units_per_purchase = ?, buying_price = ?, selling_price = ?,
+                wholesale_price = ?, bulk_selling_price = ?, stock_quantity = ?, reorder_level = ?,
                 icon = ?, image_path = ?, status = ?
              WHERE id = ?"
         );
         $update->execute([
             $name, $productType, $isbn, $categoryName, $categoryId ?: null,
-            $brandId ?: null, $supplierId ?: null, $sku, $barcode, $unit,
-            $buy, $sell, $wholesale, $stock, $reorder, $icon, ($imagePath !== '' ? $imagePath : null), $status, $id
+            $brandId ?: null, $supplierId ?: null, $sku, $barcode, $unit, $purchaseUnit, $unitsPerPurchase,
+            $buy, $sell, $wholesale, $bulkSellingPrice, $stock, $reorder, $icon, ($imagePath !== '' ? $imagePath : null), $status, $id
         ]);
 
         $priceInsert = $conn->prepare(
@@ -336,8 +343,20 @@ require_once __DIR__ . '/../../includes/sidebar.php';
             <label>Reorder Level
                 <input type="number" min="0" step="1" name="reorder_level" value="<?= e($p['reorder_level']) ?>" required>
             </label>
-            <label>Unit of Measure
-                <input name="unit" maxlength="50" value="<?= e($p['unit'] ?: 'Piece') ?>">
+            <label>Stock / Selling Unit
+                <input name="unit" maxlength="50" value="<?= e($p['unit'] ?: 'Piece') ?>" required>
+                <small>The smallest unit counted in stock.</small>
+            </label>
+            <label>Purchase Unit
+                <input name="purchase_unit" maxlength="50" value="<?= e($p['purchase_unit'] ?? $p['unit']) ?>" placeholder="e.g. Carton">
+            </label>
+            <label>Units per Purchase Unit
+                <input type="number" name="units_per_purchase" min="1" step="1" value="<?= e($p['units_per_purchase'] ?? 1) ?>" required>
+                <small>Example: 50 pieces in one carton.</small>
+            </label>
+            <label>Bulk Selling Price (KES)
+                <input type="number" name="bulk_selling_price" min="0" step=".01" value="<?= e($p['bulk_selling_price'] ?? '') ?>">
+                <small>Optional price for one full purchase unit.</small>
             </label>
             <label>Product Icon
                 <input name="icon" maxlength="20" value="<?= e($p['icon'] ?: '📦') ?>">
