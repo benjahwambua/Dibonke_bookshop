@@ -256,7 +256,7 @@ Direct purchases and purchase orders can then be recorded either in the stock un
 
 Product buying price is maintained per smallest stock unit for inventory valuation and cost of goods sold. Purchase-order and direct-purchase entry prices are converted to this per-stock-unit cost when saved. When receiving bulk purchases, staff enter the total price for the selected bulk unit; the handler converts it to a per-stock-unit cost before updating the product.
 
-Test with a disposable product: configure Piece / Carton / 50, receive 3 Cartons, confirm stock increases by 150 Pieces, sell 2 Cartons and 7 Pieces in the same POS basket, and confirm stock decreases by 107 Pieces to 143. Also test a base-unit purchase and sale, insufficient stock, optional bulk price, and printed receipts. Do not use a live stock item for the first test.
+Test with a disposable product: configure Piece / Carton / 50, receive 5 Cartons, confirm stock increases by 250 Pieces, sell 2 Cartons and 7 Pieces in the same POS basket, and confirm stock decreases by 107 Pieces to 143. Also test a base-unit purchase and sale, insufficient stock, optional bulk price, and printed receipts. Do not use a live stock item for the first test.
 
 ## Product Images
 
