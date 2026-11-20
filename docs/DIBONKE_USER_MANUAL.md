@@ -231,3 +231,21 @@ An authorised product administrator maintains per-book covering charges under **
 When automatic accounting is enabled and the accounting mappings are configured, Dibonke posts the internal-use cost as **Debit Internal Inventory Use Expense / Credit Inventory**. If automatic accounting is disabled, the stock movement is still recorded but Finance must post the journal manually. The accounting setup requires the `dibonke_internal_inventory_use_accounting.sql` migration. This internal-use control records whole rolls only. Covering a book does not automatically deduct part of a roll, because material usage is not being measured in this workflow.
 
 A cover roll sold to a customer is added to the POS as a normal product and deducts one whole roll when the sale is completed. Do not use the internal-use form for a roll sold to a customer.
+
+
+## Stocktaking (authorised users)
+
+Stocktaking is used to compare the quantity physically in the shop with the quantity recorded in Dibonke.
+
+1. Open **Launch Operations → Stocktaking**.
+2. Enter a clear count title, such as **November full stock count**, and select **Start new count**. Dibonke captures the system quantity for each active product when the count is opened.
+3. Work through the count sheet. Search by product name, SKU or barcode, or scan a product's SKU/barcode using a USB scanner. Each scan adds one to that product's physical quantity.
+4. You can also type the physical quantity. Enter **0** when no units are physically available. Leave a field blank only when that product has not yet been counted.
+5. Save physical counts as you work. You can save more than once while the count remains open.
+6. Review the variance column. A negative number is a shortage; a positive number is a surplus. The printed count sheet can be used for a paper count or filed with the final report.
+7. When every product has been counted, an authorised approver reviews the result and selects **Approve & post variances**. Only then does Dibonke update stock and create linked stock movement records.
+8. Use **View / Print** in the Stock Count Register to review or print the count sheet and final variance report.
+
+Do not guess a quantity to complete a count. If no stock is found, enter zero. If the count is wrong, correct and save it before approval. An active count can be cancelled by an authorised user; cancellation does not change inventory. Once approved, the count is a historical record and its posted stock movements should not be deleted. Report any correction through the approved stock adjustment process.
+
+A count captures the system quantities at the time it is started. If sales, receiving or other stock movements continue during counting, the approver should investigate significant variances before posting the count.
