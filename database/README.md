@@ -68,9 +68,13 @@ The POS also reads `customers`, `sales`, `settings` and `activity_logs`. Purchas
 
 **Current quantity limitation:** the inherited products, purchase, POS and stock-ledger handlers use whole-number quantities. The present workflow is therefore intended for piece/pack-style units. Supporting fractional units such as kilograms or metres requires a coordinated DECIMAL schema and PHP change across products, purchases, sales, stock movements, receipts and reports; changing only the products column would be unsafe.
 
-## Book covering from roll stock
+## Book covering and cover-roll sales
 
-Apply `dibonke_book_covering.sql` after the base product and sales tables exist. Create a cover-roll product with its stock unit set to `Centimetre` (or `cm`). Receive a 10-metre roll as 1,000 cm. In Products → Book Covering Setup, map each exercise-book product to the roll item, enter centimetres consumed per book size, and set the extra covering charge per book. The POS offers the add-on only for configured exercise books. It validates and deducts the exact configured centimetres when the sale is completed, and records the usage against the sale in the stock movement ledger. The current stock system uses whole-number quantities, so usage is entered in whole centimetres; do not use metres with fractional decimals.
+Apply `dibonke_book_covering.sql` after the base product and sales tables exist, then apply `dibonke_book_covering_service.sql`. The first migration adds the historical covering fields to `sale_items`; the second creates the current per-book service-charge rules. If the older covering migration was already applied, apply only the service migration.
+
+Create the cover roll as an ordinary product with stock unit `Roll`, purchase unit `Roll`, and the current retail selling price (initially KES 200 per roll). A customer buying a roll adds that product to the POS basket; completing the sale deducts one whole roll per roll sold. In Catalogue → Book Covering Setup, configure the extra covering charge for each exercise-book product. The POS checkbox adds that charge per book and stores the quantity and charge on the sale item. It does not consume cover-roll stock or add centimetre deductions.
+
+When the shop uses one or more complete rolls internally rather than selling them, record the quantity in the Book Covering Setup internal-use form. This writes a stock adjustment with reference type `book_covering_internal_use` and an audit event. The current internal-use workflow records whole rolls only; it does not estimate partial-roll usage or allocate material consumption to each covered book.
 
 ## Safe migration guidance
 
