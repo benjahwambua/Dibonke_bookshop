@@ -50,6 +50,31 @@ async function printReceiptDirect() {
     let receiptPrinted = false;
     try {
         if (!window.qz) throw new Error('QZ Tray print library did not load. Check your internet connection.');
+        // Authenticate Dibonke with QZ Tray before requesting printer access.
+        qz.security.setCertificatePromise(function(resolve, reject) {
+            fetch('qz_certificate.php', { cache: 'no-store', credentials: 'same-origin' })
+                .then(function(response) {
+                    if (!response.ok) throw new Error('Dibonke QZ certificate could not be loaded.');
+                    return response.text();
+                })
+                .then(resolve)
+                .catch(reject);
+        });
+        qz.security.setSignatureAlgorithm('SHA512');
+        qz.security.setSignaturePromise(function(toSign) {
+            return function(resolve, reject) {
+                fetch('qz_sign.php?request=' + encodeURIComponent(toSign), {
+                    cache: 'no-store',
+                    credentials: 'same-origin'
+                })
+                    .then(function(response) {
+                        if (!response.ok) throw new Error('Dibonke could not sign the QZ Tray request.');
+                        return response.text();
+                    })
+                    .then(resolve)
+                    .catch(reject);
+            };
+        });
         if (!qz.websocket.isActive()) await qz.websocket.connect();
         const printer = await qz.printers.find(DIBONKE_PRINTER_NAME);
         const receipt = document.querySelector('.receipt');
