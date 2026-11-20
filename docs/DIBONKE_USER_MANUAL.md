@@ -47,7 +47,7 @@ Do not enter the same delivery again in the Purchase Register.
 
 The POS is for quick walk-in sales. It does not create customer credit orders. Use **Customer Sales Orders** for an existing customer's order that needs review and invoicing.
 
-For cash payments, the receipt shows the amount received, the amount applied to the sale and the change due. The receipt contact number is **0706 046963**.
+For cash payments, the receipt shows the amount received, the amount applied to the sale and the change due. A QR code is printed on the receipt to identify the receipt reference and total. The receipt does not display the internal price-list name. The receipt contact number is **0706 046963**.
 
 If a product does not scan, search by name, SKU or ISBN. If typing does not show matching products, refresh the page and report the problem to your supervisor.
 
