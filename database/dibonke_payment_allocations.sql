@@ -16,11 +16,15 @@ CREATE TABLE IF NOT EXISTS customer_payment_allocations (
 CREATE TABLE IF NOT EXISTS supplier_payment_allocations (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     payment_id INT UNSIGNED NOT NULL,
-    purchase_id BIGINT UNSIGNED NOT NULL,
+    purchase_id BIGINT UNSIGNED NULL,
+    goods_receipt_id INT UNSIGNED NULL,
     amount DECIMAL(14,2) NOT NULL,
     allocated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uq_supplier_payment_purchase (payment_id, purchase_id),
+    UNIQUE KEY uq_supplier_payment_grn (payment_id, goods_receipt_id),
     KEY idx_supplier_alloc_purchase (purchase_id),
+    KEY idx_supplier_alloc_grn (goods_receipt_id),
+    CONSTRAINT chk_supplier_allocation_source CHECK ((purchase_id IS NOT NULL AND goods_receipt_id IS NULL) OR (purchase_id IS NULL AND goods_receipt_id IS NOT NULL)),
     CONSTRAINT chk_supplier_allocation_amount CHECK (amount > 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
