@@ -28,6 +28,7 @@ Before a fresh installation can be declared ready, the project still needs to:
 | `dibonke_launch_operations.sql` | Sales returns, cash shifts, stock counts, audit events and eTIMS queue | Requires the existing retail tables plus `roles`, `role_permissions` and `settings`; uses indexed references without foreign-key constraints to tolerate inherited ID definitions |
 | `dibonke_finance_billing_permissions.sql` | Adds Finance and Billing module permissions to existing roles | Requires `roles` and `role_permissions` from the staff/roles migration |
 | `dibonke_automatic_accounting_posting.sql` | Adds source-linked, duplicate-protected journal posting, core account mappings and expense-category mappings for automatic postings | Requires `accounts`, `journal_entries`, `journal_lines`, `roles`, `role_permissions`, `settings` and `expense_categories`; apply after the accounting and expense-category migrations |
+| `dibonke_payment_allocations.sql` | Customer invoice and supplier purchase/GRN payment allocation, explicit database role visibility, and return/refund account mappings | Requires `customers`, `sales`, `purchases`, `goods_receipts`, `customer_payments`, `supplier_payments`, `roles`, `role_permissions`, `users`, `accounts` and `accounting_mappings`; apply after the accounting, staff/roles and supply-chain migrations |
 | `dibonke_products_inventory_preflight.sql` | Read-only check of product, POS, purchase and stock-ledger dependencies | Run with the target Dibonke database selected |
 
 The preflight script performs SELECTs against `information_schema` only. It does not create or alter tables and is safe to use before planning migrations. Missing columns or foreign keys must be reconciled deliberately; do not apply one-off ALTER statements to a live database.
@@ -305,3 +306,21 @@ Import `dibonke_packaging_price_matrix.sql` after `dibonke_bulk_unit_conversion.
 Product setup now uses dropdowns for the sale/stock unit and supplier purchase unit. The smallest unit (for example Piece) remains the stock unit. The purchase unit (for example Box or Carton) is converted using Units per Purchase Unit. Example: Sale/Stock Unit = Piece, Purchase Unit = Box, Units per Purchase Unit = 12. One box is 12 pieces; staff can sell either one box or individual pieces.
 
 The Price Lists screen displays four prices per product: Retail per stock unit, Retail per purchase unit, Wholesale per stock unit and Wholesale per purchase unit. When a package-specific price is blank, the screen and sales workflow calculate it from the relevant per-piece price multiplied by the conversion factor. Set explicit package prices on the product form when a different package price is required. POS and Customer Sales Orders use the package price for the selected Retail or Wholesale list.
+
+
+## Coordinated financial and operational controls update
+
+After the existing accounting, staff/roles and Supply Chain migrations, apply `dibonke_payment_allocations.sql` once to the target development database. This migration creates customer invoice and supplier payment allocation tables, adds the two accounting mappings used for returns/refunds, assigns legacy users to matching configured roles, and seeds existing role-based module visibility as explicit database permissions.
+
+The matching application changes:
+- Allocate later customer receipts FIFO against completed invoices. POS receipts and confirmed M-PESA invoice payments are linked directly to their sale.
+- Allocate supplier payments FIFO across received purchases and GRNs. Existing supplier payments linked directly to a GRN are included in the GRN's paid amount. Historical supplier payments with no document reference are not guessed; if the supplier summary balance does not reconcile to open purchase/GRN documents, further supplier payment posting is blocked until the account is reconciled.
+- Provide Finance → Aged Payables for outstanding purchases and GRNs, alongside Aged Receivables for customer invoices.
+- Use weighted-average product buying cost when stock is received through direct purchases or GRNs. Inventory quantities remain expressed in each product's own stock unit.
+- Read module permissions from `role_permissions`; the legacy hard-coded role visibility fallback has been removed. Apply the migration before deploying this permission change, then review custom roles in Staff & Access → Roles & Permissions.
+- Post approved sales returns and actual refund settlements to the configured return, receivable/refund-payable, inventory and cost-of-goods-sold accounts when automatic accounting is enabled. The migration creates the `sales_returns` and `refund_payable` mappings; confirm them before enabling automatic posting.
+- M-PESA STK callbacks must match a stored checkout request and merchant request ID. Duplicate successful callbacks are acknowledged without reapplying the payment or downgrading a successful transaction.
+- The M-PESA Developer Settings page blocks switching to Production until Daraja credentials are encrypted at rest and live callback verification is complete. Continue sandbox testing only.
+- eTIMS remains onboarding/queue preparation only; no KRA transmission or production certification is claimed.
+
+A manual database and uploads backup/restore procedure is documented in `docs/DIBONKE_BACKUP_RECOVERY.md`. It is not an automated scheduler. Run the acceptance tests against the actual XAMPP/MariaDB database before treating this coordinated update as production-ready.
