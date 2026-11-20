@@ -307,3 +307,15 @@ The payment-allocation migration adds the `sales_returns` and `refund_payable` m
 ## M-PESA production safety
 
 The current Daraja credentials are not encrypted at rest in the existing settings store. The Developer Settings page now blocks switching to Production until credential encryption and end-to-end live callback verification are implemented. Continue using Sandbox only; do not manually change the environment setting to `live`.
+
+
+## Exercise-book covering configuration
+
+1. Create a stock product for the cover roll. Set its stock unit to **Centimetre** and, if you buy full rolls, set the purchase unit to **Roll** with the correct number of centimetres per roll (for example, 1,000 cm for a 10-metre roll).
+2. Enter the roll's buying cost on a per-centimetre basis so inventory costing can value the material consumed accurately.
+3. Receive the roll through the normal goods-receiving workflow. A 10-metre roll is received as 1 Roll and converted to 1,000 cm when the purchase-unit conversion is configured.
+4. Open **Catalogue → Book Covering Setup**. Choose the exercise-book product, the cover-roll stock item, the centimetres used for one book of that size, and the extra charge per book.
+5. Save one rule for each exercise-book size. The setup supports one active roll-material rule per exercise-book product.
+6. At POS, the cashier ticks **Add covering** for the relevant basket line. Dibonke recalculates the total and, on successful sale completion, deducts the configured centimetres from the roll stock and writes a stock movement linked to the sale.
+
+Use whole centimetres because the existing inventory balance and stock movement ledger use whole-number quantities. The migration `database/dibonke_book_covering.sql` must be applied before deploying this feature. Do not configure the roll in metres and enter fractional usage; use centimetres consistently.
