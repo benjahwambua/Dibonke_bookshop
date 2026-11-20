@@ -265,3 +265,34 @@ Docker deployment is optional. The repository's Docker setup packages applicatio
 ## 21. Support and maintenance
 
 The included maintenance period is governed by the separately signed Maintenance and Technical Support Agreement. Record the installation/handover date and maintenance expiry date. Report defects with the affected screen, steps to reproduce, exact error message and screenshot where possible. New modules, major customisations, additional branches, hardware repairs and third-party service charges may fall outside included maintenance; obtain written approval and a quotation before commissioning extra work.
+
+
+## Payment allocation and reconciliation
+
+Apply the database migration `database/dibonke_payment_allocations.sql` before deploying the matching PHP changes. It creates customer invoice and supplier purchase allocation ledgers and migrates matching legacy user roles to configured role IDs. Existing payment records are not deleted or rewritten.
+
+- Customer receipts allocate FIFO to completed sales with an outstanding balance.
+- Supplier payments allocate FIFO to received purchases with an outstanding balance.
+- POS and confirmed M-PESA invoice payments are linked directly to their sale.
+- Review aged receivables and aged payables after migration. Historical customer and supplier summary balances may not agree with the sum of invoice balances; investigate these differences rather than forcing balances to match without supporting records.
+- The allocation helper rejects payments that exceed the underlying open invoices/purchases even when the aggregate customer/supplier balance suggests otherwise.
+
+## Inventory costing
+
+Purchase receipts now update product buying cost using a weighted-average cost. Existing stock quantity is weighted at its current buying cost and received quantity at the incoming unit cost. This improves the stock valuation estimate and the cost snapshot used for subsequent sales. It does not yet calculate full landed cost or maintain separate FIFO cost layers.
+
+## Roles and permissions
+
+After the payment-allocation migration has been applied, module visibility is read from the database role-permission table. Legacy role visibility is seeded into explicit `role_permissions` rows by the migration. Review each role in Staff & Access → Roles & Permissions and assign view/create/edit/delete rights deliberately. Superuser and administrator bypass rules remain in place.
+
+## M-PESA callback controls
+
+The STK callback now requires a matching stored checkout request and merchant request ID. A previously successful callback is acknowledged as a duplicate without overwriting its success status or applying the payment twice. Keep the callback endpoint publicly reachable over HTTPS and test sandbox callbacks before production use.
+
+## eTIMS status
+
+The eTIMS page currently stores onboarding details and maintains an internal queue only. It does not transmit invoices to KRA, and production transmission remains disabled until the approved integration, credentials, sandbox testing and certification are completed.
+
+## Backup and recovery
+
+See `docs/DIBONKE_BACKUP_RECOVERY.md` for the required database and uploads backup procedure and restore verification checklist.
