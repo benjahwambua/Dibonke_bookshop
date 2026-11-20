@@ -15,7 +15,7 @@ if ((in_array($receiptRole, ['cashier', 'sales'], true) || in_array($receiptRole
 }
 $i=$conn->prepare("SELECT si.quantity,si.price,si.subtotal,si.entered_quantity,si.sale_unit,si.conversion_factor,si.covering_quantity,si.covering_cm_per_book,si.covering_charge_per_book,p.product_name,p.sku,p.unit FROM sale_items si JOIN products p ON p.id=si.product_id WHERE si.sale_id=? ORDER BY si.id");$i->execute([$id]);$items=$i->fetchAll();
 $paymentStatus = (float)$sale['balance'] <= 0.001 ? 'PAID' : ((float)$sale['paid_amount'] > 0 ? 'PARTIALLY PAID' : ($sale['payment_method'] === 'M-Pesa' ? 'M-PESA NOT YET CONFIRMED' : 'PAYMENT DUE'));
-$amountTendered=(float)($sale['amount_tendered']??$sale['paid_amount']);$changeGiven=$sale['payment_method']==='Cash'?max(0,$amountTendered-(float)$sale['total_amount']):0.0;
+$amountTendered=(float)($sale['amount_tendered']??$sale['paid_amount']);$changeGiven=$sale['payment_method']==='Cash'?max(0,$amountTendered-(float)$sale['total_amount']):0.0;$openCashDrawer=$sale['payment_method']==='Cash'&&$amountTendered>0;
 $flash=$_SESSION['sale_flash']??null;unset($_SESSION['sale_flash']);
 $company=(string)($conn->query("SELECT setting_value FROM settings WHERE setting_key='company_name' LIMIT 1")->fetchColumn()?:'Dibonke Bookshop');
 if($company===''||strcasecmp($company,'Stalk & Stable')===0)$company='Dibonke Bookshop';
@@ -26,8 +26,8 @@ $qrUrl='https://api.qrserver.com/v1/create-qr-code/?size=120x120&margin=2&data='
 <!doctype html><html><head><meta charset="utf-8"><title>Receipt <?=e($sale['invoice_number'])?></title><style>
 body{margin:0;background:#eef2f7;font-family:Arial,sans-serif;color:#111827}.actions{padding:15px;text-align:center}.actions button,.actions a{border:0;background:#004a99;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;cursor:pointer;margin:0 4px;font-weight:700}.actions a{background:#64748b}.receipt{width:80mm;margin:10px auto;background:#fff;padding:6mm;box-sizing:border-box}.center{text-align:center}.company{font-size:19px;font-weight:900;letter-spacing:.2px}.small{font-size:10px;color:#475569}.line{border-top:1px dashed #111827;margin:9px 0}.meta{font-size:10px;line-height:1.45;overflow-wrap:anywhere}.items{width:100%;border-collapse:collapse;font-size:10px;table-layout:fixed}.items th:first-child,.items td:first-child{width:54%;overflow-wrap:anywhere}.items th:nth-child(2),.items td:nth-child(2){width:14%}.items th:last-child,.items td:last-child{width:32%}.items th{text-align:left;border-bottom:1px solid #111827;padding-bottom:5px}.items td{padding:4px 1px;vertical-align:top;overflow-wrap:anywhere}.num{text-align:right}.total{font-size:15px;font-weight:900}.thanks{margin-top:12px;font-size:10px;line-height:1.45}.qr-wrap{text-align:center;margin:12px auto 4px}.qr-wrap img{width:27mm;height:27mm;display:block;margin:0 auto}.qr-wrap small{font-size:8px;color:#475569}.flash{background:#ecfdf5;color:#166534;padding:8px;font-size:11px;text-align:center;margin-bottom:8px}@media print{html,body{width:80mm;background:#fff}.actions{display:none}.receipt{width:80mm;margin:0;padding:3mm;box-shadow:none;page-break-after:avoid}@page{size:80mm auto;margin:0}}
 </style></head><body>
-<div class="actions"><button onclick="window.print()"><i>🖨</i> Print Receipt</button><a href="index.php">Back to POS</a></div>
-<div class="receipt">
+<div class="actions"><button type="button" onclick="printReceiptDirect()"><i>🖨</i> Print Receipt</button><a href="index.php">Back to POS</a><div id="printStatus" class="small" role="status" aria-live="polite" style="margin-top:8px"></div></div>
+<div class="receipt" data-open-drawer="<?= $openCashDrawer ? '1' : '0' ?>">
 <?php if($flash): ?><div class="flash"><?=e($flash)?></div><?php endif; ?>
 <div class="center"><div class="company"><?=e($company)?></div><div class="small">BOOKS · STATIONERY · GENERAL RETAIL</div><div class="small" style="font-weight:700;margin-top:3px">Tel: 0706 046963</div></div>
 <div class="line"></div><div class="meta"><strong>Receipt:</strong> <?=e($sale['invoice_number'])?><br><strong>Date:</strong> <?=e($sale['sale_date'])?><br><strong>Cashier:</strong> <?=e($sale['cashier']?:'Staff')?><br><strong>Customer:</strong> <?=e($sale['customer_name'])?><?php if($sale['phone']): ?> · <?=e($sale['phone'])?><?php endif; ?></div>
@@ -35,4 +35,69 @@ body{margin:0;background:#eef2f7;font-family:Arial,sans-serif;color:#111827}.act
 <table class="items"><thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Amount</th></tr></thead><tbody><?php foreach($items as $item): ?><tr><td><?=e($item['product_name'])?><?php if((int)$item['covering_quantity']>0): ?><br><small>Covering service: <?=number_format((int)$item['covering_quantity'])?> book(s) · Extra charge KES <?=number_format((float)$item['covering_charge_per_book']*(int)$item['covering_quantity'],2)?></small><?php endif; ?></td><td class="num"><?=e($item['entered_quantity'] ?? $item['quantity'])?> <?=e($item['sale_unit'] ?? $item['unit'])?></td><td class="num"><?=e($currency)?> <?=number_format((float)$item['subtotal'],2)?></td></tr><?php endforeach; ?></tbody></table>
 <div class="line"><div class="meta"><div><span>Subtotal</span><span style="float:right"><?=e($currency)?> <?=number_format((float)$sale['subtotal'],2)?></span></div><div><span>Discount</span><span style="float:right"><?=e($currency)?> <?=number_format((float)$sale['discount'],2)?></span></div><div><span>Tax</span><span style="float:right"><?=e($currency)?> <?=number_format((float)$sale['tax'],2)?></span></div><div class="total"><span>TOTAL</span><span style="float:right"><?=e($currency)?> <?=number_format((float)$sale['total_amount'],2)?></span></div><?php if($sale['payment_method']==='Cash'):?><div><span>Amount received</span><span style="float:right"><?=e($currency)?> <?=number_format($amountTendered,2)?></span></div><div><span>Paid</span><span style="float:right"><?=e($currency)?> <?=number_format((float)$sale['paid_amount'],2)?></span></div><div><span>Change given</span><span style="float:right"><?=e($currency)?> <?=number_format($changeGiven,2)?></span></div><?php else:?><div><span>Paid</span><span style="float:right"><?=e($currency)?> <?=number_format((float)$sale['paid_amount'],2)?></span></div><?php endif;?><div><span>Balance</span><span style="float:right"><?=e($currency)?> <?=number_format((float)$sale['balance'],2)?></span></div><div><span>Payment</span><span style="float:right"><?=e($sale['payment_method'])?></span></div><div style="font-weight:800;margin-top:5px"><span>Payment status</span><span style="float:right"><?=e($paymentStatus)?></span></div></div></div>
 <div class="qr-wrap"><img src="<?=e($qrUrl)?>" alt="Receipt QR code"><small>Scan to identify this receipt · <?=e($sale['invoice_number'])?></small></div><div class="center thanks">Thank you for shopping with us.<br>We appreciate your business.</div>
-</div><script>window.addEventListener('load',()=>{if(new URLSearchParams(location.search).get('autoprint')==='1')setTimeout(()=>window.print(),300)});</script></body></html>
+</div><script src="https://cdn.jsdelivr.net/npm/qz-tray@2.3.0/qz-tray.min.js"></script>
+<script>
+const DIBONKE_PRINTER_NAME = 'Xprinter XP-80';
+let dibonkePrintBusy = false;
+function setPrintStatus(message) {
+    const el = document.getElementById('printStatus');
+    if (el) el.textContent = message;
+}
+async function printReceiptDirect() {
+    if (dibonkePrintBusy) return;
+    dibonkePrintBusy = true;
+    setPrintStatus('Connecting to the receipt printer…');
+    let receiptPrinted = false;
+    try {
+        if (!window.qz) throw new Error('QZ Tray print library did not load. Check your internet connection.');
+        if (!qz.websocket.isActive()) await qz.websocket.connect();
+        const printer = await qz.printers.find(DIBONKE_PRINTER_NAME);
+        const receipt = document.querySelector('.receipt');
+        const css = document.querySelector('style').textContent;
+        const html = '<!doctype html><html><head><meta charset="utf-8"><style>' +
+            css +
+            'html,body{width:80mm;margin:0;padding:0;background:#fff}.receipt{width:80mm;margin:0 auto;padding:3mm;box-shadow:none}@page{size:80mm auto;margin:0}' +
+            '</style></head><body>' + receipt.outerHTML + '</body></html>';
+        const config = qz.configs.create(printer, { margins: 0, orientation: 'portrait' });
+        await qz.print(config, [{
+            type: 'pixel',
+            format: 'html',
+            flavor: 'plain',
+            data: html
+        }]);
+        receiptPrinted = true;
+    } catch (error) {
+        console.error('Dibonke direct receipt printing failed:', error);
+        setPrintStatus('Direct printing is unavailable. Opening the normal print window instead.');
+        dibonkePrintBusy = false;
+        window.print();
+        return;
+    }
+
+    const receipt = document.querySelector('.receipt');
+    const shouldOpenDrawer = receipt && receipt.dataset.openDrawer === '1';
+    if (shouldOpenDrawer) {
+        try {
+            setPrintStatus('Receipt printed. Opening the cash drawer…');
+            const drawerConfig = qz.configs.create(DIBONKE_PRINTER_NAME, { forceRaw: true });
+            await qz.print(drawerConfig, [{
+                type: 'raw',
+                format: 'command',
+                data: '\\x1B\\x70\\x00\\x19\\xFA'
+            }]);
+            setPrintStatus('Receipt printed and cash drawer command sent.');
+        } catch (error) {
+            console.error('Dibonke cash drawer command failed:', error);
+            setPrintStatus('Receipt printed, but the cash drawer did not respond. Check its cable and printer drawer settings.');
+        }
+    } else {
+        setPrintStatus('Receipt printed.');
+    }
+    dibonkePrintBusy = false;
+}
+window.addEventListener('load', () => {
+    if (new URLSearchParams(location.search).get('autoprint') === '1') {
+        setTimeout(printReceiptDirect, 600);
+    }
+});
+</script></body></html>
