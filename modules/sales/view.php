@@ -21,7 +21,7 @@ require_once __DIR__.'/../../includes/sidebar.php';
 <div class="top"><div><h1>Stalk & Stable</h1><p>Alcohol Distribution Management System</p><p><?=e($sale['customer_name'])?><br><?=e($sale['phone']??'')?><br><?=e($sale['address']??'')?></p></div>
 <div class="right"><h2><?=e($sale['invoice_number'])?></h2><p><?=e($sale['sale_date'])?></p><p>Payment: <?=e($sale['payment_method'])?></p><p>Served by: <?=e($sale['full_name']??'')?></p></div></div>
 <table class="table"><thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead><tbody>
-<?php foreach($items as $i):?><tr><td><?=e($i['product_name'])?></td><td><?=e($i['entered_quantity'] ?? $i['quantity'])?> <?=e($i['sale_unit'] ?? $i['unit'])?></td><td>KES <?=number_format((float)$i['price'],2)?></td><td>KES <?=number_format((float)$i['subtotal'],2)?></td></tr><?php endforeach;?>
+<?php foreach($items as $i):?><tr><td><?=e($i['product_name'])?></td><td><?=e($i['entered_quantity'] ?? $i['quantity'])?> <?=e($i['sale_unit'] ?? $i['unit'])?></td><td>KES <?=number_format((float)($i['entered_unit_price'] ?? $i['price']),2)?></td><td>KES <?=number_format((float)$i['subtotal'],2)?></td></tr><?php endforeach;?>
 </tbody></table>
 <div class="right"><p>Subtotal: KES <?=number_format((float)$sale['subtotal'],2)?></p><p>Discount: KES <?=number_format((float)$sale['discount'],2)?></p><p>Tax: KES <?=number_format((float)$sale['tax'],2)?></p><h2>Total: KES <?=number_format((float)$sale['total_amount'],2)?></h2><p>Paid: KES <?=number_format((float)$sale['paid_amount'],2)?></p><p>Balance: KES <?=number_format((float)$sale['balance'],2)?></p></div>
 </div></main>
