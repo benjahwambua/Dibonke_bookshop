@@ -70,6 +70,15 @@ Confirm the business details before issuing receipts and reports. Avoid changing
 - Check for duplicate products before creating new records.
 - Record verified opening stock once only.
 
+### Barcode, ISBN and SKU setup
+
+- Record a book's ISBN in the ISBN field when available. ISBN-13 is the current standard; older editions may carry ISBN-10.
+- The Barcode field stores the value scanned at receiving and POS. A book's printed barcode often encodes its ISBN; avoid treating the same value as two different identifiers. If it is the same number, store it as the product barcode and populate ISBN as appropriate for catalogue reporting.
+- SKU is the internal Dibonke product code and is generated automatically when left blank.
+- ISBN is not applicable to stationery and general merchandise. Barcode is optional where a product has no barcode; staff can search by product name or SKU.
+- The Add Product form opens with the Barcode field focused. A standard USB HID scanner enters the digits as keyboard input. The scanner's Enter suffix moves focus to Product Name rather than submitting the incomplete form. Staff then complete required product details manually and save.
+- Check for duplicate barcode/ISBN values and verify the scanned digits before saving. A scanner reads the printed code; it does not automatically retrieve product names, descriptions, categories or prices.
+
 ## 6. Product units, package conversions and price lists
 
 When setting up a product that is bought in bulk and sold in smaller quantities, define the smallest stock/sale unit and the purchase package clearly.
