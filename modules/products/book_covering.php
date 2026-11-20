@@ -3,6 +3,7 @@ declare(strict_types=1);
 require_once __DIR__.'/../../includes/auth.php';
 require_once __DIR__.'/../../config/db.php';
 require_once __DIR__.'/../../includes/audit.php';
+require_once __DIR__.'/../../includes/accounting_posting.php';
 requireModulePermission('products','edit');
 $pageTitle='Book Covering Setup';
 $flash=$_SESSION['book_covering_flash']??null; unset($_SESSION['book_covering_flash']);
@@ -37,7 +38,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
             if($rollId<=0||$quantity<=0) throw new RuntimeException('Choose a cover roll and enter at least one whole roll.');
             if($notes==='') throw new RuntimeException('Enter why the roll is being taken for internal covering use.');
             $conn->beginTransaction();
-            $q=$conn->prepare("SELECT id,product_name,unit,stock_quantity FROM products WHERE id=? AND status='Active' FOR UPDATE");
+            $q=$conn->prepare("SELECT id,product_name,unit,stock_quantity,buying_price FROM products WHERE id=? AND status='Active' FOR UPDATE");
             $q->execute([$rollId]); $roll=$q->fetch(PDO::FETCH_ASSOC);
             if(!$roll) throw new RuntimeException('The selected cover roll is unavailable.');
             if(strtolower((string)$roll['unit'])!=='roll') throw new RuntimeException('The selected product must use Roll as its stock unit.');
@@ -47,9 +48,24 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
             $conn->prepare("UPDATE products SET stock_quantity=? WHERE id=?")->execute([$after,$rollId]);
             $movement=$conn->prepare("INSERT INTO stock_movements(product_id,user_id,movement_type,quantity,stock_before,stock_after,reference_type,reference_id,notes,movement_date) VALUES(?,?,'Adjustment',?,?,?,'book_covering_internal_use',?, ?, NOW())");
             $movement->execute([$rollId,$uid,$quantity,$before,$after,$rollId,'Internal book-covering use: '.$notes]);
-            recordAuditEvent($conn,'Create','inventory','Recorded '.$quantity.' roll(s) used internally for book covering','book_covering_internal_use',$rollId,null,['quantity'=>$quantity,'stock_before'=>$before,'stock_after'=>$after,'notes'=>$notes]);
+            $movementId=(int)$conn->lastInsertId();
+            $usageCost=round((float)$roll['buying_price']*$quantity,2);
+            $journalPosted=false;
+            if(dibonkeAccountingAutoPostingEnabled($conn)){
+                if($usageCost>0){
+                    $expenseAccount=dibonkeAccountingAccount($conn,'internal_inventory_use','Expense');
+                    $inventoryAccount=dibonkeAccountingAccount($conn,'inventory','Asset');
+                    $journalLines=[
+                        dibonkeAccountingLine($expenseAccount,'Cover rolls used internally: '.$roll['product_name'],$usageCost,0),
+                        dibonkeAccountingLine($inventoryAccount,'Inventory issued for internal book covering',0,$usageCost)
+                    ];
+                    dibonkeAccountingPostJournal($conn,'inventory_internal_use',$movementId,date('Y-m-d'),'Internal use of '.$quantity.' cover roll(s)',$journalLines,$uid);
+                    $journalPosted=true;
+                }
+            }
+            recordAuditEvent($conn,'Create','inventory','Recorded '.$quantity.' roll(s) used internally for book covering','book_covering_internal_use',$movementId,null,['product_id'=>$rollId,'quantity'=>$quantity,'unit_cost'=>(float)$roll['buying_price'],'total_cost'=>$usageCost,'stock_before'=>$before,'stock_after'=>$after,'journal_posted'=>$journalPosted,'notes'=>$notes]);
             $conn->commit();
-            $_SESSION['book_covering_flash']='Internal use recorded. '.$quantity.' roll(s) deducted from stock.';
+            $_SESSION['book_covering_flash']='Internal use recorded. '.$quantity.' roll(s) deducted from stock at cost KES '.number_format($usageCost,2).'.'.($journalPosted?' Expense and inventory journal posted.':(dibonkeAccountingTablesReady($conn)?' Automatic accounting is off; post the internal-use journal manually.':' Accounting tables are not configured.'));
         }else{
             throw new RuntimeException('Unknown action.');
         }
