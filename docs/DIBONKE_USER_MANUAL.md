@@ -69,6 +69,12 @@ For cash payments, the receipt shows the amount received, the amount applied to 
 
 If a product does not scan, search by name, SKU or ISBN. If typing does not show matching products, refresh the page and report the problem to your supervisor.
 
+### Filter products by category
+
+- Select a category button above the POS product list, such as **Pens**, to show only products assigned to that category.
+- Select **All Products** to return to the full catalogue.
+- Product search works within the selected category. Clear the search to see all products in that category again.
+
 ## 5. Customer sales orders and pending invoices
 
 Use this process when an existing customer is ordering goods and the order must be checked before an invoice is created. Do not use the POS for this workflow.
@@ -220,4 +226,8 @@ Some exercise books can be sold with an optional covering service. When an exerc
 
 The cover roll is a normal stock product sold by the whole roll. Set its stock unit to **Roll** and its retail selling price to **KES 200** (or the current shop price). When a customer buys a roll, add it to the basket like any other product; one roll is deducted from stock when the sale is completed. The covering service charge is separate and is not included in the roll price.
 
-An authorised product administrator maintains per-book covering charges under **Catalogue → Book Covering Setup**. If the shop takes a complete roll from its own stock for internal covering work instead of selling it, use **Record cover rolls used internally** on that page. Enter the number of whole rolls and a reason; Dibonke records an inventory adjustment and audit entry. This internal-use control records whole rolls only. Covering a book does not automatically deduct part of a roll, because material usage is not being measured in this workflow.
+An authorised product administrator maintains per-book covering charges under **Catalogue → Book Covering Setup**. If the shop takes a complete roll from its own stock for internal covering work instead of selling it, use **Record cover rolls used internally** on that page. Enter the roll product, number of whole rolls and a reason. Dibonke reduces stock, records the inventory movement and audit event, and values the issue using the product's buying cost (not its KES 200 selling price).
+
+When automatic accounting is enabled and the accounting mappings are configured, Dibonke posts the internal-use cost as **Debit Internal Inventory Use Expense / Credit Inventory**. If automatic accounting is disabled, the stock movement is still recorded but Finance must post the journal manually. The accounting setup requires the `dibonke_internal_inventory_use_accounting.sql` migration. This internal-use control records whole rolls only. Covering a book does not automatically deduct part of a roll, because material usage is not being measured in this workflow.
+
+A cover roll sold to a customer is added to the POS as a normal product and deducts one whole roll when the sale is completed. Do not use the internal-use form for a roll sold to a customer.
