@@ -230,7 +230,7 @@ body.counter-mode .product .badge {
 </style>
 
 <div class="pos-wrap">
-<div class="pos-title"><div><h1><i class="fas fa-cash-register"></i> Retail POS</h1><div class="muted">Scan ISBN / barcode, add items, collect payment and print receipt</div></div><div class="pos-actions"><span class="counter-label"><i class="fas fa-barcode"></i> Scanner ready</span><button type="button" class="btn light" id="counterModeBtn" onclick="toggleCounterMode()"><i class="fas fa-expand"></i> Counter mode</button><?php if($canManageOwnShift):?><a class="btn light shift-shortcut" target="_blank" rel="noopener" href="<?=BASE_URL?>/modules/sales/my_shift.php"><i class="fas fa-cash-register"></i> My Shift</a><?php endif;?><a class="btn light" href="<?=BASE_URL?>/modules/customers/index.php"><i class="fas fa-users"></i> Customers</a></div></div>
+<div class="pos-title"><div><h1><i class="fas fa-cash-register"></i> Retail POS</h1><div class="muted">Scan ISBN / barcode, add items, collect payment and print receipt</div></div><div class="pos-actions"><span class="counter-label"><i class="fas fa-barcode"></i> Scanner ready</span><button type="button" class="btn light" id="counterModeBtn" onclick="toggleCounterMode()"><i class="fas fa-expand"></i> Counter mode</button><?php if($canManageOwnShift):?><a class="btn light shift-shortcut" target="_blank" rel="noopener" href="<?=BASE_URL?>/modules/sales/my_shift.php"><i class="fas fa-cash-register"></i> My Shift</a><?php endif;?><a class="btn light" href="<?=BASE_URL?>/modules/customer_orders/index.php"><i class="fas fa-file-signature"></i> Customer Orders</a></div></div>
 <?php if($flash): ?><div class="flash"><?=e($flash)?></div><?php endif; ?>
 <?php if($cashShiftRequired&&!$hasOpenCashShift):?><div class="flash" style="border-left:4px solid #d97706"><strong>Cash shift not open.</strong> Open your shift before accepting cash payments. Your POS basket stays open while you open the shift in another tab. <a target="_blank" rel="noopener" href="<?=BASE_URL?>/modules/sales/my_shift.php">Open My Cashier Shift</a></div><?php endif;?>
 
@@ -251,7 +251,7 @@ body.counter-mode .product .badge {
 
 <section class="checkout">
 <div class="checkout-heading"><div><span class="checkout-kicker">CURRENT TRANSACTION</span><h3><i class="fas fa-shopping-basket"></i> Order summary</h3></div><div class="basket-count" id="basketCount">0 items</div></div>
-<div class="field"><label>Price List</label><select name="price_list_id" id="price_list_id"><?php foreach($priceLists as $pl):?><option value="<?=$pl['id']?>" data-code="<?=e($pl['code'])?>"><?=e($pl['name'])?></option><?php endforeach;?></select></div>
+<div class="field" style="display:none"><label>Price List</label><select name="price_list_id" id="price_list_id"><?php foreach($priceLists as $pl):?><option value="<?=$pl['id']?>" data-code="<?=e($pl['code'])?>"><?=e($pl['name'])?></option><?php endforeach;?></select></div>
 <div class="cart-toolbar"><span>Items in this basket</span><button type="button" class="clear-cart" onclick="clearCart()">Clear all</button></div><div id="cart" class="cart"><div class="empty">Your basket is empty. Select a product to begin.</div></div>
 <input type="hidden" name="cart_json" id="cart_json">
 <div class="field"><label>Discount (KES)</label><input type="number" name="discount" id="discount" min="0" step=".01" value="0"></div>
