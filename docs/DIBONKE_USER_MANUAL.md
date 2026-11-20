@@ -203,7 +203,7 @@ Use **Help & Support → General User Manual** for these instructions. Contact y
 
 - A customer receipt is automatically allocated to the customer's oldest outstanding completed invoice first. If the receipt is larger than that invoice balance, the remaining amount is applied to the next oldest invoice.
 - Invoice balances and the customer account balance are updated together. If the receipt is greater than the outstanding invoice balances, Dibonke stops the transaction and asks for the account to be reconciled.
-- Supplier payments are allocated to the oldest outstanding received purchase first, then to the next oldest purchase if money remains.
+- Supplier payments are allocated to the oldest outstanding received purchase or Goods Received Note (GRN) first, then to the next oldest supplier document if money remains.
 - Use Finance → Aged Receivables to review customer invoices and Finance → Aged Payables to review supplier purchases by age.
 - POS payments are linked directly to the invoice created by that sale. Confirmed M-PESA payments are also linked to the relevant invoice or customer account.
 
