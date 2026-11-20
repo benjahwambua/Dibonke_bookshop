@@ -319,3 +319,21 @@ The current Daraja credentials are not encrypted at rest in the existing setting
 6. The internal-use value is calculated at the product's buying cost, not the KES 200 selling price. When automatic accounting is enabled, Dibonke posts **Debit Internal Inventory Use Expense / Credit Inventory** for that cost. If automatic accounting is disabled, the stock adjustment is still recorded but the journal must be posted manually.
 
 The internal-use form records whole rolls only. It does not estimate or deduct partial-roll consumption per covered book. Apply `database/dibonke_book_covering.sql` and then `database/dibonke_book_covering_service.sql` before deploying the current covering workflow. Also apply `database/dibonke_internal_inventory_use_accounting.sql` to create the expense account mapping.
+
+
+## Stocktaking controls and approval
+
+Stocktaking is managed under **Launch Operations → Stocktaking**.
+
+- Give **stocktaking: view** to staff who need to review count sheets and reports.
+- Give **stocktaking: create** to staff who are allowed to start counts and enter physical quantities.
+- Give **stocktaking: edit** only to managers or other authorised approvers who may approve variances or cancel an active count.
+- Dibonke allows one active count session at a time. Starting a count captures the then-current stock quantity for every active product into the count sheet.
+- Count takers can search the sheet by product name, SKU or barcode, scan a SKU/barcode to increment the physical count by one, or enter a quantity manually. A zero is a valid counted quantity; a blank field means not yet counted.
+- Quantities can be saved repeatedly while the count is open. Approval is blocked until every item has a physical quantity.
+- Before approval, review shortages and surpluses, check unexpected variances against sales, goods receipts, returns and stock movements since the count began, and obtain explanations where needed.
+- Approval updates each affected product's stock quantity and writes a stock_movements row with movement type Adjustment, reference type stock_count and the count ID. The count is then marked Approved and an audit event is recorded.
+- Cancellation is permitted only while the count is open. It marks the count Cancelled and does not alter stock.
+- Use **View / Print** in the register for the count sheet and variance report. Retain approved reports with the supporting stocktake paperwork.
+
+The system quantity on the count sheet is the snapshot from the start of the count. If the shop continues trading during the count, the approver must investigate stock movements between the snapshot and approval. Do not approve unexplained differences merely to close the count. Approved counts should be corrected only through a separately authorised adjustment with its own audit trail.
