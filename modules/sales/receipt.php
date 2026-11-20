@@ -83,7 +83,7 @@ async function printReceiptDirect() {
             await qz.print(drawerConfig, [{
                 type: 'raw',
                 format: 'command',
-                data: '\\x1B\\x70\\x00\\x19\\xFA'
+                data: '\x1B\x70\x00\x19\xFA'
             }]);
             setPrintStatus('Receipt printed and cash drawer command sent.');
         } catch (error) {
