@@ -212,3 +212,10 @@ Use **Help & Support → General User Manual** for these instructions. Contact y
 - Product quantities are maintained in each product's configured stock unit. Do not add pieces, reams, boxes and other different units together as if they were the same unit.
 - On receiving a purchase, Dibonke updates the product's buying cost using a weighted-average cost based on the existing stock and the newly received quantity.
 - Inventory value is an operational estimate using the recorded weighted-average cost. It is not a substitute for a full landed-cost valuation where freight, duties or other acquisition costs need to be capitalised.
+
+
+## Book covering at the POS
+
+Some exercise books can be sold with an optional covering service. When an exercise book has a covering rule configured, the cashier will see **Add covering** beneath that item in the basket. Tick it to add the extra charge for each book; leave it unticked for an ordinary sale. The POS checks the available roll stock before completing the sale. The receipt identifies the covered quantity and the centimetres of roll used.
+
+Cashiers should not change the covering charge or material usage. An authorised product administrator maintains these settings under **Catalogue → Book Covering Setup**. Each rule identifies the exercise-book product, the cover-roll stock item, the centimetres required for one book of that size, and the extra charge. Configure the roll product with **Centimetre** as its stock unit. For example, enter a 10-metre roll as 1,000 cm when receiving stock. Different exercise-book sizes can have different usage and charges. If the customer brings their own book, use the existing service-only workflow only if a separate service product has been configured; this POS add-on currently applies to an exercise book already in the basket.
