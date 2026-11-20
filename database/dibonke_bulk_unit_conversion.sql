@@ -39,3 +39,16 @@ PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 SET @sql := IF((SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='sale_items' AND COLUMN_NAME='entered_unit_price')=0,
 "ALTER TABLE sale_items ADD COLUMN entered_unit_price DECIMAL(12,2) NULL AFTER conversion_factor", "SELECT 1");
 PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+
+SET @sql := IF((SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='purchase_order_items' AND COLUMN_NAME='entered_quantity')=0,
+"ALTER TABLE purchase_order_items ADD COLUMN entered_quantity DECIMAL(12,3) NULL AFTER line_total", "SELECT 1");
+PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+SET @sql := IF((SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='purchase_order_items' AND COLUMN_NAME='purchase_unit')=0,
+"ALTER TABLE purchase_order_items ADD COLUMN purchase_unit VARCHAR(50) NULL AFTER entered_quantity", "SELECT 1");
+PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+SET @sql := IF((SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='purchase_order_items' AND COLUMN_NAME='conversion_factor')=0,
+"ALTER TABLE purchase_order_items ADD COLUMN conversion_factor INT UNSIGNED NULL AFTER purchase_unit", "SELECT 1");
+PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+SET @sql := IF((SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=@db AND TABLE_NAME='purchase_order_items' AND COLUMN_NAME='entered_unit_cost')=0,
+"ALTER TABLE purchase_order_items ADD COLUMN entered_unit_cost DECIMAL(12,2) NULL AFTER conversion_factor", "SELECT 1");
+PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
