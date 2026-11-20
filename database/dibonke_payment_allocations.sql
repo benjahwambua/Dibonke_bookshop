@@ -117,6 +117,10 @@ SELECT 'Manager' role_name, 'supply_chain' module_key
 UNION ALL
 SELECT 'Manager' role_name, 'mpesa' module_key
 UNION ALL
+SELECT 'Manager' role_name, 'aged_receivables' module_key
+UNION ALL
+SELECT 'Manager' role_name, 'aged_payables' module_key
+UNION ALL
 SELECT 'Manager' role_name, 'staff' module_key
 UNION ALL
 SELECT 'Sales' role_name, 'customers' module_key
