@@ -8,9 +8,9 @@ function isSuperUser(): bool { return (int)($_SESSION['is_super'] ?? 0) === 1; }
 function isAdministrator(): bool { return isSuperUser() || strtoupper(trim((string)($_SESSION['role_code'] ?? ''))) === 'ADMIN' || in_array(strtolower(trim((string)($_SESSION['role'] ?? ''))), ['admin', 'administrator'], true); }
 function roleModules(): array {
  return [
- 'Admin'=>['products','categories','brands','customers','suppliers','purchases','sales','customer_payments','supplier_payments','deliveries','stock_movements','expenses','finance','billing','reports','analytics','supply_chain','mpesa','price_lists','staff'],
- 'Manager'=>['products','categories','brands','customers','suppliers','purchases','sales','customer_payments','supplier_payments','deliveries','stock_movements','expenses','finance','billing','reports','analytics','supply_chain','mpesa','staff'],
- 'Sales'=>['customers','sales','customer_payments','deliveries','billing','reports'],
+ 'Admin'=>['products','categories','brands','customers','suppliers','purchases','sales','customer_orders','customer_payments','supplier_payments','deliveries','stock_movements','expenses','finance','billing','reports','analytics','supply_chain','mpesa','price_lists','staff'],
+ 'Manager'=>['products','categories','brands','customers','suppliers','purchases','sales','customer_orders','customer_payments','supplier_payments','deliveries','stock_movements','expenses','finance','billing','reports','analytics','supply_chain','mpesa','staff'],
+ 'Sales'=>['customers','sales','customer_orders','customer_payments','deliveries','billing','reports'],
  'Cashier'=>['customers','sales','customer_payments','billing'],
  'Storekeeper'=>['products','categories','brands','suppliers','purchases','stock_movements','deliveries','supply_chain'],
  'Driver'=>['deliveries'],'Staff'=>[]
