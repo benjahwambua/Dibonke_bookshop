@@ -14,8 +14,7 @@ if ((in_array($receiptRole, ['cashier', 'sales'], true) || in_array($receiptRole
     exit('You can only view receipts for sales recorded under your login.');
 }
 $i=$conn->prepare("SELECT si.quantity,si.price,si.subtotal,si.entered_quantity,si.sale_unit,si.conversion_factor,si.covering_quantity,si.covering_cm_per_book,si.covering_charge_per_book,p.product_name,p.sku,p.unit FROM sale_items si JOIN products p ON p.id=si.product_id WHERE si.sale_id=? ORDER BY si.id");$i->execute([$id]);$items=$i->fetchAll();
-$paymentStatus = (float)$sale['balance'] <= 0.001 ? 'PAID' : ((float)$sale['paid_amount'] > 0 ? 'PARTIALLY PAID' : ($sale['payment_method'] === 'M-Pesa' ? 'M-PESA NOT YET CONFIRMED' : 'PAYMENT DUE'));
-$amountTendered=(float)($sale['amount_tendered']??$sale['paid_amount']);$changeGiven=$sale['payment_method']==='Cash'?max(0,$amountTendered-(float)$sale['total_amount']):0.0;$drawerSaleId=(int)($_SESSION['cash_drawer_sale_id']??0);$openCashDrawer=$drawerSaleId===$id&&$sale['payment_method']==='Cash'&&$amountTendered>0;if($drawerSaleId===$id)unset($_SESSION['cash_drawer_sale_id']);
+$amountTendered=(float)($sale['amount_tendered']??$sale['paid_amount']);$drawerSaleId=(int)($_SESSION['cash_drawer_sale_id']??0);$openCashDrawer=$drawerSaleId===$id&&$sale['payment_method']==='Cash'&&$amountTendered>0;if($drawerSaleId===$id)unset($_SESSION['cash_drawer_sale_id']);
 $flash=$_SESSION['sale_flash']??null;unset($_SESSION['sale_flash']);
 $company=(string)($conn->query("SELECT setting_value FROM settings WHERE setting_key='company_name' LIMIT 1")->fetchColumn()?:'Dibonke Bookshop');
 if($company===''||strcasecmp($company,'Stalk & Stable')===0)$company='Dibonke Bookshop';
