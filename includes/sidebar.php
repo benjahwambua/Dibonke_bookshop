@@ -77,9 +77,10 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <?php if (canAccessModule('price_lists')): ?><a href="<?= BASE_URL ?>/modules/price_lists/index.php" class="<?= navActive('/price_lists/') ?>"><i class="fas fa-tags icon-main"></i>Price Lists</a><?php endif; ?>
         <?php endif; ?>
 
-        <?php if (canAccessModule('stock_movements')): ?>
+        <?php if (canAccessModule('products') || canAccessModule('stock_movements')): ?>
         <button type="button" class="menu-title nav-group-toggle" aria-expanded="false"><span>Inventory</span><span class="nav-group-chevron" aria-hidden="true"></span></button>
-        <a href="<?= BASE_URL ?>/modules/stock_movements/index.php" class="<?= navActive('/stock_movements/') ?>"><i class="fas fa-exchange-alt icon-main"></i>Stock Movements</a>
+        <?php if (canAccessModule('products')): ?><a href="<?= BASE_URL ?>/modules/inventory/index.php" class="<?= navActive('/inventory/') ?>"><i class="fas fa-boxes icon-main"></i>Stock Overview</a><?php endif; ?>
+        <?php if (canAccessModule('stock_movements')): ?><a href="<?= BASE_URL ?>/modules/stock_movements/index.php" class="<?= navActive('/stock_movements/') ?>"><i class="fas fa-exchange-alt icon-main"></i>Stock Movements</a><?php endif; ?>
         <?php endif; ?>
 
         <?php if (canAccessModule('suppliers') || canAccessModule('purchases') || canAccessModule('supply_chain')): ?>
