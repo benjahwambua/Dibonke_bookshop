@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__.'/../../includes/auth.php';
 require_once __DIR__.'/../../config/db.php';
+require_once __DIR__.'/../../includes/audit.php';
 requireModuleAccess('etims');
 requireModulePermission('etims','edit');
 if($_SERVER['REQUEST_METHOD']!=='POST'){header('Location: index.php');exit;}
@@ -15,6 +16,7 @@ try{
  $data=['etims_taxpayer_pin'=>$pin,'etims_integration_type'=>$type,'etims_branch_identifier'=>trim((string)($_POST['etims_branch_identifier']??'')),'etims_registration_status'=>$status,'etims_onboarding_reference'=>trim((string)($_POST['etims_onboarding_reference']??'')),'etims_approval_reference'=>trim((string)($_POST['etims_approval_reference']??'')),'etims_environment'=>$environment,'etims_enabled'=>'0'];
  $q=$conn->prepare("INSERT INTO settings(setting_key,setting_value) VALUES(?,?) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value)");
  foreach($data as $k=>$v)$q->execute([$k,$v]);
+ recordAuditEvent($conn,'Update Profile','etims','Updated eTIMS onboarding profile metadata','integration_profile',null,null,['integration_type'=>$type,'registration_status'=>$status,'environment'=>$environment,'transmission_enabled'=>false]);
  $_SESSION['etims_setup_flash']='eTIMS profile saved. Live KRA transmission remains disabled.';
 }catch(Throwable $e){$_SESSION['etims_setup_flash']='Could not save eTIMS profile: '.$e->getMessage();}
 header('Location: index.php');exit;
