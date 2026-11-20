@@ -5,7 +5,7 @@ This runbook is for the local XAMPP deployment. Backups must be stored outside t
 ## What must be backed up
 
 1. The complete MariaDB database: `dibonke_bookshop_db`.
-2. The application uploads directory: `C:\\xampp\\htdocs\\dibonke_bookshop\\uploads` (product images and any other uploaded business documents).
+2. The application uploads directory: `C:\xampp\htdocs\dibonke_bookshop\uploads` (product images and any other uploaded business documents).
 3. Local configuration that is not committed to Git, including any private environment or secret-key file introduced for production integrations.
 4. The current application branch and commit reference.
 
@@ -18,10 +18,10 @@ Do not place database dumps, credentials or secret files in a publicly accessibl
 3. Run the following command, changing the date in the filename as needed:
 
 ```bat
-C:\\xampp\\mysql\\bin\\mysqldump.exe -u root dibonke_bookshop_db > D:\\DibonkeBackups\\dibonke_bookshop_YYYY-MM-DD.sql
+C:\xampp\mysql\bin\mysqldump.exe -u root dibonke_bookshop_db > D:\DibonkeBackups\dibonke_bookshop_YYYY-MM-DD.sql
 ```
 
-If the MariaDB root account has a password, add `-p` after `-u root`; enter the password when prompted. Create the `D:\\DibonkeBackups` folder first, or choose another backup location outside `htdocs`.
+If the MariaDB root account has a password, add `-p` after `-u root`; enter the password when prompted. Create the `D:\DibonkeBackups` folder first, or choose another backup location outside `htdocs`.
 
 4. Confirm the SQL file exists and has a non-zero size.
 5. Copy the `uploads` folder to the same dated backup location.
@@ -35,7 +35,7 @@ Do not test restoration over the live database.
 2. Import the backup into that test database using phpMyAdmin or:
 
 ```bat
-C:\\xampp\\mysql\\bin\\mysql.exe -u root dibonke_restore_test < D:\\DibonkeBackups\\dibonke_bookshop_YYYY-MM-DD.sql
+C:\xampp\mysql\bin\mysql.exe -u root dibonke_restore_test < D:\DibonkeBackups\dibonke_bookshop_YYYY-MM-DD.sql
 ```
 
 3. Check that core tables exist: `users`, `products`, `sales`, `sale_items`, `customers`, `purchases`, `supplier_payments`, `journal_entries`, `journal_lines`, and the allocation tables.
