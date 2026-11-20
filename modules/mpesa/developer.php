@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../config/db.php';
 require_once __DIR__ . '/../../config/mpesa.php';
+require_once __DIR__ . '/../../includes/audit.php';
 
 if (!isSuperUser()) {
     http_response_code(403);
@@ -109,6 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
             mpesaDeveloperSave($conn, 'mpesa_environment', $environment);
+            recordAuditEvent($conn, 'Update Developer Settings', 'mpesa', 'Updated Daraja developer configuration', 'integration_settings', null, null, ['environment' => $environment, 'credentials_included' => true]);
 
             $_SESSION['mpesa_dev_flash'] = 'Developer M-PESA settings saved.';
         } catch (Throwable $e) {
