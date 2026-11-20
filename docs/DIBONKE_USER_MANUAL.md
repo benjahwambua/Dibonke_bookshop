@@ -67,6 +67,10 @@ The POS is for quick walk-in sales. It does not create customer credit orders. U
 
 For cash payments, the receipt shows the amount received, the amount applied to the sale and the change due. A QR code is printed on the receipt to identify the receipt reference and total. The receipt does not display the internal price-list name. The receipt contact number is **0706 046963**.
 
+For direct counter printing, keep **QZ Tray** running on the POS computer and leave the Xprinter connected. Dibonke sends the receipt to the Windows printer named **Xprinter XP-80** without opening Chrome's printer-settings window. If QZ Tray is unavailable, the normal browser print window is used as a fallback. QZ Tray may display a security permission prompt until this Dibonke site is trusted; fully silent printing requires a trusted QZ signing certificate to be configured.
+
+The cash drawer is connected to the receipt printer. After a successful receipt print, Dibonke sends the drawer-open command only when the sale has a cash payment amount greater than zero. M-Pesa and Bank sales do not trigger the drawer. If the receipt prints but the drawer does not open, check that the drawer cable is connected to the printer's cash-drawer port and report it to the administrator. Do not repeatedly complete test sales to troubleshoot the drawer.
+
 If a product does not scan, search by name, SKU or ISBN. If typing does not show matching products, refresh the page and report the problem to your supervisor.
 
 ### Filter products by category
