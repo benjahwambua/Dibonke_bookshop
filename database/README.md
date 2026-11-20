@@ -67,6 +67,10 @@ The POS also reads `customers`, `sales`, `settings` and `activity_logs`. Purchas
 
 **Current quantity limitation:** the inherited products, purchase, POS and stock-ledger handlers use whole-number quantities. The present workflow is therefore intended for piece/pack-style units. Supporting fractional units such as kilograms or metres requires a coordinated DECIMAL schema and PHP change across products, purchases, sales, stock movements, receipts and reports; changing only the products column would be unsafe.
 
+## Book covering from roll stock
+
+Apply `dibonke_book_covering.sql` after the base product and sales tables exist. Create a cover-roll product with its stock unit set to `Centimetre` (or `cm`). Receive a 10-metre roll as 1,000 cm. In Products → Book Covering Setup, map each exercise-book product to the roll item, enter centimetres consumed per book size, and set the extra covering charge per book. The POS offers the add-on only for configured exercise books. It validates and deducts the exact configured centimetres when the sale is completed, and records the usage against the sale in the stock movement ledger. The current stock system uses whole-number quantities, so usage is entered in whole centimetres; do not use metres with fractional decimals.
+
 ## Safe migration guidance
 
 1. Back up the target development database before any migration.
