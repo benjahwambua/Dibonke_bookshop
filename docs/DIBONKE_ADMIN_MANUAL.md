@@ -337,3 +337,6 @@ Stocktaking is managed under **Launch Operations → Stocktaking**.
 - Use **View / Print** in the register for the count sheet and variance report. Retain approved reports with the supporting stocktake paperwork.
 
 The system quantity on the count sheet is the snapshot from the start of the count. If the shop continues trading during the count, the approver must investigate stock movements between the snapshot and approval. Do not approve unexplained differences merely to close the count. Approved counts should be corrected only through a separately authorised adjustment with its own audit trail.
+
+
+**Movement handling during an open count:** each item retains the time its physical quantity was last counted. At approval, the system rolls that quantity forward by the net stock movements recorded for that product after its count time (using stock_movements stock_before/stock_after). If a product is physically recounted, the user must tick its **Recounted** checkbox before saving; this resets that item's count timestamp. This is designed to preserve sales, receipts and adjustments that happen while the overall stocktake is in progress. It depends on all inventory-changing workflows writing complete stock movement records. Confirm this during acceptance testing before relying on the result for a formal stock valuation.
