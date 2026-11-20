@@ -65,8 +65,10 @@ try {
     $unitsPerPurchase = (int)($_POST['units_per_purchase'] ?? 1);
     $bulkPriceRaw = trim((string)($_POST['bulk_selling_price'] ?? ''));
     $bulkSellingPrice = $bulkPriceRaw === '' ? null : (float)$bulkPriceRaw;
+    $bulkWholesaleRaw = trim((string)($_POST['bulk_wholesale_price'] ?? ''));
+    $bulkWholesalePrice = $bulkWholesaleRaw === '' ? null : (float)$bulkWholesaleRaw;
     if ($unitsPerPurchase < 1 || ($purchaseUnit === '' && $unitsPerPurchase !== 1)) throw new RuntimeException('Enter a purchase unit and a valid units-per-purchase quantity.');
-    if ($bulkSellingPrice !== null && $bulkSellingPrice < 0) throw new RuntimeException('Bulk selling price cannot be negative.');
+    if (($bulkSellingPrice !== null && $bulkSellingPrice < 0) || ($bulkWholesalePrice !== null && $bulkWholesalePrice < 0)) throw new RuntimeException('Bulk selling prices cannot be negative.');
     if ($purchaseUnit === '') { $purchaseUnit = $unit; $unitsPerPurchase = 1; }
     $icon = trim((string)($_POST['icon'] ?? '📦')) ?: '📦';
     $uploadedProductImage = uploadProductImage();
@@ -177,14 +179,14 @@ try {
         "INSERT INTO products (
             product_name, product_type, isbn, category, category_id,
             brand_id, supplier_id, sku, barcode, unit, purchase_unit, units_per_purchase, buying_price,
-            selling_price, wholesale_price, bulk_selling_price, stock_quantity, reorder_level,
+            selling_price, wholesale_price, bulk_selling_price, bulk_wholesale_price, stock_quantity, reorder_level,
             icon, image_path, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active')"
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active')"
     );
     $insert->execute([
         $name, $productType, $isbn, $categoryName, $categoryId ?: null,
         $brandId ?: null, $supplierId ?: null, $sku, $barcode, $unit, $purchaseUnit, $unitsPerPurchase,
-        $buy, $sell, $wholesale, $bulkSellingPrice, $stock, $reorder, $icon, $uploadedProductImage
+        $buy, $sell, $wholesale, $bulkSellingPrice, $bulkWholesalePrice, $stock, $reorder, $icon, $uploadedProductImage
     ]);
     $productId = (int)$conn->lastInsertId();
 
