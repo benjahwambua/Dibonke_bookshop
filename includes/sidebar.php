@@ -69,13 +69,17 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <button type="button" class="menu-title nav-group-toggle" aria-expanded="false"><span>Workspace</span><span class="nav-group-chevron" aria-hidden="true"></span></button>
         <a href="<?= BASE_URL ?>/index.php" class="<?= $currentPath === BASE_URL . '/index.php' ? 'active' : '' ?>"><i class="fas fa-th-large icon-main"></i>Dashboard</a>
 
-        <?php if (canAccessModule('products') || canAccessModule('categories') || canAccessModule('brands') || canAccessModule('price_lists') || canAccessModule('stock_movements')): ?>
-        <button type="button" class="menu-title nav-group-toggle" aria-expanded="false"><span>Catalogue &amp; Inventory</span><span class="nav-group-chevron" aria-hidden="true"></span></button>
+        <?php if (canAccessModule('products') || canAccessModule('categories') || canAccessModule('brands') || canAccessModule('price_lists')): ?>
+        <button type="button" class="menu-title nav-group-toggle" aria-expanded="false"><span>Catalogue</span><span class="nav-group-chevron" aria-hidden="true"></span></button>
         <?php if (canAccessModule('products')): ?><a href="<?= BASE_URL ?>/modules/products/index.php" class="<?= navActive('/products/') ?>"><i class="fas fa-book icon-main"></i>Products &amp; Books</a><?php endif; ?>
         <?php if (canAccessModule('categories')): ?><a href="<?= BASE_URL ?>/modules/categories/index.php" class="<?= navActive('/categories/') ?>"><i class="fas fa-layer-group icon-main"></i>Categories</a><?php endif; ?>
-        <?php if (canAccessModule('brands')): ?><a href="<?= BASE_URL ?>/modules/brands/index.php" class="<?= navActive('/brands/') ?>"><i class="fas fa-bookmark icon-main"></i>Brands / Publishers</a><?php endif; ?>
+        <?php if (canAccessModule('brands')): ?><a href="<?= BASE_URL ?>/modules/brands/index.php" class="<?= navActive('/brands/') ?>"><i class="fas fa-bookmark icon-main"></i>Publishers / Brands</a><?php endif; ?>
         <?php if (canAccessModule('price_lists')): ?><a href="<?= BASE_URL ?>/modules/price_lists/index.php" class="<?= navActive('/price_lists/') ?>"><i class="fas fa-tags icon-main"></i>Price Lists</a><?php endif; ?>
-        <?php if (canAccessModule('stock_movements')): ?><a href="<?= BASE_URL ?>/modules/stock_movements/index.php" class="<?= navActive('/stock_movements/') ?>"><i class="fas fa-exchange-alt icon-main"></i>Stock Movements</a><?php endif; ?>
+        <?php endif; ?>
+
+        <?php if (canAccessModule('stock_movements')): ?>
+        <button type="button" class="menu-title nav-group-toggle" aria-expanded="false"><span>Inventory</span><span class="nav-group-chevron" aria-hidden="true"></span></button>
+        <a href="<?= BASE_URL ?>/modules/stock_movements/index.php" class="<?= navActive('/stock_movements/') ?>"><i class="fas fa-exchange-alt icon-main"></i>Stock Movements</a>
         <?php endif; ?>
 
         <?php if (canAccessModule('suppliers') || canAccessModule('purchases') || canAccessModule('supply_chain')): ?>
