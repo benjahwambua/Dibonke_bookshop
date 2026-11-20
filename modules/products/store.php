@@ -27,9 +27,10 @@ try {
 
     $categoryNameInput = trim((string)($_POST['category_name'] ?? ''));
     $brandNameInput = trim((string)($_POST['brand_name'] ?? ''));
+    $supplierNameInput = trim((string)($_POST['supplier_name'] ?? ''));
     $categoryId = 0;
     $brandId = 0;
-    $supplierId = (int)($_POST['supplier_id'] ?? 0);
+    $supplierId = 0;
 
     $buyRaw = trim((string)($_POST['buying_price'] ?? ''));
     $sellRaw = trim((string)($_POST['selling_price'] ?? ''));
@@ -55,14 +56,6 @@ try {
 
     if ($buy < 0 || $sell < 0 || $wholesale < 0) {
         throw new RuntimeException('Prices cannot be negative.');
-    }
-
-    if ($supplierId > 0) {
-        $lookup = $conn->prepare("SELECT id FROM suppliers WHERE id = ? AND status = 'Active' LIMIT 1");
-        $lookup->execute([$supplierId]);
-        if (!$lookup->fetchColumn()) {
-            throw new RuntimeException('The selected supplier is unavailable.');
-        }
     }
 
     $sku = trim((string)($_POST['sku'] ?? '')) ?: null;
@@ -119,6 +112,31 @@ try {
             $createBrand = $conn->prepare("INSERT INTO brands (brand_name, description, status) VALUES (?, NULL, 'Active')");
             $createBrand->execute([$brandNameInput]);
             $brandId = (int)$conn->lastInsertId();
+        }
+    }
+
+    if ($supplierNameInput !== '') {
+        if (strlen($supplierNameInput) > 160) {
+            throw new RuntimeException('Supplier name must be 160 characters or fewer.');
+        }
+        $lookup = $conn->prepare("SELECT id, status FROM suppliers WHERE LOWER(supplier_name) = LOWER(?) LIMIT 1");
+        $lookup->execute([$supplierNameInput]);
+        $existingSupplier = $lookup->fetch(PDO::FETCH_ASSOC);
+        if ($existingSupplier) {
+            if ($existingSupplier['status'] !== 'Active') {
+                throw new RuntimeException('That supplier is inactive. Activate it in Suppliers before using it.');
+            }
+            $supplierId = (int)$existingSupplier['id'];
+        } else {
+            if (!hasModulePermission('suppliers', 'create')) {
+                throw new RuntimeException('You can add products, but your role cannot create suppliers. Ask an administrator to grant supplier creation access.');
+            }
+            $createSupplier = $conn->prepare(
+                "INSERT INTO suppliers (supplier_name, contact_person, phone, email, address, tax_pin, credit_limit, balance, status, notes)
+                 VALUES (?, NULL, NULL, NULL, NULL, NULL, 0, 0, 'Active', NULL)"
+            );
+            $createSupplier->execute([$supplierNameInput]);
+            $supplierId = (int)$conn->lastInsertId();
         }
     }
 
