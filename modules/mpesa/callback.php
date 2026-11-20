@@ -12,10 +12,10 @@ $data=json_decode($raw,true);
 try{
  $cb=$data['Body']['stkCallback']??null;
  if(!$cb)throw new RuntimeException('Invalid callback payload.');
- $merchant=(string)($cb['MerchantRequestID']??'');$checkout=(string)($cb['CheckoutRequestID']??'');$code=(int)($cb['ResultCode']??-1);$desc=(string)($cb['ResultDesc']??'');
+ $merchant=(string)($cb['MerchantRequestID']??'');$checkout=(string)($cb['CheckoutRequestID']??'');if($merchant===''||$checkout==='')throw new RuntimeException('Callback is missing its Daraja request identifiers.');$code=(int)($cb['ResultCode']??-1);$desc=(string)($cb['ResultDesc']??'');
  $status=$code===0?'Success':'Failed';$amount=0;$phone='';$receipt='';$date=null;
  $conn->beginTransaction();
- $priorLookup=$conn->prepare("SELECT id,result_status FROM mpesa_transactions WHERE checkout_request_id=? LIMIT 1 FOR UPDATE");
+ $priorLookup=$conn->prepare("SELECT id,result_status,merchant_request_id FROM mpesa_transactions WHERE checkout_request_id=? LIMIT 1 FOR UPDATE");
  $priorLookup->execute([$checkout]);$priorCallback=$priorLookup->fetch(PDO::FETCH_ASSOC);
  $alreadyProcessed=$code===0 && $priorCallback && $priorCallback['result_status']==='Success';
  foreach(($cb['CallbackMetadata']['Item']??[]) as $item){$name=$item['Name']??'';$value=$item['Value']??null;if($name==='Amount')$amount=(float)$value;elseif($name==='MpesaReceiptNumber')$receipt=(string)$value;elseif($name==='PhoneNumber')$phone=(string)$value;elseif($name==='TransactionDate'&&$value)$date=DateTime::createFromFormat('YmdHis',(string)$value)?->format('Y-m-d H:i:s');}
