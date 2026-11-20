@@ -296,3 +296,14 @@ The eTIMS page currently stores onboarding details and maintains an internal que
 ## Backup and recovery
 
 See `docs/DIBONKE_BACKUP_RECOVERY.md` for the required database and uploads backup procedure and restore verification checklist.
+
+
+## Returns and refund accounting
+
+Approved returns now post to the Sales Returns and Allowances contra-revenue account. The credit applied to an outstanding customer invoice reduces Accounts Receivable; the remaining refund is recorded as Customer Refunds Payable. When the refund is paid, the payable is cleared against the selected cash, M-PESA clearing, bank or other clearing account. Restocked goods reverse their original sale cost from Cost of Goods Sold back to Inventory. These journals are created only when automatic accounting is enabled and the required mappings are present.
+
+The payment-allocation migration adds the `sales_returns` and `refund_payable` mappings. Confirm these mappings in Finance → Automatic Posting Mappings before enabling automatic posting.
+
+## M-PESA production safety
+
+The current Daraja credentials are not encrypted at rest in the existing settings store. The Developer Settings page now blocks switching to Production until credential encryption and end-to-end live callback verification are implemented. Continue using Sandbox only; do not manually change the environment setting to `live`.
