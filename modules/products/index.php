@@ -121,7 +121,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <label>Barcode<input name="barcode" maxlength="80"></label>
 <label>Category<input name="category_name" list="productCategoryOptions" maxlength="120" placeholder="Type or choose a category" autocomplete="off"><datalist id="productCategoryOptions"><?php foreach($categories as $c):?><option value="<?=e($c['category_name'])?>"><?php endforeach;?></datalist><small>Choose an existing category or type a new one.</small></label>
 <label>Brand / Publisher<input name="brand_name" list="productBrandOptions" maxlength="120" placeholder="Type or choose a brand / publisher" autocomplete="off"><datalist id="productBrandOptions"><?php foreach($brands as $b):?><option value="<?=e($b['brand_name'])?>"><?php endforeach;?></datalist><small>Choose an existing brand or type a new one.</small></label>
-<label>Supplier<select name="supplier_id"><option value="">Select supplier</option><?php foreach($suppliers as $s):?><option value="<?=$s['id']?>"><?=e($s['supplier_name'])?></option><?php endforeach;?></select></label>
+<label>Supplier<input name="supplier_name" list="productSupplierOptions" maxlength="160" placeholder="Type or choose a supplier" autocomplete="off"><datalist id="productSupplierOptions"><?php foreach($suppliers as $s):?><option value="<?=e($s['supplier_name'])?>"><?php endforeach;?></datalist><small>Choose an existing supplier or type a new one.</small></label>
 <label>Buying Price *<input type="number" name="buying_price" min="0" step=".01" required></label>
 <label>Selling Price *<input type="number" name="selling_price" min="0" step=".01" required></label>
 <label>Wholesale Price<input type="number" name="wholesale_price" min="0" step=".01"></label>
