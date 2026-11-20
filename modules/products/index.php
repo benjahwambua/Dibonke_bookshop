@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../config/db.php';
 
 $pageTitle='Products';
+$unitOptions=['Piece','Pack','Box','Carton','Dozen','Ream','Set','Pair','Bottle','Roll','Bundle','Packet','Kilogram','Gram','Litre','Millilitre','Metre','Unit'];
 
 $search=trim((string)($_GET['q']??''));
 $category=(int)($_GET['category']??0);
@@ -127,10 +128,10 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <label>Wholesale Price<input type="number" name="wholesale_price" min="0" step=".01"></label>
 <label>Opening Stock<input type="number" name="stock_quantity" min="0" value="0"></label>
 <label>Reorder Level<input type="number" name="reorder_level" min="0" value="10"></label>
-<label>Stock / Selling Unit<input name="unit" value="Piece" maxlength="30" required><small>The smallest unit counted in stock.</small></label>
-<label>Purchase Unit<input name="purchase_unit" value="Carton" maxlength="50"><small>Leave blank if purchased in the stock unit.</small></label>
+<label>Sale / Stock Unit<select name="unit" required><?php foreach($unitOptions as $unitOption):?><option value="<?=e($unitOption)?>" <?=$unitOption==='Piece'?'selected':''?>><?=e($unitOption)?></option><?php endforeach;?></select><small>The smallest unit counted in stock and sold individually.</small></label>
+<label>Purchase Unit<select name="purchase_unit"><option value="">Same as sale unit</option><?php foreach($unitOptions as $unitOption):?><option value="<?=e($unitOption)?>" <?=$unitOption==='Carton'?'selected':''?>><?=e($unitOption)?></option><?php endforeach;?></select><small>Choose supplier packaging, e.g. Box or Carton.</small></label>
 <label>Units per Purchase Unit<input type="number" name="units_per_purchase" min="1" step="1" value="1" required><small>Example: 50 pieces in one carton.</small></label>
-<label>Bulk Selling Price (KES)<input type="number" name="bulk_selling_price" min="0" step=".01"><small>Optional price for one full purchase unit.</small></label>
+<label>Retail Price per Purchase Unit (KES)<input type="number" name="bulk_selling_price" min="0" step=".01"><small>Optional retail price for one full box or carton.</small></label><label>Wholesale Price per Purchase Unit (KES)<input type="number" name="bulk_wholesale_price" min="0" step=".01"><small>Optional wholesale price for one full box or carton.</small></label>
 <label>Icon<input name="icon" value="📦" maxlength="10"></label>
 <label>Product Image (PNG/JPEG, max 2 MB)<input type="file" name="product_image" accept="image/png,image/jpeg"><small>Max dimensions: 2400 x 2400 pixels.</small></label>
 </div>
