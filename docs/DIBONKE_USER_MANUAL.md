@@ -197,3 +197,18 @@ Product edits and deletion are permission-controlled. Products with sales, purch
 ## 15. Help and support
 
 Use **Help & Support → General User Manual** for these instructions. Contact your supervisor or the system administrator first for access changes, incorrect business records or approval questions. For technical support covered by the service arrangement, contact FlexiScriptHub on **0705259931**.
+
+
+## Customer receipts and supplier payments
+
+- A customer receipt is automatically allocated to the customer's oldest outstanding completed invoice first. If the receipt is larger than that invoice balance, the remaining amount is applied to the next oldest invoice.
+- Invoice balances and the customer account balance are updated together. If the receipt is greater than the outstanding invoice balances, Dibonke stops the transaction and asks for the account to be reconciled.
+- Supplier payments are allocated to the oldest outstanding received purchase first, then to the next oldest purchase if money remains.
+- Use Finance → Aged Receivables to review customer invoices and Finance → Aged Payables to review supplier purchases by age.
+- POS payments are linked directly to the invoice created by that sale. Confirmed M-PESA payments are also linked to the relevant invoice or customer account.
+
+## Inventory cost and stock quantities
+
+- Product quantities are maintained in each product's configured stock unit. Do not add pieces, reams, boxes and other different units together as if they were the same unit.
+- On receiving a purchase, Dibonke updates the product's buying cost using a weighted-average cost based on the existing stock and the newly received quantity.
+- Inventory value is an operational estimate using the recorded weighted-average cost. It is not a substitute for a full landed-cost valuation where freight, duties or other acquisition costs need to be capitalised.
