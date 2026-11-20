@@ -58,13 +58,21 @@ try {
         throw new RuntimeException('Prices cannot be negative.');
     }
 
-    $sku = trim((string)($_POST['sku'] ?? '')) ?: null;
+    $skuInput = trim((string)($_POST['sku'] ?? ''));
     $barcode = trim((string)($_POST['barcode'] ?? '')) ?: null;
     $unit = trim((string)($_POST['unit'] ?? 'Piece')) ?: 'Piece';
     $icon = trim((string)($_POST['icon'] ?? '📦')) ?: '📦';
     $uploadedProductImage = uploadProductImage();
 
     $conn->beginTransaction();
+
+    // Generate a readable SKU only when the user has not supplied one.
+    $sku = $skuInput !== '' ? $skuInput : generateProductSku($conn, $productType, $name);
+    $skuCheck = $conn->prepare('SELECT id FROM products WHERE sku = ? LIMIT 1');
+    $skuCheck->execute([$sku]);
+    if ($skuCheck->fetchColumn()) {
+        throw new RuntimeException('That SKU is already in use. Enter a different SKU or leave the field blank for automatic generation.');
+    }
 
     // Resolve typed category and publisher names. New master records are created
     // in the same transaction as the product so they never become orphaned.
