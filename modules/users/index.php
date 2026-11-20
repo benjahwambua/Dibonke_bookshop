@@ -3,9 +3,11 @@ declare(strict_types=1);
 require_once __DIR__.'/../../includes/auth.php';
 require_once __DIR__.'/../../config/db.php';
 
-if (!isSuperUser()) { http_response_code(403); exit('Access denied.'); }
+if (!isAdministrator()) { http_response_code(403); exit('Access denied.'); }
 
-$users = $conn->query("SELECT id, full_name, username, role, is_super, status, last_login FROM users ORDER BY id DESC")->fetchAll();
+$users = $conn->query("SELECT u.id,u.full_name,u.username,COALESCE(r.role_name,u.role) role_name,u.is_super,u.status,u.last_login FROM users u LEFT JOIN roles r ON r.id=u.role_id ORDER BY u.id DESC")->fetchAll();
+$roles = $conn->query("SELECT id,role_name FROM roles WHERE status='Active' ORDER BY role_name")->fetchAll();
+$staffOptions = $conn->query("SELECT id,employee_number,full_name FROM staff WHERE status='Active' AND user_id IS NULL ORDER BY full_name")->fetchAll();
 $flash = $_SESSION['user_flash'] ?? null;
 unset($_SESSION['user_flash']);
 
@@ -27,7 +29,7 @@ require_once __DIR__.'/../../includes/sidebar.php';
 </style>
 
 <h1>User Management</h1>
-<p>Create and manage staff accounts. Only Super Users can access this module.</p>
+<p>Create and manage staff accounts. Only Administrators can access this module.</p>
 
 <?php if ($flash): ?>
 <div class="flash <?=($flash['type'] ?? 'success') === 'error' ? 'error' : 'success'?>"><?=e($flash['message'] ?? '')?></div>
@@ -49,11 +51,11 @@ require_once __DIR__.'/../../includes/sidebar.php';
         </div>
         <div class="field">
             <label>Role</label>
-            <select name="role">
-                <?php foreach (['Admin','Manager','Sales','Cashier','Storekeeper','Driver','Staff'] as $r): ?>
-                    <option value="<?=e($r)?>"><?=e($r)?></option>
-                <?php endforeach; ?>
+            <select name="role_id" required>
+                <?php foreach ($roles as $r): ?><option value="<?= (int)$r['id'] ?>"><?=e($r['role_name'])?></option><?php endforeach; ?>
             </select>
+        </div>
+        <div class="field"><label>Link Staff Profile (optional)</label><select name="staff_id"><option value="">No staff profile</option><?php foreach($staffOptions as $s):?><option value="<?= (int)$s['id'] ?>"><?=e($s['employee_number'].' — '.$s['full_name'])?></option><?php endforeach;?></select>
         </div>
         <div>
             <button class="btn"><i class="fas fa-user-plus"></i> Create User</button>
@@ -73,7 +75,7 @@ require_once __DIR__.'/../../includes/sidebar.php';
             <tr>
                 <td><?=e($u['full_name'])?></td>
                 <td><strong><?=e($u['username'])?></strong></td>
-                <td><?=e($u['role'])?></td>
+                <td><?=e($u['role_name'])?></td>
                 <td><?=!empty($u['is_super']) ? 'Yes' : 'No'?></td>
                 <td><span class="badge <?=strtolower($u['status']) === 'active' ? 'active' : 'inactive'?>"><?=e($u['status'])?></span></td>
                 <td><?=e($u['last_login'] ?? 'Never')?></td>
@@ -81,6 +83,10 @@ require_once __DIR__.'/../../includes/sidebar.php';
                     <?php if ((int)$u['id'] !== (int)$_SESSION['user_id']): ?>
                     <div class="actions">
                         <a class="btn btn-secondary" href="edit.php?id=<?=e($u['id'])?>">Manage</a>
+                        <?php if (empty($u['is_super'])): ?>
+                        <form method="post" action="store.php" onsubmit="return confirm('Change this user account status?')"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>"><input type="hidden" name="action" value="set_status"><input type="hidden" name="id" value="<?=(int)$u['id']?>"><input type="hidden" name="status" value="<?=$u['status']==='Active'?'Inactive':'Active'?>"><button class="btn btn-secondary"><?=$u['status']==='Active'?'Deactivate':'Reactivate'?></button></form>
+                        <form method="post" action="store.php" onsubmit="return confirm('Permanently delete this user account? This is allowed only when no business history is linked.')"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?=(int)$u['id']?>"><button class="btn btn-danger">Delete</button></form>
+                        <?php endif; ?>
                     </div>
                     <?php else: ?>
                         <span style="color:#64748b">Current user</span>

@@ -1,0 +1,111 @@
+# Dibonke Bookshop — Functional Gap Assessment
+
+**Assessment date:** 20 November 2026  
+**Repository:** `benjahwambua/Dibonke_bookshop`  
+**Branch reviewed:** `feature/dibonke-product-catalog`  
+**Assessment type:** Source-code review of selected current-branch files. This is not a live application, database, or end-to-end workflow test.
+
+## Executive summary
+
+Dibonke already has a meaningful operational foundation: product catalogue, retail POS, customer sales orders, purchase orders and receiving, direct purchases, supplier/customer records, stock movements, expenses, cashier shifts, payment records, basic finance screens, double-entry journal infrastructure, reports, M-Pesa integration work and role-based access.
+
+The largest risks are not simply missing menu items. They are gaps between related records and workflows. In particular:
+
+1. Customer receipts are recorded against a customer balance, not allocated to individual invoices. The receipt code inserts customer payments with `sale_id = NULL` and reduces `customers.balance`, while Aged Receivables reads each invoice's `sales.balance`. This can leave invoice-level ageing out of step with the customer's account balance.
+2. Supplier payments reduce the supplier's aggregate balance, not a selected supplier invoice. The payment record has no purchase allocation in the reviewed workflow; purchase-level balances can therefore be difficult to reconcile to payments.
+3. Inventory value is estimated using current `products.buying_price`, rather than a demonstrated cost-layer / weighted-average valuation. The inventory screen also sums quantities across products with different units, so the headline “total units” is not a meaningful common unit.
+4. The finance overview is a cash movement summary, not a full Profit & Loss, Balance Sheet, or cash-flow statement. Double-entry accounting infrastructure exists, but automatic posting is configurable and its completeness across every transaction type still needs verification.
+5. Permissions currently combine database role permissions with a hard-coded legacy role/module fallback for viewing. This should be rationalised and tested consistently across every module and action.
+
+These are the first areas to address before expanding the feature set.
+
+## Status definitions
+
+- **Implemented — source confirmed:** Relevant code is present in the files reviewed. Runtime behaviour is not implied.
+- **Partial / risk:** A basic workflow exists, but a material business control or connected workflow is not demonstrated.
+- **Not verified:** The relevant code, migration, or runtime behaviour was not available in this review. Do not treat this as proof that the feature is absent.
+- **Not required:** Defer unless the bookshop's operating model needs it.
+
+## Findings and gap register
+
+| Area | Current evidence | Assessment | Priority |
+|---|---|---|---|
+| Product catalogue, barcode, ISBN, SKU | Product listing searches name, SKU, barcode and ISBN; product setup and scanner-first flow are documented. | Implemented — source confirmed. Need duplicate checks, product lifecycle and barcode hardware test. | Medium |
+| Book-specific catalogue | ISBN and brand/category exist. Authors, editions, series, language, binding, publication date and book-specific metadata were not confirmed in reviewed files. | Partial / not verified. Decide which book attributes Dibonke actually needs. | Medium |
+| Units and pack conversion | Product and purchase screens support stock unit, purchase unit and conversion factor. | Implemented for one purchase unit per product. Multiple packaging levels and fractional units not demonstrated. | Medium |
+| Price lists and quantity tiers | Retail/wholesale price lists and product quantity prices are used in POS/order pricing. | Implemented — source confirmed. Verify price precedence and edge cases in live tests. | High |
+| Supplier master | Supplier records include contact, tax PIN, credit limit and balance. | Implemented — source confirmed. Supplier statement and document completeness need verification. | Medium |
+| Purchase orders and receiving | Purchase orders have Draft, Approved, Partially Received, Fully Received and Cancelled states; receiving is separate from the direct purchase register. | Implemented — source confirmed. Verify partial receipt, over-receipt, supplier invoice matching and duplicate prevention. | High |
+| Direct purchases | Direct Purchase Register immediately increases stock and records supplier balances. | Implemented, but it creates a second purchasing route alongside PO/receiving. Define when each route is allowed to prevent duplicate recording. | High |
+| Supplier invoice register and allocation | Supplier payments reduce `suppliers.balance`; reviewed payment form selects a supplier, not a supplier invoice. | Partial / material gap. Allocate payments to one or more supplier bills and support part-payments, credit notes and supplier ageing. | Critical |
+| Customer credit and orders | Customer sales orders support draft, validation, pending invoice and confirmation; confirmation creates invoice and stock movement. | Implemented — source confirmed. Verify cancellation, amendment and partial fulfilment rules. | High |
+| Customer receipts and invoice allocation | Customer payment store inserts a payment with `sale_id = NULL` and reduces `customers.balance`; it does not update a selected invoice balance. Aged Receivables reads `sales.balance`. | Partial / material gap. Build invoice allocation, unallocated credits, overpayment handling and customer statement reconciliation. | Critical |
+| POS | POS validates stock and price list, creates sale and sale items, deducts stock and creates stock movements. | Implemented — source confirmed. Verify cash change, failed M-Pesa, receipt reprint, voids and concurrent cashier tests. | High |
+| Returns and refunds | Financial control and cashier-shift code reference `sales_return_payments`; the specific return workflow was not inspected in this review. | Not verified. Confirm return authorisation, item condition, restocking, refund methods, credit notes and accounting reversal. | Critical |
+| Inventory balances | Inventory overview shows stock, reorder level and movement links; stock adjustments lock the product row and record before/after quantities and reason. | Implemented — source confirmed. Need cycle counts, approvals and discrepancy workflow review. | High |
+| Inventory valuation | Overview calculates stock cost as `stock_quantity * buying_price`. | Partial / risk. Confirm costing policy (weighted average or FIFO), landed costs, purchase price changes and valuation journal integration. | Critical |
+| Stock transfers / locations | No multi-location transfer workflow was confirmed in reviewed files. | Not verified. Single-store operation may defer; required before multiple branches or separate stockrooms. | Low / Medium |
+| Expenses | Expense recording and categories exist; finance screens summarise expense outflows. | Implemented — source confirmed. Verify approvals, attachments, recurring expenses and accounting category mapping. | High |
+| Cashier shifts | Open/close shift, opening float, cash-in/out, expected cash, counted cash and variance are present in reviewed code. | Implemented — source confirmed. Need manager review/approval of variances and robust reconciliation tests. | High |
+| Double-entry accounting | Chart of accounts, journals, general ledger and trial balance exist. Automatic posting requires configuration and account mappings. | Partial / risk. Verify opening balances, period controls, posting coverage, reversals, tax accounts and financial statements. | Critical |
+| Finance overview | Overview totals sales, collections, supplier payments, expenses and net cash movement. | Partial. This is a management cash summary, not a formal Profit & Loss, Balance Sheet or Cash Flow Statement. | High |
+| Aged receivables | Ageing is calculated from invoice date and each sale's balance. | Partial due to customer payment allocation gap. | Critical |
+| Aged payables | No supplier invoice ageing workflow was confirmed. | Not verified / likely gap. Needed with supplier bill allocation. | High |
+| M-Pesa and reconciliation | M-Pesa STK and transaction records are referenced by payment workflows. | Partial / verify callback idempotency, unmatched payments, reversals, timeouts, duplicate callbacks and settlement reconciliation. | Critical |
+| eTIMS / tax compliance | Not established by the files reviewed in this assessment. | Not verified. Confirm actual KRA integration status, tax invoice requirements and certification before representing as live compliant. | Critical |
+| Roles and permissions | Permission checks query role_permissions; view access can fall back to hard-coded roleModules(). Administrator/superuser bypasses checks. | Partial / design risk. Establish one permission source and test view/create/edit/delete on every route and POST endpoint. | Critical |
+| Audit trail | Shared audit writer records before/after data where called; failures are logged but do not stop the transaction. | Partial. Verify coverage of edits, deletes, approvals, price changes, stock changes, refunds and permission changes. | High |
+| Reports and exports | Report tools and multiple finance/customer/payment reports exist. | Partial. Need reconciled reports, consistent filters, CSV/Excel/PDF validation and margin/stock reports. | Medium |
+| Backups and recovery | Deployment documentation mentions backup/restore, but operational recovery was not tested. | Not verified. Require scheduled backups and a tested restore procedure. | Critical |
+| Multi-branch | Not established in reviewed files. | Not required for first release unless the business already operates multiple locations. Design for later rather than adding complexity now. | Low |
+| HR, deliveries and fleet | Sidebar and user manual reference HR self-service, deliveries and fleet. | Outside core bookshop flow; validate only if Dibonke will actively use these modules. | Low |
+
+## Priority remediation plan
+
+### Phase 1 — Financial integrity (must resolve before relying on balances)
+1. Introduce supplier bills / purchase invoice records and allocate supplier payments to one or multiple bills.
+2. Introduce customer payment allocation to invoices, including partial payments and unapplied customer credits.
+3. Reconcile customer statements, invoice balances, aged receivables and customer control-account journals from the same allocation ledger.
+4. Reconcile supplier statements, bill balances, aged payables and supplier control-account journals.
+5. Review all transaction-to-journal mappings and produce formal Profit & Loss, Balance Sheet and Cash Flow reports.
+6. Verify sales returns, refunds, M-Pesa callback handling and eTIMS status.
+
+### Phase 2 — Inventory integrity
+1. Agree the stock costing method and implement a defensible valuation ledger.
+2. Separate stock quantities by their units; remove or relabel the cross-unit “total units” metric.
+3. Add controlled cycle counts and discrepancy approvals.
+4. Confirm purchase receipt, sale, return, damage and adjustment movements reconcile to the product balance and valuation.
+
+### Phase 3 — Operational controls
+1. Consolidate permissions into one role/permission model.
+2. Add manager review for cashier shift variances and sensitive corrections.
+3. Complete audit-event coverage for all material business actions.
+4. Confirm supplier and customer document/statement workflows.
+5. Validate reporting and backup restoration.
+
+### Phase 4 — Bookshop-specific enhancements
+1. Decide whether authors, editions, series and other bibliographic fields are needed.
+2. Add stock transfers only if separate locations or branches are part of the operating model.
+3. Consider promotions, purchase planning, reorder suggestions and supplier lead times after core integrity is stable.
+
+## End-to-end acceptance tests
+
+These should be run on a safe test database with sample records before production use.
+
+1. **Purchase to payment:** Create PO → approve → receive part → receive balance → enter supplier bill → pay part → verify bill balance, supplier statement, stock quantity, stock valuation and journals.
+2. **Walk-in sale:** Open cashier shift → scan multiple products → complete cash sale with change → print receipt → close shift → reconcile expected and counted cash.
+3. **Customer credit:** Create customer order → validate → invoice → allocate a partial payment → allocate final payment → verify invoice status, customer statement, aged receivables and journals.
+4. **Return:** Return one item from a completed sale → approve → restock or quarantine → issue refund/store credit → verify customer balance, stock movement and reversal journal.
+5. **M-Pesa:** Initiate STK → confirm callback → handle duplicate callback → reconcile transaction to sale/invoice → verify receipt and journals.
+6. **Stock count:** Count selected products → record variances with reasons → approve → verify stock ledger and valuation.
+7. **Permissions:** Test each role against each module and action, including direct URL access and POST requests.
+8. **Period close:** Reconcile cash, bank and M-Pesa → review receivables/payables → verify trial balance → generate formal financial statements → lock the period.
+
+## Important limitations of this assessment
+
+- The review inspected selected files on the feature branch, not every file in the repository.
+- The repository README states that a verified complete fresh-install base schema is not currently included. The live database schema and imported migrations therefore need to be inspected before making final claims about table-level completeness.
+- No local XAMPP session, live database queries, PHP runtime tests, physical scanner, receipt printer, M-Pesa callback or eTIMS transmission was exercised.
+- “Not verified” means evidence was not established in this review; it does not mean the feature definitely does not exist.
+
+**Recommendation:** Do not add more modules yet. Resolve invoice allocation and financial integrity first, then inventory valuation and permission consistency. Those improvements will make the existing modules behave like one coherent business system rather than a collection of separate screens.

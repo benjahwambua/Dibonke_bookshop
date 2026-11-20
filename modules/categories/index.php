@@ -11,6 +11,8 @@ $editCategory = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     verify_csrf();
     $action = $_POST['action'] ?? '';
+    $permissionAction = $action === 'create' ? 'create' : ($action === 'delete' ? 'delete' : 'edit');
+    requireModulePermission('categories', $permissionAction);
 
     try {
         if ($action === 'create') {
@@ -147,6 +149,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 ?>
 <main class="content">
     <div class="master-page">
+        <nav class="breadcrumbs" aria-label="Breadcrumb"><span class="current">Catalogue</span><span aria-hidden="true">/</span><span class="current">Categories</span></nav>
         <div class="page-heading">
             <div>
                 <h1>Categories</h1>
@@ -173,7 +176,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 
         <div class="table-card">
             <div class="table-wrap">
-                <table>
+                <table class="table">
                     <thead><tr><th>Category</th><th>Description</th><th>Products</th><th>Status</th><th>Actions</th></tr></thead>
                     <tbody>
                     <?php if (!$categories): ?>
@@ -210,7 +213,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
             <input type="hidden" name="action" value="<?= $editCategory ? 'update' : 'create' ?>">
             <?php if ($editCategory): ?><input type="hidden" name="id" value="<?= (int)$editCategory['id'] ?>"><?php endif; ?>
             <label>Category Name *</label>
-            <input type="text" name="category_name" required value="<?= e($editCategory['category_name'] ?? '') ?>" placeholder="e.g. Beer & Malt">
+            <input type="text" name="category_name" required value="<?= e($editCategory['category_name'] ?? '') ?>" placeholder="e.g. Fiction & Literature">
             <label>Description</label>
             <textarea name="description" rows="3" placeholder="Optional description"><?= e($editCategory['description'] ?? '') ?></textarea>
             <label>Status</label>
