@@ -27,8 +27,8 @@ CREATE TABLE IF NOT EXISTS supplier_payment_allocations (
 -- Link existing user accounts to configured roles where names/codes match.
 UPDATE users u
 JOIN roles r
-  ON UPPER(REPLACE(REPLACE(TRIM(r.role_name), ' ', ''), '-', '')) =
-     UPPER(REPLACE(REPLACE(TRIM(u.role), ' ', ''), '-', ''))
+  ON (UPPER(REPLACE(REPLACE(TRIM(r.role_name), ' ', ''), '-', '')) =
+     UPPER(REPLACE(REPLACE(TRIM(u.role), ' ', ''), '-', '')) OR UPPER(r.role_code)=UPPER(REPLACE(TRIM(u.role),' ','_')))
 SET u.role_id = r.id
 WHERE u.role_id IS NULL;
 
@@ -157,7 +157,7 @@ SELECT 'Storekeeper' role_name, 'deliveries' module_key
 UNION ALL
 SELECT 'Storekeeper' role_name, 'supply_chain' module_key
 UNION ALL
-SELECT 'Driver' role_name, 'deliveries' module_key) m ON LOWER(m.role_name)=LOWER(r.role_name)
+SELECT 'Driver' role_name, 'deliveries' module_key) m ON (LOWER(m.role_name)=LOWER(r.role_name) OR UPPER(m.role_name)=UPPER(r.role_code))
 WHERE NOT EXISTS (
     SELECT 1 FROM role_permissions rp
     WHERE rp.role_id=r.id AND rp.module_key=m.module_key
