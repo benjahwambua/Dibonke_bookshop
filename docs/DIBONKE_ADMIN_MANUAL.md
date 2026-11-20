@@ -61,13 +61,31 @@ Confirm the business details before issuing receipts and reports. Avoid changing
 ## 5. Maintain the product catalogue
 
 - Create and maintain product categories and product records.
+- Use the smallest stock/sale unit and purchase unit consistently. For bulk items, enter the number of smallest units contained in one purchase package (for example, 12 pieces per box).
+- Set retail and wholesale prices for the smallest unit and the purchase package where applicable. Review the **Price Lists** matrix to compare all four values.
+- Remember that stock is tracked in the smallest unit; package quantities are converted into that unit during purchasing and sales.
 - Use consistent SKUs/barcodes and enter ISBNs for books where available.
 - Keep buying and selling prices accurate.
 - Set reorder levels to support purchasing decisions.
 - Check for duplicate products before creating new records.
 - Record verified opening stock once only.
 
-## 6. Suppliers, purchase orders and receiving
+## 6. Product units, package conversions and price lists
+
+When setting up a product that is bought in bulk and sold in smaller quantities, define the smallest stock/sale unit and the purchase package clearly.
+
+1. Open **Products & Books** and add or edit the product.
+2. Select the smallest **Sale/Stock Unit** (for example Piece).
+3. Select the **Purchase Unit** (for example Box or Carton).
+4. Enter **Units per Purchase Unit**. For a box containing 12 covers, enter 12.
+5. Enter the unit-level retail and wholesale prices, and the retail and wholesale package prices where applicable.
+6. Save and check the product in the catalogue and price list.
+
+Inventory is maintained in the smallest stock unit. The conversion means one box of 12 is recorded as 12 pieces in stock. Staff can then receive or sell either a box or individual pieces. Verify the package contents and conversion before the product is used in transactions. The current product setup supports one purchase-package conversion per product; do not assume it can represent several different package sizes for the same product.
+
+The **Price Lists** screen presents the retail and wholesale price matrix for both the smallest stock unit and the purchase package. Review all four prices where relevant. Package prices can be set independently; if a package price is not entered, the system may calculate it from the unit price and conversion factor. Check the actual displayed price before authorising a transaction.
+
+## 7. Suppliers, purchase orders and receiving
 
 - Maintain accurate supplier records.
 - Use **Purchase Orders & Receiving** for the controlled order and goods-received process.
@@ -78,9 +96,13 @@ Confirm the business details before issuing receipts and reports. Avoid changing
 
 Do not record the same supplier invoice in both workflows. This can duplicate stock and financial records.
 
-## 7. Customer credit and receivables
+## 8. Customer sales orders, pending invoices and receivables
 
 - Maintain correct customer names and contact details.
+- Use **Customer Sales Orders** for existing-customer orders that require review before invoicing. Staff create a draft, review and validate it, then the validated order appears under **Pending Invoices**.
+- Validation checks stock but does not reserve or deduct it. When an authorised user confirms the pending order, the system checks stock again, creates the credit invoice, deducts stock and updates the customer's outstanding balance.
+- Confirm only after checking the customer, quantities, selling units, prices and total. Resolve stock shortages or credit-limit warnings before confirmation.
+- The customer invoice can then be opened and printed. Customer payments are recorded separately through the customer payment workflow.
 - Review credit terms and limits before authorising credit sales.
 - Review **Aged Receivables** regularly and follow up overdue customer balances.
 - Open customer records to review invoices and prepare statements.
@@ -89,7 +111,7 @@ Do not record the same supplier invoice in both workflows. This can duplicate st
 
 The receivables age buckets are based on invoice date. Where agreed customer due dates differ from invoice dates, use the actual credit agreement when following up.
 
-## 8. Cash management and shift review
+## 9. Cash management and shift review
 
 - Ensure each cashier opens their own shift before using POS.
 - Review submitted shift closures and investigate variances.
@@ -99,7 +121,7 @@ The receivables age buckets are based on invoice date. Where agreed customer due
 
 Do not treat a balanced screen as a substitute for physically counting and reconciling the till.
 
-## 9. Expenses and categories
+## 10. Expenses and categories
 
 Expense categories are maintained in the expense workflow and are automatically populated for users. Review the category list periodically and keep naming consistent.
 
@@ -109,7 +131,7 @@ When reviewing expenses:
 - Use filters to investigate a particular period or category.
 - Review unusual or repeated expenses.
 
-## 10. Human Resources administration
+## 11. Human Resources administration
 
 Open **Human Resources** to manage employee records and review leave and attendance information.
 
@@ -120,7 +142,7 @@ Open **Human Resources** to manage employee records and review leave and attenda
 
 The employee self-service page is for each user to view their own records, clock in/out and submit leave requests.
 
-## 11. Finance, accounting and reports
+## 12. Finance, accounting and reports
 
 Use Finance Overview, Ledger, Financial Control, Aged Receivables, Chart of Accounts, Journal Entries, General Ledger and Trial Balance according to your assigned access.
 
@@ -133,7 +155,7 @@ For manual journals:
 
 The Trial Balance and General Ledger show posted journal entries. Ensure the business has completed its accounting setup and reconciliations before using these reports as formal financial statements.
 
-## 12. M-Pesa and eTIMS administration
+## 13. M-Pesa and eTIMS administration
 
 ### M-Pesa
 - Use business-issued Daraja credentials only.
@@ -145,7 +167,7 @@ The Trial Balance and General Ledger show posted journal entries. Ensure the bus
 ### KRA eTIMS
 Use the eTIMS setup area to maintain the business onboarding details and configuration records. Complete the required KRA onboarding and verification before relying on electronic tax invoice submission. Follow current KRA instructions and your authorised integration provider's guidance.
 
-## 13. Reports, exports and statements
+## 14. Reports, exports and statements
 
 Reports provide filters relevant to the selected area. Before exporting:
 1. Set the correct date range and other filters.
@@ -155,7 +177,7 @@ Reports provide filters relevant to the selected area. Before exporting:
 
 Customer statements and reports contain confidential business information.
 
-## 14. Security and operational controls
+## 15. Security and operational controls
 
 - Create one account per employee and deactivate access promptly when no longer required.
 - Review administrator and finance permissions regularly.
@@ -166,7 +188,7 @@ Customer statements and reports contain confidential business information.
 - Review audit/activity records where available.
 - Follow the organisation's database backup and record-retention procedures.
 
-## 15. Daily and periodic administrator checklist
+## 16. Daily and periodic administrator checklist
 
 **Daily**
 - Check cashier shift openings and closures.
@@ -187,7 +209,7 @@ Customer statements and reports contain confidential business information.
 - Review user roles and access.
 
 
-## 16. Master data and option-list management
+## 17. Master data and option-list management
 
 Use the management links provided beside the relevant forms to maintain lists rather than entering duplicate or inconsistent values.
 
@@ -200,13 +222,13 @@ Use the management links provided beside the relevant forms to maintain lists ra
 
 Changes to master data can affect future transactions and reports. Review the impact before deactivating an option that employees currently use.
 
-## 17. Fleet management
+## 18. Fleet management
 
 Open **Deliveries → Fleet Management** to register and maintain vehicles. Record the registration number, vehicle type, make/model, capacity, assigned driver, insurance expiry, inspection expiry, odometer and operational status. Use the maintenance section to record service date, service type, odometer, cost, garage/supplier and next service date. Active vehicles can be selected when creating deliveries.
 
 A vehicle with delivery or maintenance history cannot be deleted; set it to **Inactive** when it is no longer in service. Keep insurance and inspection dates current and do not dispatch a vehicle that is unsafe or not legally roadworthy.
 
-## 18. Automatic double-entry posting and posting mappings
+## 19. Automatic double-entry posting and posting mappings
 
 The system includes automatic journal posting for supported new transactions, provided the required accounting migrations have been applied and automatic posting has been enabled.
 
@@ -225,12 +247,12 @@ Automatic posting does not automatically create journals for historical transact
 
 The General Ledger and Trial Balance report posted journals, not a substitute for reviewing source records and reconciling bank, cash, stock, receivables and payables. Have the bookkeeper/accountant verify mappings and opening balances before relying on these reports for formal financial reporting.
 
-## 19. Backups, Docker and deployment
+## 20. Backups, Docker and deployment
 
 For the current local installation, maintain separate backups of the database and the uploads directory, including product images. Store at least one backup away from the computer running the application and periodically test restoration. Do not experiment with Docker or database migrations against the live trading database.
 
 Docker deployment is optional. The repository's Docker setup packages application code in an image and uses persistent volumes for MariaDB data and uploads, but the repository documentation notes that a complete verified fresh-install base schema is not yet supplied. Do not treat a successful container start as proof that the database is correctly migrated. Follow docs/DOCKER.md and database/README.md, use a separate test database, and verify backup/restore before any production move.
 
-## 20. Support and maintenance
+## 21. Support and maintenance
 
 The included maintenance period is governed by the separately signed Maintenance and Technical Support Agreement. Record the installation/handover date and maintenance expiry date. Report defects with the affected screen, steps to reproduce, exact error message and screenshot where possible. New modules, major customisations, additional branches, hardware repairs and third-party service charges may fall outside included maintenance; obtain written approval and a quotation before commissioning extra work.
