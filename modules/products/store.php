@@ -179,7 +179,7 @@ try {
             brand_id, supplier_id, sku, barcode, unit, purchase_unit, units_per_purchase, buying_price,
             selling_price, wholesale_price, bulk_selling_price, stock_quantity, reorder_level,
             icon, image_path, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active')"
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active')"
     );
     $insert->execute([
         $name, $productType, $isbn, $categoryName, $categoryId ?: null,
