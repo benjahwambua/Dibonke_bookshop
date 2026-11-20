@@ -77,8 +77,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $unitsPerPurchase = (int)($_POST['units_per_purchase'] ?? 1);
         $bulkPriceRaw = trim((string)($_POST['bulk_selling_price'] ?? ''));
         $bulkSellingPrice = $bulkPriceRaw === '' ? null : (float)$bulkPriceRaw;
+        $bulkWholesaleRaw = trim((string)($_POST['bulk_wholesale_price'] ?? ''));
+        $bulkWholesalePrice = $bulkWholesaleRaw === '' ? null : (float)$bulkWholesaleRaw;
         if ($unitsPerPurchase < 1 || ($purchaseUnit === '' && $unitsPerPurchase !== 1)) throw new RuntimeException('Enter a purchase unit and a valid units-per-purchase quantity.');
-        if ($bulkSellingPrice !== null && $bulkSellingPrice < 0) throw new RuntimeException('Bulk selling price cannot be negative.');
+        if (($bulkSellingPrice !== null && $bulkSellingPrice < 0) || ($bulkWholesalePrice !== null && $bulkWholesalePrice < 0)) throw new RuntimeException('Bulk selling prices cannot be negative.');
         if ($purchaseUnit === '') { $purchaseUnit = $unit; $unitsPerPurchase = 1; }
         $icon = trim((string)($_POST['icon'] ?? '📦')) ?: '📦';
         $newProductImage = uploadProductImage();
@@ -190,14 +192,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 product_name = ?, product_type = ?, isbn = ?, category = ?,
                 category_id = ?, brand_id = ?, supplier_id = ?, sku = ?,
                 barcode = ?, unit = ?, purchase_unit = ?, units_per_purchase = ?, buying_price = ?, selling_price = ?,
-                wholesale_price = ?, bulk_selling_price = ?, stock_quantity = ?, reorder_level = ?,
+                wholesale_price = ?, bulk_selling_price = ?, bulk_wholesale_price = ?, stock_quantity = ?, reorder_level = ?,
                 icon = ?, image_path = ?, status = ?
              WHERE id = ?"
         );
         $update->execute([
             $name, $productType, $isbn, $categoryName, $categoryId ?: null,
             $brandId ?: null, $supplierId ?: null, $sku, $barcode, $unit, $purchaseUnit, $unitsPerPurchase,
-            $buy, $sell, $wholesale, $bulkSellingPrice, $stock, $reorder, $icon, ($imagePath !== '' ? $imagePath : null), $status, $id
+            $buy, $sell, $wholesale, $bulkSellingPrice, $bulkWholesalePrice, $stock, $reorder, $icon, ($imagePath !== '' ? $imagePath : null), $status, $id
         ]);
 
         $priceInsert = $conn->prepare(
@@ -267,6 +269,7 @@ foreach ($suppliers as $supplierOption) {
 }
 
 $pageTitle = 'Edit Product';
+$unitOptions=['Piece','Pack','Box','Carton','Dozen','Ream','Set','Pair','Bottle','Roll','Bundle','Packet','Kilogram','Gram','Litre','Millilitre','Metre','Unit'];
 require_once __DIR__ . '/../../includes/header.php';
 require_once __DIR__ . '/../../includes/sidebar.php';
 ?>
@@ -344,20 +347,25 @@ require_once __DIR__ . '/../../includes/sidebar.php';
             <label>Reorder Level
                 <input type="number" min="0" step="1" name="reorder_level" value="<?= e($p['reorder_level']) ?>" required>
             </label>
-            <label>Stock / Selling Unit
-                <input name="unit" maxlength="50" value="<?= e($p['unit'] ?: 'Piece') ?>" required>
-                <small>The smallest unit counted in stock.</small>
+            <label>Sale / Stock Unit
+                <select name="unit" required><?php foreach($unitOptions as $unitOption):?><option value="<?=e($unitOption)?>" <?=$unitOption===($p['unit']?:'Piece')?'selected':''?>><?=e($unitOption)?></option><?php endforeach;?></select>
+                <small>The smallest unit counted in stock and sold individually.</small>
             </label>
             <label>Purchase Unit
-                <input name="purchase_unit" maxlength="50" value="<?= e($p['purchase_unit'] ?? $p['unit']) ?>" placeholder="e.g. Carton">
+                <select name="purchase_unit"><option value="">Same as sale unit</option><?php foreach($unitOptions as $unitOption):?><option value="<?=e($unitOption)?>" <?=$unitOption===($p['purchase_unit']??$p['unit'])?'selected':''?>><?=e($unitOption)?></option><?php endforeach;?></select>
+                <small>Choose the supplier packaging unit.</small>
             </label>
             <label>Units per Purchase Unit
                 <input type="number" name="units_per_purchase" min="1" step="1" value="<?= e($p['units_per_purchase'] ?? 1) ?>" required>
                 <small>Example: 50 pieces in one carton.</small>
             </label>
-            <label>Bulk Selling Price (KES)
+            <label>Retail Price per Purchase Unit (KES)
                 <input type="number" name="bulk_selling_price" min="0" step=".01" value="<?= e($p['bulk_selling_price'] ?? '') ?>">
-                <small>Optional price for one full purchase unit.</small>
+                <small>Optional retail price for one full box or carton.</small>
+            </label>
+            <label>Wholesale Price per Purchase Unit (KES)
+                <input type="number" name="bulk_wholesale_price" min="0" step=".01" value="<?= e($p['bulk_wholesale_price'] ?? '') ?>">
+                <small>Optional wholesale price for one full box or carton.</small>
             </label>
             <label>Product Icon
                 <input name="icon" maxlength="20" value="<?= e($p['icon'] ?: '📦') ?>">
