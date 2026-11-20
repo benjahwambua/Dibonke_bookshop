@@ -84,7 +84,7 @@ try {
     $purchaseId = (int)$conn->lastInsertId();$purchaseNumber='PUR-'.date('ymd').'-'.str_pad((string)$purchaseId,5,'0',STR_PAD_LEFT);$conn->prepare("UPDATE purchases SET purchase_number=? WHERE id=?")->execute([$purchaseNumber,$purchaseId]);
 
     $itemStmt = $conn->prepare("INSERT INTO purchase_items (purchase_id,product_id,quantity,buying_price,subtotal,entered_quantity,purchase_unit,conversion_factor,entered_unit_price) VALUES (?,?,?,?,?,?,?,?,?)");
-    $stockStmt = $conn->prepare("UPDATE products SET stock_quantity=stock_quantity+?, buying_price=? WHERE id=?");
+    $stockStmt = $conn->prepare("UPDATE products SET buying_price=CASE WHEN stock_quantity+? > 0 THEN ((stock_quantity*buying_price)+(?*?))/(stock_quantity+?) ELSE ? END, stock_quantity=stock_quantity+? WHERE id=?");
     $movementStmt = $conn->prepare("INSERT INTO stock_movements (product_id,user_id,movement_type,quantity,stock_before,stock_after,reference_type,reference_id,notes,movement_date) VALUES (?,?,?,?,?,?,?,?,?,?)");
 
     $runningStock = [];
@@ -93,7 +93,7 @@ try {
         $stockAfter = $stockBefore + $item['quantity'];
         $runningStock[$item['product_id']] = $stockAfter;
         $itemStmt->execute([$purchaseId,$item['product_id'],$item['quantity'],$item['buying_price'],$item['line_total'],$item['entered_quantity'],$item['purchase_unit'],$item['conversion_factor'],$item['entered_unit_price']]);
-        $stockStmt->execute([$item['quantity'],$item['buying_price'],$item['product_id']]);
+        $stockStmt->execute([$item['quantity'],$item['quantity'],$item['buying_price'],$item['quantity'],$item['buying_price'],$item['quantity'],$item['product_id']]);
         $movementStmt->execute([
             $item['product_id'],(int)$_SESSION['user_id'],'Purchase',$item['quantity'],
             $stockBefore,$stockAfter,'purchase',$purchaseId,
