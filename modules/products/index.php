@@ -4,7 +4,7 @@ require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../config/db.php';
 
 $pageTitle='Products';
-$unitOptions=['Piece','Pack','Box','Carton','Dozen','Ream','Set','Pair','Bottle','Roll','Bundle','Packet','Kilogram','Gram','Litre','Millilitre','Metre','Unit'];
+$unitOptions=['Piece','Pack','Box','Carton','Dozen','Ream','Set','Pair','Bottle','Roll','Bundle','Packet','Kilogram','Gram','Litre','Millilitre','Metre','Centimetre','Unit'];
 
 $search=trim((string)($_GET['q']??''));
 $category=(int)($_GET['category']??0);
@@ -67,7 +67,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <div class="page-head">
  <div><h1>Products Inventory</h1><p class="muted">Manage products, pricing, stock and suppliers.</p></div>
  <button class="btn btn-primary" type="button" onclick="openProductModal()"><i class="fas fa-plus"></i> Add Product</button>
- <div style="display:flex;gap:7px;flex-wrap:wrap"><a class="btn btn-light" href="<?=BASE_URL?>/modules/categories/index.php">Manage Categories</a><a class="btn btn-light" href="<?=BASE_URL?>/modules/brands/index.php">Manage Brands</a><a class="btn btn-light" href="<?=BASE_URL?>/modules/suppliers/index.php">Manage Suppliers</a><a class="btn btn-light" href="<?=BASE_URL?>/modules/price_lists/index.php">Manage Price Lists</a></div>
+ <div style="display:flex;gap:7px;flex-wrap:wrap"><a class="btn btn-light" href="<?=BASE_URL?>/modules/categories/index.php">Manage Categories</a><a class="btn btn-light" href="<?=BASE_URL?>/modules/brands/index.php">Manage Brands</a><a class="btn btn-light" href="<?=BASE_URL?>/modules/suppliers/index.php">Manage Suppliers</a><a class="btn btn-light" href="<?=BASE_URL?>/modules/price_lists/index.php">Manage Price Lists</a><?php if(hasModulePermission('products','edit')): ?><a class="btn btn-light" href="<?=BASE_URL?>/modules/products/book_covering.php">Book Covering Setup</a><?php endif; ?></div>
 </div>
 
 <?php if($flash): ?><div class="flash"><?=e($flash)?></div><?php endif; ?>
