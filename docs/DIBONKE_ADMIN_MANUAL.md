@@ -311,11 +311,10 @@ The current Daraja credentials are not encrypted at rest in the existing setting
 
 ## Exercise-book covering configuration
 
-1. Create a stock product for the cover roll. Set its stock unit to **Centimetre** and, if you buy full rolls, set the purchase unit to **Roll** with the correct number of centimetres per roll (for example, 1,000 cm for a 10-metre roll).
-2. Enter the roll's buying cost on a per-centimetre basis so inventory costing can value the material consumed accurately.
-3. Receive the roll through the normal goods-receiving workflow. A 10-metre roll is received as 1 Roll and converted to 1,000 cm when the purchase-unit conversion is configured.
-4. Open **Catalogue → Book Covering Setup**. Choose the exercise-book product, the cover-roll stock item, the centimetres used for one book of that size, and the extra charge per book.
-5. Save one rule for each exercise-book size. The setup supports one active roll-material rule per exercise-book product.
-6. At POS, the cashier ticks **Add covering** for the relevant basket line. Dibonke recalculates the total and, on successful sale completion, deducts the configured centimetres from the roll stock and writes a stock movement linked to the sale.
+1. Create the cover roll as a normal stock product. Set both its stock unit and purchase unit to **Roll**, and set its retail selling price to **KES 200 per roll** (or the current shop price).
+2. Receive cover rolls through the normal goods-receiving workflow. Stock is counted in whole rolls.
+3. Open **Catalogue → Book Covering Setup** and configure the extra covering charge for each exercise-book product. The POS offers **Add covering service** for configured books and adds the charge per book.
+4. The covering service does not deduct cover-roll stock. A customer who buys a roll must have the roll product added to the basket separately; the normal sale process deducts one whole roll.
+5. When staff take complete rolls from the shop's own stock for internal covering work, use **Record cover rolls used internally**. Enter the number of whole rolls and a reason. Dibonke records an inventory adjustment and audit event.
 
-Use whole centimetres because the existing inventory balance and stock movement ledger use whole-number quantities. The migration `database/dibonke_book_covering.sql` must be applied before deploying this feature. Do not configure the roll in metres and enter fractional usage; use centimetres consistently.
+The internal-use form records whole rolls only. It does not estimate or deduct partial-roll consumption per covered book. Apply `database/dibonke_book_covering.sql` and then `database/dibonke_book_covering_service.sql` before deploying the current covering workflow. If the first migration was already applied, only the service migration is needed.
