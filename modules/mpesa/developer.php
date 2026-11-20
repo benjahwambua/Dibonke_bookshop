@@ -41,6 +41,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new RuntimeException('Select a valid Daraja environment.');
             }
 
+            if ($environment === 'live') {
+                throw new RuntimeException('Production M-PESA is locked until Daraja credentials are encrypted at rest and the live callback has passed end-to-end verification. Sandbox remains available.');
+            }
+
             $sandboxShortcode = preg_replace('/\D+/', '', (string)($_POST['mpesa_sandbox_shortcode'] ?? '174379')) ?? '';
             if ($sandboxShortcode === '') {
                 throw new RuntimeException('Enter the Daraja sandbox shortcode.');
