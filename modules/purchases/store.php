@@ -120,7 +120,7 @@ try {
             $paymentStmt = $conn->prepare("INSERT INTO supplier_payments (receipt_number,supplier_id,goods_receipt_id,user_id,amount,payment_method,transaction_reference,payment_date,notes) VALUES (?,?,NULL,?,?,?,?,?,?)");
             $paymentStmt->execute([$paymentReceipt,$supplierId,(int)$_SESSION['user_id'],$paidAmount,$paymentMethod,null,$paymentDate,'Payment recorded against purchase '.$purchaseNumber]);
         }
-        $supplierPaymentId=(int)$conn->lastInsertId();$paymentReceipt='SP-'.date('ymd').'-'.str_pad((string)$supplierPaymentId,5,'0',STR_PAD_LEFT);$conn->prepare("UPDATE supplier_payments SET receipt_number=? WHERE id=?")->execute([$paymentReceipt,$supplierPaymentId]);
+        $supplierPaymentId=(int)$conn->lastInsertId();$paymentReceipt='SP-'.date('ymd').'-'.str_pad((string)$supplierPaymentId,5,'0',STR_PAD_LEFT);$conn->prepare("UPDATE supplier_payments SET receipt_number=? WHERE id=?")->execute([$paymentReceipt,$supplierPaymentId]);if($paidAmount>0){$conn->prepare("INSERT INTO supplier_payment_allocations(payment_id,purchase_id,amount) VALUES(?,?,?)")->execute([$supplierPaymentId,$purchaseId,$paidAmount]);}
     }
 
     recordAuditEvent($conn,'Create','purchases','Created purchase '.$purchaseNumber.' for KES '.number_format($total,2),'purchase',$purchaseId,null,['supplier_id'=>$supplierId,'total_amount'=>$total,'paid_amount'=>$paidAmount,'balance'=>$balance]);
