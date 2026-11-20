@@ -52,3 +52,43 @@ function normalizeProductType($value): string
     }
     return $type;
 }
+
+
+/**
+ * Generate a readable, unique SKU when staff leave the SKU field blank.
+ * Existing/manual SKUs are never rewritten by this helper.
+ */
+function generateProductSku(PDO $conn, string $productType, string $productName, int $excludeProductId = 0): string
+{
+    $typePrefix = [
+        'Book' => 'BOOK',
+        'Stationery' => 'STAT',
+        'General' => 'GEN',
+    ][$productType] ?? 'GEN';
+
+    $words = preg_split('/[^A-Za-z0-9]+/', strtoupper($productName), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+    $namePrefix = '';
+    foreach ($words as $word) {
+        $namePrefix .= substr($word, 0, 1);
+        if (strlen($namePrefix) >= 3) {
+            break;
+        }
+    }
+    if (strlen($namePrefix) < 3) {
+        $compact = preg_replace('/[^A-Z0-9]/', '', strtoupper($productName));
+        $namePrefix = str_pad(substr((string)$compact, 0, 3), 3, 'X');
+    }
+    $namePrefix = substr($namePrefix, 0, 3);
+    $base = $typePrefix . '-' . $namePrefix;
+
+    $check = $conn->prepare("SELECT id FROM products WHERE sku = ? AND id <> ? LIMIT 1");
+    for ($number = 1; $number <= 999999; $number++) {
+        $candidate = $base . '-' . str_pad((string)$number, 3, '0', STR_PAD_LEFT);
+        $check->execute([$candidate, $excludeProductId]);
+        if (!$check->fetchColumn()) {
+            return $candidate;
+        }
+    }
+
+    throw new RuntimeException('A unique SKU could not be generated. Enter a SKU manually or contact an administrator.');
+}
