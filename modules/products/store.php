@@ -25,8 +25,10 @@ try {
     $productType = normalizeProductType($_POST['product_type'] ?? 'General');
     $isbn = normalizeProductIsbn($_POST['isbn'] ?? '');
 
-    $categoryId = (int)($_POST['category_id'] ?? 0);
-    $brandId = (int)($_POST['brand_id'] ?? 0);
+    $categoryNameInput = trim((string)($_POST['category_name'] ?? ''));
+    $brandNameInput = trim((string)($_POST['brand_name'] ?? ''));
+    $categoryId = 0;
+    $brandId = 0;
     $supplierId = (int)($_POST['supplier_id'] ?? 0);
 
     $buyRaw = trim((string)($_POST['buying_price'] ?? ''));
@@ -55,24 +57,6 @@ try {
         throw new RuntimeException('Prices cannot be negative.');
     }
 
-    $categoryName = null;
-    if ($categoryId > 0) {
-        $lookup = $conn->prepare("SELECT category_name FROM categories WHERE id = ? AND status = 'Active' LIMIT 1");
-        $lookup->execute([$categoryId]);
-        $categoryName = $lookup->fetchColumn();
-        if ($categoryName === false) {
-            throw new RuntimeException('The selected category is unavailable. Refresh the page and choose an active category.');
-        }
-    }
-
-    if ($brandId > 0) {
-        $lookup = $conn->prepare("SELECT id FROM brands WHERE id = ? AND status = 'Active' LIMIT 1");
-        $lookup->execute([$brandId]);
-        if (!$lookup->fetchColumn()) {
-            throw new RuntimeException('The selected brand or publisher is unavailable.');
-        }
-    }
-
     if ($supplierId > 0) {
         $lookup = $conn->prepare("SELECT id FROM suppliers WHERE id = ? AND status = 'Active' LIMIT 1");
         $lookup->execute([$supplierId]);
@@ -88,6 +72,55 @@ try {
     $uploadedProductImage = uploadProductImage();
 
     $conn->beginTransaction();
+
+    // Resolve typed category and publisher names. New master records are created
+    // in the same transaction as the product so they never become orphaned.
+    $categoryName = null;
+    if ($categoryNameInput !== '') {
+        if (strlen($categoryNameInput) > 120) {
+            throw new RuntimeException('Category name must be 120 characters or fewer.');
+        }
+        $lookup = $conn->prepare("SELECT id, category_name, status FROM categories WHERE LOWER(category_name) = LOWER(?) LIMIT 1");
+        $lookup->execute([$categoryNameInput]);
+        $existingCategory = $lookup->fetch(PDO::FETCH_ASSOC);
+        if ($existingCategory) {
+            if ($existingCategory['status'] !== 'Active') {
+                throw new RuntimeException('That category is inactive. Activate it in Categories before using it.');
+            }
+            $categoryId = (int)$existingCategory['id'];
+            $categoryName = (string)$existingCategory['category_name'];
+        } else {
+            if (!hasModulePermission('categories', 'create')) {
+                throw new RuntimeException('You can add products, but your role cannot create categories. Ask an administrator to grant category creation access.');
+            }
+            $createCategory = $conn->prepare("INSERT INTO categories (category_name, description, status) VALUES (?, NULL, 'Active')");
+            $createCategory->execute([$categoryNameInput]);
+            $categoryId = (int)$conn->lastInsertId();
+            $categoryName = $categoryNameInput;
+        }
+    }
+
+    if ($brandNameInput !== '') {
+        if (strlen($brandNameInput) > 120) {
+            throw new RuntimeException('Brand or publisher name must be 120 characters or fewer.');
+        }
+        $lookup = $conn->prepare("SELECT id, brand_name, status FROM brands WHERE LOWER(brand_name) = LOWER(?) LIMIT 1");
+        $lookup->execute([$brandNameInput]);
+        $existingBrand = $lookup->fetch(PDO::FETCH_ASSOC);
+        if ($existingBrand) {
+            if ($existingBrand['status'] !== 'Active') {
+                throw new RuntimeException('That brand or publisher is inactive. Activate it in Brands before using it.');
+            }
+            $brandId = (int)$existingBrand['id'];
+        } else {
+            if (!hasModulePermission('brands', 'create')) {
+                throw new RuntimeException('You can add products, but your role cannot create brands or publishers. Ask an administrator to grant brand creation access.');
+            }
+            $createBrand = $conn->prepare("INSERT INTO brands (brand_name, description, status) VALUES (?, NULL, 'Active')");
+            $createBrand->execute([$brandNameInput]);
+            $brandId = (int)$conn->lastInsertId();
+        }
+    }
 
     // The product catalogue and POS both depend on an active standard price list.
     $priceListStmt = $conn->prepare("SELECT id FROM price_lists WHERE code = 'normal' AND status = 'Active' LIMIT 1");
