@@ -66,7 +66,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <nav class="breadcrumbs" aria-label="Breadcrumb"><span class="current">Catalogue</span><span aria-hidden="true">/</span><span class="current">Products</span></nav>
 <div class="page-head">
  <div><h1>Products Inventory</h1><p class="muted">Manage products, pricing, stock and suppliers.</p></div>
- <button class="btn btn-primary" onclick="document.getElementById('productModal').classList.add('show')"><i class="fas fa-plus"></i> Add Product</button>
+ <button class="btn btn-primary" type="button" onclick="openProductModal()"><i class="fas fa-plus"></i> Add Product</button>
  <div style="display:flex;gap:7px;flex-wrap:wrap"><a class="btn btn-light" href="<?=BASE_URL?>/modules/categories/index.php">Manage Categories</a><a class="btn btn-light" href="<?=BASE_URL?>/modules/brands/index.php">Manage Brands</a><a class="btn btn-light" href="<?=BASE_URL?>/modules/suppliers/index.php">Manage Suppliers</a><a class="btn btn-light" href="<?=BASE_URL?>/modules/price_lists/index.php">Manage Price Lists</a></div>
 </div>
 
@@ -115,11 +115,11 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <form method="post" action="store.php" enctype="multipart/form-data">
 <input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>">
 <div class="form-grid">
+<label>Barcode *<input id="productBarcode" name="barcode" type="text" maxlength="80" placeholder="Scan barcode or type it manually" autocomplete="off" inputmode="none"><small>Scan this first. The barcode will be saved with the product when you complete the form.</small></label>
 <label>Product Name *<input name="product_name" required maxlength="160"></label>
 <label>Item Type<select name="product_type"><option value="Book">Book</option><option value="Stationery">Stationery</option><option value="General" selected>General</option></select></label>
 <label>ISBN (optional)<input name="isbn" maxlength="20" placeholder="ISBN-10 or ISBN-13"></label>
 <label>SKU<input name="sku" maxlength="80" placeholder="Generated automatically if left blank"><small>Leave blank and the system will create a unique SKU when you save.</small></label>
-<label>Barcode<input name="barcode" maxlength="80"></label>
 <label>Category<input name="category_name" list="productCategoryOptions" maxlength="120" placeholder="Type or choose a category" autocomplete="off"><datalist id="productCategoryOptions"><?php foreach($categories as $c):?><option value="<?=e($c['category_name'])?>"><?php endforeach;?></datalist><small>Choose an existing category or type a new one.</small></label>
 <label>Brand / Publisher<input name="brand_name" list="productBrandOptions" maxlength="120" placeholder="Type or choose a brand / publisher" autocomplete="off"><datalist id="productBrandOptions"><?php foreach($brands as $b):?><option value="<?=e($b['brand_name'])?>"><?php endforeach;?></datalist><small>Choose an existing brand or type a new one.</small></label>
 <label>Supplier<input name="supplier_name" list="productSupplierOptions" maxlength="160" placeholder="Type or choose a supplier" autocomplete="off"><datalist id="productSupplierOptions"><?php foreach($suppliers as $s):?><option value="<?=e($s['supplier_name'])?>"><?php endforeach;?></datalist><small>Choose an existing supplier or type a new one.</small></label>
@@ -140,4 +140,26 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <style>
 .modal{display:none;position:fixed;inset:0;background:#0008;z-index:2000;align-items:center;justify-content:center;padding:20px}.modal.show{display:flex}.modal-box{background:#fff;border-radius:15px;padding:25px;width:min(760px,100%);max-height:90vh;overflow:auto;position:relative}.modal-box h2{margin-top:0}.modal-close{position:absolute;right:18px;top:12px;border:0;background:none;font-size:28px;cursor:pointer}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.form-grid label{font-size:12px;font-weight:700;color:#475569}.form-grid input,.form-grid select{display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:11px;border:1px solid #dbe3ec;border-radius:8px}.modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}@media(max-width:650px){.form-grid{grid-template-columns:1fr}}
 </style>
+<script>
+function openProductModal() {
+    const modal = document.getElementById('productModal');
+    const barcode = document.getElementById('productBarcode');
+    modal.classList.add('show');
+    window.setTimeout(() => barcode && barcode.focus(), 80);
+}
+document.addEventListener('DOMContentLoaded', function () {
+    const barcode = document.getElementById('productBarcode');
+    if (barcode) {
+        // Many USB scanners send Enter after the barcode. Keep that Enter
+        // from submitting the incomplete product form.
+        barcode.addEventListener('keydown', function (event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const nameField = document.querySelector('#productModal input[name="product_name"]');
+                if (nameField) nameField.focus();
+            }
+        });
+    }
+});
+</script>
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>
