@@ -90,10 +90,11 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <?php if (canAccessModule('supply_chain')): ?><a href="<?= BASE_URL ?>/modules/supply_chain/index.php" class="<?= navActive('/supply_chain/') ?>"><i class="fas fa-diagram-project icon-main"></i>Purchase Orders &amp; Receiving</a><?php endif; ?>
         <?php endif; ?>
 
-        <?php if (canAccessModule('customers') || canAccessModule('sales') || canAccessModule('deliveries')): ?>
+        <?php if (canAccessModule('customers') || canAccessModule('sales') || canAccessModule('customer_orders') || canAccessModule('deliveries')): ?>
         <button type="button" class="menu-title nav-group-toggle" aria-expanded="false"><span>Sales &amp; Customer Service</span><span class="nav-group-chevron" aria-hidden="true"></span></button>
         <?php if (canAccessModule('customers')): ?><a href="<?= BASE_URL ?>/modules/customers/index.php" class="<?= navActive('/customers/') ?>"><i class="fas fa-users icon-main"></i>Customers</a><?php endif; ?>
         <?php if (canAccessModule('sales')): ?><a href="<?= BASE_URL ?>/modules/sales/index.php" class="<?= navActive('/sales/') ?>"><i class="fas fa-cash-register icon-main"></i>Sales &amp; POS</a><?php endif; ?>
+        <?php if (canAccessModule('customer_orders')): ?><a href="<?= BASE_URL ?>/modules/customer_orders/index.php" class="<?= navActive('/customer_orders/') ?>"><i class="fas fa-file-signature icon-main"></i>Customer Sales Orders</a><a href="<?= BASE_URL ?>/modules/customer_orders/pending.php" class="<?= navActive('/customer_orders/pending.php') ?>"><i class="fas fa-file-invoice-dollar icon-main"></i>Pending Invoices</a><?php endif; ?>
         <?php if (hasModulePermission('cash_management','view') || hasModulePermission('cash_management','create')): ?><a href="<?= BASE_URL ?>/modules/sales/my_shift.php" class="<?= navActive('/sales/my_shift.php') ?>"><i class="fas fa-cash-register icon-main"></i>My Cashier Shift</a><?php endif; ?>
         <?php if (canAccessModule('deliveries')): ?><a href="<?= BASE_URL ?>/modules/deliveries/index.php" class="<?= $currentPath === BASE_URL . '/modules/deliveries/index.php' ? 'active' : '' ?>"><i class="fas fa-shipping-fast icon-main"></i>Deliveries</a><?php endif; ?>
         <?php if (canAccessModule('fleet')): ?><a href="<?= BASE_URL ?>/modules/deliveries/fleet.php" class="<?= navActive('/deliveries/fleet.php') ?>"><i class="fas fa-truck icon-main"></i>Fleet Management</a><?php endif; ?>
