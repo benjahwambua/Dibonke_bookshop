@@ -328,8 +328,9 @@ require_once __DIR__ . '/../../includes/sidebar.php';
                 <datalist id="editProductSupplierOptions"><?php foreach ($suppliers as $supplier): ?><option value="<?= e($supplier['supplier_name']) ?>"><?php endforeach; ?></datalist>
                 <small>Choose an existing supplier or type a new one.</small>
             </label>
-            <label>Purchase Price (KES) *
+            <label>Buying Price per Stock Unit (KES) *
                 <input type="number" step=".01" min="0" name="buying_price" value="<?= e($p['buying_price']) ?>" required>
+                <small>For example, cost per piece, not per carton.</small>
             </label>
             <label>Retail Selling Price (KES) *
                 <input type="number" step=".01" min="0" name="selling_price" value="<?= e($p['selling_price']) ?>" required>
