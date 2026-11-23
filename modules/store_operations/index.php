@@ -54,7 +54,8 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 .store-table-wrap{overflow:auto}.store-table{width:100%;border-collapse:collapse;min-width:680px}
 .store-table th{background:#f4f7fa;color:#526477;text-align:left;font-size:11px;padding:11px}
 .store-table td{padding:10px 11px;border-top:1px solid #edf1f5;font-size:12px}
-.store-table input{width:100px;min-height:34px;padding:6px 8px;border:1px solid #d7e0e9;border-radius:6px}\n.store-search{width:100%;max-width:440px;min-height:42px;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:10px 12px;font:inherit;font-size:13px;margin:4px 0 12px}\n.store-no-match td{color:#64748b;text-align:center;padding:18px}
+.store-table input{width:100px;min-height:34px;padding:6px 8px;border:1px solid #d7e0e9;border-radius:6px}
+.store-search{width:100%;max-width:440px;min-height:42px;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:10px 12px;font:inherit;font-size:13px;margin:4px 0 12px}\n.store-no-match td{color:#64748b;text-align:center;padding:18px}
 .store-btn{display:inline-flex;align-items:center;gap:7px;background:#174a7e;color:#fff;border:0;border-radius:7px;padding:10px 14px;text-decoration:none;font-size:12px;font-weight:700;cursor:pointer}
 .store-btn.secondary{background:#eef2f7;color:#334155}
 .store-flash{padding:12px 14px;border-radius:8px;background:#eff6ff;color:#1e40af;margin:12px 0;font-size:13px}
