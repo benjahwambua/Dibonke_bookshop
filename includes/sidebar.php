@@ -135,9 +135,16 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <?php if (canAccessModule('mpesa')): ?><a href="<?= BASE_URL ?>/modules/mpesa/index.php" class="<?= navActive('/mpesa/') ?>"><i class="fas fa-mobile-alt icon-main"></i>M-PESA</a><?php endif; ?>
         <?php endif; ?>
 
-        <?php if (canAccessModule('launch_controls') || canAccessModule('etims')): ?>
+        <?php if (canAccessModule('launch_controls') || canAccessModule('sales_returns') || canAccessModule('cash_management') || canAccessModule('stocktaking') || canAccessModule('audit_logs') || canAccessModule('etims')): ?>
         <button type="button" class="menu-title nav-group-toggle" aria-expanded="false"><span>Control &amp; Compliance</span><span class="nav-group-chevron" aria-hidden="true"></span></button>
+        <?php if (canAccessModule('launch_controls')): ?>
         <a href="<?= BASE_URL ?>/modules/launch_controls/index.php" class="<?= navActive('/launch_controls/') ?>"><i class="fas fa-clipboard-check icon-main"></i>Launch Operations</a>
+        <?php else: ?>
+        <?php if (canAccessModule('sales_returns')): ?><a href="<?= BASE_URL ?>/modules/launch_controls/index.php?tab=returns" class="<?= navActive('/launch_controls/') ?>"><i class="fas fa-undo icon-main"></i>Sales Returns &amp; Refunds</a><?php endif; ?>
+        <?php if (canAccessModule('cash_management')): ?><a href="<?= BASE_URL ?>/modules/launch_controls/index.php?tab=shifts" class="<?= navActive('/launch_controls/') ?>"><i class="fas fa-cash-register icon-main"></i>Cash Shift Review</a><?php endif; ?>
+        <?php if (canAccessModule('stocktaking')): ?><a href="<?= BASE_URL ?>/modules/launch_controls/index.php?tab=stocktaking" class="<?= navActive('/launch_controls/') ?>"><i class="fas fa-clipboard-list icon-main"></i>Stocktaking</a><?php endif; ?>
+        <?php if (canAccessModule('audit_logs')): ?><a href="<?= BASE_URL ?>/modules/launch_controls/index.php?tab=audit" class="<?= navActive('/launch_controls/') ?>"><i class="fas fa-history icon-main"></i>Audit Trail</a><?php endif; ?>
+        <?php endif; ?>
         <?php if (canAccessModule('etims')): ?><a href="<?= BASE_URL ?>/modules/etims/index.php" class="<?= navActive('/etims/') ?>"><i class="fas fa-file-invoice-dollar icon-main"></i>eTIMS Setup</a><?php endif; ?>
         <?php endif; ?>
 
