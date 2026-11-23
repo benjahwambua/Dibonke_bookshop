@@ -170,7 +170,7 @@ try {
             $productId = (int)$item['product_id'];
             $issued = (float)$item['quantity_issued'];
             $returned = isset($returns[$productId]) && is_numeric($returns[$productId]) ? (float)$returns[$productId] : 0.0;
-            $sold = (float)($soldByProduct[$productId] ?? 0);
+            $sold = (float)($soldByProduct[$productId]['quantity'] ?? 0);
             $stockVariance = $issued - $returned - $sold;
             $stockLock->execute([(int)$session['store_id'], $productId]);
             $available = $stockLock->fetchColumn();
