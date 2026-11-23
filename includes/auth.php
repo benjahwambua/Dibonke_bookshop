@@ -161,8 +161,6 @@ if ($markerPosition !== false) {
         'finance/aged_payables.php' => 'aged_payables',
         'finance/posting_mappings.php' => 'accounting_mappings',
         'sales/my_shift.php' => 'cash_management',
-        'sales/returns.php' => 'sales_returns',
-        'sales/return.php' => 'sales_returns',
         'hr/my.php' => 'hr_self_service',
         'inventory/index.php' => 'products',
     ];
