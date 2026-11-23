@@ -74,9 +74,11 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <div class="store-view-panel">
     <h2 style="font-size:16px;margin:0 0 12px">Money Reconciliation</h2>
     <div class="store-view-grid">
-        <div><small>Expected collections</small><strong>KES <?=number_format((float)$session['expected_sales'],2)?></strong></div>
-        <div><small>Cash received</small><strong>KES <?=number_format((float)$session['cash_received'],2)?></strong></div>
-        <div><small>M-Pesa received</small><strong>KES <?=number_format((float)$session['mpesa_received'],2)?></strong></div>
+        <div><small>Expected total collections</small><strong>KES <?=number_format((float)$session['expected_sales'],2)?></strong></div>
+        <div><small>Expected cash (POS)</small><strong>KES <?=number_format((float)$session['expected_cash'],2)?></strong></div>
+        <div><small>Cash physically received</small><strong>KES <?=number_format((float)$session['cash_received'],2)?></strong><small>Difference: KES <?=number_format((float)$session['cash_received']-(float)$session['expected_cash'],2)?></small></div>
+        <div><small>Expected M-Pesa (POS)</small><strong>KES <?=number_format((float)$session['expected_mpesa'],2)?></strong></div>
+        <div><small>M-Pesa actually received</small><strong>KES <?=number_format((float)$session['mpesa_received'],2)?></strong><small>Difference: KES <?=number_format((float)$session['mpesa_received']-(float)$session['expected_mpesa'],2)?></small></div>
         <div><small>Bank received</small><strong>KES <?=number_format((float)$session['bank_received'],2)?></strong></div>
         <div><small>Other received</small><strong>KES <?=number_format((float)$session['other_received'],2)?></strong></div>
         <div><small>Total received</small><strong>KES <?=number_format((float)$session['total_received'],2)?></strong></div>
