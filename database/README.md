@@ -227,11 +227,11 @@ The following is a dependency guide for a development database. **Do not re-run 
 13. `dibonke_hr_self_service_receivables.sql` — apply after staff roles, accounting/HR tables, and sales/customers.
 14. `dibonke_short_references_and_cash_tender.sql` — adds cash tender tracking to sales; apply after the base sales table exists.
 15. `dibonke_expense_categories_seed.sql` — creates/seeds standard expense categories. The Expenses page also ensures the standard active categories exist at runtime.
-16. `dibonke_bulk_unit_conversion.sql` — adds bulk purchase/sale unit conversion fields. Apply before using the updated product, purchase and POS screens.
+16. `dibonke_bulk_unit_conversion.sql` — adds bulk purchase/sale unit conversion fields. Apply before using the updated product, purchase and POS screens.\n17. `dibonke_store_operations.sql` — creates Main Store, Store 1 and Store 2, store-level stock balances, daily issue/return transfers and reconciliation records; adds store attribution to POS sales and grants the Store Operations permission to Administrator and Manager roles. Apply after the base products, sales, sale_items, stock_movements, users, roles and role_permissions tables exist.
 
 The sequence above is not a substitute for checking the current database. A database that already has some or all of these extensions should not receive them again blindly. The local database is the source of truth for which migrations have already been applied.
 
-## Final acceptance tests
+\n\n## Store Operations\n\nApply `dibonke_store_operations.sql` after the retail base tables and role permissions are present. It creates Main Store, Store 1 and Store 2. Main Store inventory continues to use the existing `products.stock_quantity` balance; separate selling-store balances are held in `store_stock`. The owner issues stock to a selling store each day, POS sales are attributed to the selected store and deducted from that store's balance, and the end-of-day reconciliation transfers all returned quantities back to Main Store. The system compares POS quantities with issued/returned quantities and records unexplained stock differences separately. It compares money handed over (cash, M-Pesa, bank and other) with POS amounts actually paid for that store and business date. A store's previous open day must be reconciled before fresh stock can be issued. Sellers are recorded as the person in charge only; they do not need application accounts.\n\n## Final acceptance tests
 
 Before production use, test the following against the actual Dibonke development database and the target PHP/MariaDB versions:
 
