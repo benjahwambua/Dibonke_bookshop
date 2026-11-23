@@ -69,8 +69,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute([$id]);
             $purchaseLinks = (int)$stmt->fetchColumn();
 
-            if ($productLinks > 0 || $purchaseLinks > 0) {
-                throw new RuntimeException('This supplier cannot be deleted because it has linked products or purchase records. Set it to Inactive instead.');
+            $stmt = $conn->prepare("SELECT balance FROM suppliers WHERE id = ?");
+            $stmt->execute([$id]);
+            $supplierBalance = $stmt->fetchColumn();
+            if ($supplierBalance === false) {
+                throw new RuntimeException('Supplier not found.');
+            }
+
+            $linkedRecords = $productLinks + $purchaseLinks;
+            foreach (['purchase_orders', 'goods_receipts', 'supplier_payments'] as $relatedTable) {
+                $tableCheck = $conn->prepare("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = ?");
+                $tableCheck->execute([$relatedTable]);
+                if ((int)$tableCheck->fetchColumn() > 0) {
+                    $linkedCheck = $conn->prepare("SELECT COUNT(*) FROM {$relatedTable} WHERE supplier_id = ?");
+                    $linkedCheck->execute([$id]);
+                    $linkedRecords += (int)$linkedCheck->fetchColumn();
+                }
+            }
+
+            if ($linkedRecords > 0 || abs((float)$supplierBalance) > 0.00001) {
+                throw new RuntimeException('This supplier has linked products, purchase history, payments or an outstanding balance. Set the supplier to Inactive instead of deleting it.');
             }
 
             $stmt = $conn->prepare("DELETE FROM suppliers WHERE id = ?");
