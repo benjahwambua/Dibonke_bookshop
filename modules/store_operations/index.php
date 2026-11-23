@@ -160,7 +160,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
             <td><strong><?= $s['status']==='Reconciled' ? 'KES '.number_format((float)$s['money_variance'],2) : '—' ?></strong></td>
             <td><?= $s['status']==='Reconciled' ? number_format((int)$s['stock_variance_items']).' item(s)' : '—' ?></td>
             <td><span class="store-status <?= $s['status']==='Reconciled'?'done':'' ?>"><?= e($s['status']) ?></span></td>
-            <td><?php if ($s['status']==='Open'): ?><a class="store-btn" href="index.php?reconcile=<?= (int)$s['id'] ?>">Reconcile</a><?php endif; ?></td>
+            <td><a class="store-btn secondary" href="view.php?id=<?= (int)$s['id'] ?>">View</a> <?php if ($s['status']==='Open'): ?><a class="store-btn" href="index.php?reconcile=<?= (int)$s['id'] ?>">Reconcile</a><?php endif; ?></td>
         </tr><?php endforeach; endif; ?>
         </tbody>
     </table></div>
