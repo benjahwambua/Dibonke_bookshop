@@ -132,9 +132,14 @@ $sql = "SELECT sm.*, p.product_name, p.sku, u.full_name, {$movementStoreSelect}
 $params = [':from_date' => $from, ':to_date' => $to];
 
 if ($search !== '') {
-    $searchStore = $hasMovementStoreId ? " OR st.store_name LIKE :q" : '';
-    $sql .= " AND (p.product_name LIKE :q OR p.sku LIKE :q OR sm.notes LIKE :q OR CAST(sm.reference_id AS CHAR) LIKE :q{$searchStore})";
-    $params[':q'] = "%{$search}%";
+    $searchStore = $hasMovementStoreId ? " OR st.store_name LIKE :q_store" : '';
+    $sql .= " AND (p.product_name LIKE :q_product OR p.sku LIKE :q_sku OR sm.notes LIKE :q_notes OR CAST(sm.reference_id AS CHAR) LIKE :q_reference{$searchStore})";
+    $like = "%{$search}%";
+    $params[':q_product'] = $like;
+    $params[':q_sku'] = $like;
+    $params[':q_notes'] = $like;
+    $params[':q_reference'] = $like;
+    if ($hasMovementStoreId) $params[':q_store'] = $like;
 }
 if ($hasMovementStoreId && $storeFilter > 0) {
     $sql .= " AND sm.store_id = :store_id";
