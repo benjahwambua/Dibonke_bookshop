@@ -129,7 +129,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <main class="content">
 <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="<?= BASE_URL ?>/index.php">Dashboard</a><span aria-hidden="true">/</span><span class="current">Suppliers</span></nav>
 <div class="master-page">
-<div class="page-heading"><div><h1>Suppliers</h1><p>Manage suppliers, contacts, credit limits and purchasing relationships.</p></div><?php if($canCreateSupplier): ?><button class="btn btn-primary" onclick="document.getElementById('supplierModal').classList.add('show')"><i class="fas fa-plus"></i> Add Supplier</button><?php endif; ?></div>
+<div class="page-heading"><div><h1>Suppliers</h1><p>Manage suppliers, contacts, credit limits and purchasing relationships.</p></div><?php if($canCreateSupplier): ?><button class="btn btn-primary" onclick="openSupplierModal()"><i class="fas fa-plus"></i> Add Supplier</button><?php endif; ?></div>
 <?php if($flash): ?><div class="alert success"><?=e($flash['message'])?></div><?php endif; ?>
 <?php foreach($errors as $error): ?><div class="alert danger"><?=e($error)?></div><?php endforeach; ?>
 <div class="cards"><div class="card"><strong><?=number_format((int)$summary['total'])?></strong><small>Total Suppliers</small></div><div class="card"><strong><?=number_format((int)$summary['active'])?></strong><small>Active Suppliers</small></div><div class="card"><strong><?=number_format((int)$summary['inactive'])?></strong><small>Inactive Suppliers</small></div><div class="card"><strong>KES <?=number_format((float)$summary['outstanding'],2)?></strong><small>Outstanding Supplier Balance</small></div></div>
@@ -139,83 +139,30 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <tr><td><strong><?=e($s['supplier_name'])?></strong><br><small><?=e($s['email']?:'')?></small></td><td><?=e($s['contact_person']?:'—')?></td><td><?=e($s['phone']?:'—')?></td><td>KES <?=number_format((float)$s['credit_limit'],2)?></td><td>KES <?=number_format((float)$s['balance'],2)?></td><td><span class="count-pill"><?= (int)$s['product_count']?></span></td><td><span class="count-pill"><?= (int)$s['purchase_count']?></span></td><td><span class="status <?=strtolower($s['status'])?>"><?=e($s['status'])?></span></td><td class="actions"><?php if($canEditSupplier): ?><a class="icon-btn" href="?edit=<?= (int)$s['id']?>" aria-label="Edit supplier" title="Edit supplier"><i class="fas fa-edit"></i></a><?php endif; ?><?php if($canDeleteSupplier): ?><form method="post" onsubmit="return confirm('Delete this supplier? This cannot be undone.');"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= (int)$s['id']?>"><button class="icon-btn danger-btn" type="submit" aria-label="Delete supplier" title="Delete supplier"><i class="fas fa-trash"></i></button></form><?php endif; ?><?php if(!$canEditSupplier && !$canDeleteSupplier): ?><span class="muted">—</span><?php endif; ?></td></tr>
 <?php endforeach; endif; ?></tbody></table></div></div></div></main>
 <?php if($canCreateSupplier || ($canEditSupplier && $editSupplier)): ?>
-<div class="modal supplier-modal <?= $editSupplier?'show':'' ?>" id="supplierModal" role="dialog" aria-modal="true" aria-labelledby="supplierModalTitle" onclick="if(event.target===this)closeSupplierModal()">
-    <div class="modal-box supplier-modal-box">
-        <div class="modal-head supplier-modal-head">
-            <div>
-                <h2 id="supplierModalTitle"><?= $editSupplier?'Edit Supplier':'Add Supplier' ?></h2>
-                <p><?= $editSupplier?'Update the supplier contact and account details.':'Enter the supplier details below. Only the supplier name is required.' ?></p>
-            </div>
-            <button class="supplier-modal-close" type="button" onclick="closeSupplierModal()" aria-label="Close supplier form">&times;</button>
-        </div>
-        <form method="post" class="supplier-form">
-            <input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>">
-            <input type="hidden" name="action" value="<?= $editSupplier?'update':'create' ?>">
-            <?php if($editSupplier): ?><input type="hidden" name="id" value="<?= (int)$editSupplier['id'] ?>"><?php endif; ?>
-
-            <section class="supplier-form-section">
-                <h3>Supplier details</h3>
-                <div class="supplier-form-grid">
-                    <label class="supplier-field supplier-field-wide">Supplier Name <span>*</span>
-                        <input name="supplier_name" required maxlength="150" autocomplete="organization" placeholder="e.g. Nairobi Book Distributors" value="<?=e($editSupplier['supplier_name']??'')?>">
-                    </label>
-                    <label class="supplier-field">Contact Person
-                        <input name="contact_person" maxlength="150" autocomplete="name" placeholder="Name of your contact" value="<?=e($editSupplier['contact_person']??'')?>">
-                    </label>
-                    <label class="supplier-field">Phone Number
-                        <input name="phone" maxlength="30" type="tel" autocomplete="tel" placeholder="e.g. 07XX XXX XXX" value="<?=e($editSupplier['phone']??'')?>">
-                    </label>
-                    <label class="supplier-field supplier-field-wide">Email Address
-                        <input type="email" name="email" maxlength="150" autocomplete="email" placeholder="supplier@example.com" value="<?=e($editSupplier['email']??'')?>">
-                    </label>
-                </div>
-            </section>
-
-            <section class="supplier-form-section">
-                <h3>Commercial details</h3>
-                <div class="supplier-form-grid">
-                    <label class="supplier-field">Tax PIN
-                        <input name="tax_pin" maxlength="30" placeholder="Supplier KRA PIN" value="<?=e($editSupplier['tax_pin']??'')?>">
-                    </label>
-                    <label class="supplier-field">Credit Limit (KES)
-                        <input type="number" min="0" step="0.01" name="credit_limit" inputmode="decimal" value="<?=e($editSupplier['credit_limit']??'0')?>">
-                    </label>
-                    <label class="supplier-field">Supplier Status
-                        <select name="status">
-                            <option value="Active" <?=($editSupplier['status']??'Active')==='Active'?'selected':''?>>Active</option>
-                            <option value="Inactive" <?=($editSupplier['status']??'')==='Inactive'?'selected':''?>>Inactive</option>
-                        </select>
-                    </label>
-                </div>
-            </section>
-
-            <section class="supplier-form-section">
-                <h3>Address and notes</h3>
-                <div class="supplier-form-grid">
-                    <label class="supplier-field supplier-field-wide">Business Address
-                        <textarea name="address" rows="2" placeholder="Street, building, town or delivery address"><?=e($editSupplier['address']??'')?></textarea>
-                    </label>
-                    <label class="supplier-field supplier-field-wide">Internal Notes
-                        <textarea name="notes" rows="3" placeholder="Optional notes for your staff"><?=e($editSupplier['notes']??'')?></textarea>
-                    </label>
-                </div>
-            </section>
-
-            <div class="supplier-modal-actions">
-                <button class="btn btn-light" type="button" onclick="closeSupplierModal()">Cancel</button>
-                <button class="btn btn-primary" type="submit"><i class="fas fa-save"></i> <?= $editSupplier?'Save Changes':'Save Supplier' ?></button>
-            </div>
-        </form>
-    </div>
+<div class="modal" id="supplierModal" role="dialog" aria-modal="true" aria-labelledby="supplierModalTitle" <?= $editSupplier?'':'hidden' ?> onclick="if(event.target===this)closeSupplierModal()">
+<div class="modal-box wide">
+<div class="modal-head"><div><h2 id="supplierModalTitle"><?= $editSupplier?'Edit Supplier':'Add Supplier' ?></h2><p><?= $editSupplier?'Update the supplier contact and account details.':'Enter the supplier details below. Only the supplier name is required.' ?></p></div><button class="close" type="button" onclick="closeSupplierModal()" aria-label="Close supplier form">&times;</button></div>
+<form method="post">
+<input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>">
+<input type="hidden" name="action" value="<?= $editSupplier?'update':'create' ?>">
+<?php if($editSupplier): ?><input type="hidden" name="id" value="<?= (int)$editSupplier['id'] ?>"><?php endif; ?>
+<div class="form-grid">
+<div><label>Supplier Name *</label><input name="supplier_name" required maxlength="150" autocomplete="organization" placeholder="e.g. Nairobi Book Distributors" value="<?=e($editSupplier['supplier_name']??'')?>"></div>
+<div><label>Contact Person</label><input name="contact_person" maxlength="150" autocomplete="name" placeholder="Name of your contact" value="<?=e($editSupplier['contact_person']??'')?>"></div>
+<div><label>Phone Number</label><input name="phone" maxlength="30" type="tel" autocomplete="tel" placeholder="e.g. 07XX XXX XXX" value="<?=e($editSupplier['phone']??'')?>"></div>
+<div><label>Email Address</label><input type="email" name="email" maxlength="150" autocomplete="email" placeholder="supplier@example.com" value="<?=e($editSupplier['email']??'')?>"></div>
+<div><label>Tax PIN</label><input name="tax_pin" maxlength="30" placeholder="Supplier KRA PIN" value="<?=e($editSupplier['tax_pin']??'')?>"></div>
+<div><label>Credit Limit (KES)</label><input type="number" min="0" step="0.01" name="credit_limit" inputmode="decimal" value="<?=e($editSupplier['credit_limit']??'0')?>"></div>
+<div><label>Supplier Status</label><select name="status"><option value="Active" <?=($editSupplier['status']??'Active')==='Active'?'selected':''?>>Active</option><option value="Inactive" <?=($editSupplier['status']??'')==='Inactive'?'selected':''?>>Inactive</option></select></div>
+<div class="full"><label>Business Address</label><textarea name="address" rows="2" placeholder="Street, building, town or delivery address"><?=e($editSupplier['address']??'')?></textarea></div>
+<div class="full"><label>Internal Notes</label><textarea name="notes" rows="3" placeholder="Optional notes for your staff"><?=e($editSupplier['notes']??'')?></textarea></div>
 </div>
+<div class="modal-actions"><button class="btn btn-light" type="button" onclick="closeSupplierModal()">Cancel</button><button class="btn btn-primary" type="submit"><i class="fas fa-save"></i> <?= $editSupplier?'Save Changes':'Save Supplier' ?></button></div>
+</form></div></div>
 <script>
-function closeSupplierModal(){
-    const modal=document.getElementById('supplierModal');
-    if(modal) modal.classList.remove('show');
-}
-document.addEventListener('keydown',function(event){
-    if(event.key==='Escape') closeSupplierModal();
-});
+function openSupplierModal(){const modal=document.getElementById('supplierModal');if(modal){modal.hidden=false;modal.classList.add('show');}}
+function closeSupplierModal(){const modal=document.getElementById('supplierModal');if(modal){modal.classList.remove('show');modal.hidden=true;}}
+document.addEventListener('keydown',function(event){if(event.key==='Escape')closeSupplierModal();});
 </script>
 <?php endif; ?>
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>
