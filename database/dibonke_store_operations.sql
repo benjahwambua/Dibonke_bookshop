@@ -93,11 +93,27 @@ CREATE TABLE IF NOT EXISTS store_daily_items (
     quantity_issued DECIMAL(14,3) NOT NULL DEFAULT 0,
     quantity_returned DECIMAL(14,3) NOT NULL DEFAULT 0,
     quantity_sold DECIMAL(14,3) NOT NULL DEFAULT 0,
+    quantity_variance DECIMAL(14,3) NOT NULL DEFAULT 0,
     expected_amount DECIMAL(14,2) NOT NULL DEFAULT 0,
     UNIQUE KEY uq_store_daily_product (session_id,product_id),
     KEY idx_store_daily_item_product (product_id),
     CONSTRAINT fk_store_daily_item_session FOREIGN KEY (session_id) REFERENCES store_daily_sessions(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
+-- Support re-running the migration against a database created before stock variance was added.
+SET @has_store_daily_variance := (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='store_daily_items' AND COLUMN_NAME='quantity_variance'
+);
+SET @sql_store_daily_variance := IF(
+    @has_store_daily_variance=0,
+    'ALTER TABLE store_daily_items ADD COLUMN quantity_variance DECIMAL(14,3) NOT NULL DEFAULT 0 AFTER quantity_sold',
+    'SELECT 1'
+);
+PREPARE stmt_store_daily_variance FROM @sql_store_daily_variance;
+EXECUTE stmt_store_daily_variance;
+DEALLOCATE PREPARE stmt_store_daily_variance;
 
 -- Store attribution on each sale. Existing historical sales remain assigned to Main Store.
 SET @has_sales_store_id := (
