@@ -48,6 +48,9 @@ try {
         $store = $stmt->fetch(PDO::FETCH_ASSOC);
         if (!$store) throw new RuntimeException('The selected store could not be found.');
         if ($store['store_name'] === $name) storeFail('No changes were needed.');
+        $duplicate = $conn->prepare("SELECT COUNT(*) FROM stores WHERE store_name=? AND id<>?");
+        $duplicate->execute([$name, $storeId]);
+        if ((int)$duplicate->fetchColumn() > 0) throw new RuntimeException('Another store already uses that name. Choose a different name.');
         $update = $conn->prepare("UPDATE stores SET store_name=? WHERE id=?");
         $update->execute([$name, $storeId]);
         recordAuditEvent($conn, 'Rename', 'store_operations', 'Renamed ' . $store['store_type'] . ' store from ' . $store['store_name'] . ' to ' . $name, 'store', $storeId);
