@@ -153,13 +153,13 @@ require_once __DIR__ . '/../../includes/sidebar.php';
         </table></div>
         <h3 style="font-size:14px;margin:18px 0 10px">Money handed over</h3>
         <div class="store-form-grid">
-            <div class="store-field"><label>Cash (KES)</label><input type="number" name="cash_received" min="0" step="0.01" value="0" required></div>
-            <div class="store-field"><label>M-Pesa (KES)</label><input type="number" name="mpesa_received" min="0" step="0.01" value="0" required></div>
+            <div class="store-field"><label>Cash physically received (KES)</label><input type="number" name="cash_received" min="0" step="0.01" value="0" required></div>
+            <div class="store-field"><label>M-Pesa actually received (KES)</label><input type="number" name="mpesa_received" min="0" step="0.01" value="0" required></div>
             <div class="store-field"><label>Bank (KES)</label><input type="number" name="bank_received" min="0" step="0.01" value="0" required></div>
             <div class="store-field"><label>Other (KES)</label><input type="number" name="other_received" min="0" step="0.01" value="0" required></div>
             <div class="store-field" style="grid-column:1/-1"><label>Notes / explanation</label><textarea name="notes" maxlength="5000"></textarea></div>
         </div>
-        <p class="store-muted">All returned quantities are transferred back into Main Store. The system compares the money received with completed POS sales attributed to this store for the same date.</p>
+        <p class="store-muted">Enter the actual cash and M-Pesa handed over, then count and enter every unsold item returned to Main Store. The system compares cash and M-Pesa separately against completed POS sales for this store and date. Any difference is shown in the daily record.</p>
         <p><button class="store-btn" type="submit"><i class="fas fa-check"></i> Complete Reconciliation</button> <a class="store-btn secondary" href="index.php">Cancel</a></p>
     </form>
 </section>
@@ -178,7 +178,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
             <td><strong><?= $s['status']==='Reconciled' ? 'KES '.number_format((float)$s['money_variance'],2) : '—' ?></strong></td>
             <td><?= $s['status']==='Reconciled' ? number_format((int)$s['stock_variance_items']).' item(s)' : '—' ?></td>
             <td><span class="store-status <?= $s['status']==='Reconciled'?'done':'' ?>"><?= e($s['status']) ?></span></td>
-            <td><a class="store-btn secondary" href="view.php?id=<?= (int)$s['id'] ?>">View</a> <?php if ($s['status']==='Open'): ?><a class="store-btn" href="index.php?reconcile=<?= (int)$s['id'] ?>">Reconcile</a><?php endif; ?></td>
+            <td><a class="store-btn secondary" href="view.php?id=<?= (int)$s['id'] ?>">View</a> <a class="store-btn secondary" href="print_issue.php?id=<?= (int)$s['id'] ?>" target="_blank">Print Issue</a> <?php if ($s['status']==='Open'): ?><a class="store-btn" href="index.php?reconcile=<?= (int)$s['id'] ?>">Reconcile</a><?php endif; ?></td>
         </tr><?php endforeach; endif; ?>
         </tbody>
     </table></div>
