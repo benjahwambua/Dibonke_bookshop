@@ -91,7 +91,7 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <?php if (canAccessModule('supply_chain')): ?><a href="<?= BASE_URL ?>/modules/supply_chain/index.php" class="<?= navActive('/supply_chain/') ?>"><i class="fas fa-diagram-project icon-main"></i>Purchase Orders &amp; Receiving</a><?php endif; ?>
         <?php endif; ?>
 
-        <?php if (canAccessModule('customers') || canAccessModule('sales') || canAccessModule('customer_orders') || canAccessModule('deliveries') || canAccessModule('fleet')): ?>
+        <?php if (canAccessModule('customers') || canAccessModule('sales') || canAccessModule('customer_orders') || canAccessModule('deliveries') || canAccessModule('fleet') || canAccessModule('cash_management')): ?>
         <button type="button" class="menu-title nav-group-toggle" aria-expanded="false"><span>Sales &amp; Customer Service</span><span class="nav-group-chevron" aria-hidden="true"></span></button>
         <?php if (canAccessModule('customers')): ?><a href="<?= BASE_URL ?>/modules/customers/index.php" class="<?= navActive('/customers/') ?>"><i class="fas fa-users icon-main"></i>Customers</a><?php endif; ?>
         <?php if (canAccessModule('sales')): ?><a href="<?= BASE_URL ?>/modules/sales/index.php" class="<?= navActive('/sales/') ?>"><i class="fas fa-cash-register icon-main"></i>Sales &amp; POS</a><?php endif; ?>
