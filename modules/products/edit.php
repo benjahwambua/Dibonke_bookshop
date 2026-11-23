@@ -302,14 +302,14 @@ require_once __DIR__ . '/../../includes/sidebar.php';
                 <input name="product_name" required maxlength="160" value="<?= e($p['product_name']) ?>">
             </label>
             <label>Item Type
-                <select name="product_type">
+                <select id="editProductType" name="product_type">
                     <?php foreach (['Book', 'Stationery', 'General'] as $type): ?>
                         <option value="<?= e($type) ?>" <?= ($p['product_type'] ?? 'General') === $type ? 'selected' : '' ?>><?= e($type) ?></option>
                     <?php endforeach; ?>
                 </select>
             </label>
-            <label>ISBN (optional for books)
-                <input name="isbn" maxlength="20" value="<?= e($p['isbn'] ?? '') ?>" placeholder="ISBN-10 or ISBN-13">
+            <label id="editProductIsbnField">ISBN (optional for books)
+                <input id="editProductIsbn" name="isbn" maxlength="20" value="<?= e($p['isbn'] ?? '') ?>" placeholder="ISBN-10 or ISBN-13">
             </label>
             <label>SKU
                 <input name="sku" maxlength="80" value="<?= e($p['sku'] ?? '') ?>" placeholder="Generated automatically if left blank">
@@ -396,5 +396,22 @@ require_once __DIR__ . '/../../includes/sidebar.php';
             <button class="btn btn-primary" type="submit"><i class="fas fa-save"></i> Save Changes</button>
         </div>
     </form>
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const productType = document.getElementById('editProductType');
+        const isbnField = document.getElementById('editProductIsbnField');
+        const isbnInput = document.getElementById('editProductIsbn');
+        const syncIsbnField = function () {
+            const isBook = productType && productType.value === 'Book';
+            if (isbnField) isbnField.hidden = !isBook;
+            if (isbnInput) {
+                isbnInput.disabled = !isBook;
+                if (!isBook) isbnInput.value = '';
+            }
+        };
+        if (productType) productType.addEventListener('change', syncIsbnField);
+        syncIsbnField();
+    });
+    </script>
 </main>
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>
