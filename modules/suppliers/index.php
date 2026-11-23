@@ -23,7 +23,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $name = trim((string)($_POST['supplier_name'] ?? ''));
             $contact = trim((string)($_POST['contact_person'] ?? ''));
             $phone = trim((string)($_POST['phone'] ?? ''));
-            $altPhone = trim((string)($_POST['alternative_phone'] ?? ''));
             $email = trim((string)($_POST['email'] ?? ''));
             $address = trim((string)($_POST['address'] ?? ''));
             $taxPin = trim((string)($_POST['tax_pin'] ?? ''));
