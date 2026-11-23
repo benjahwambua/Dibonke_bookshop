@@ -187,7 +187,7 @@ try {
         }
 
         $received = round($cash + $mpesa + $bank + $other, 2);
-        $salesStmt = $conn->prepare("SELECT COALESCE(SUM(total_amount),0) FROM sales WHERE store_id=? AND sale_status='Completed' AND DATE(sale_date)=?");
+        $salesStmt = $conn->prepare("SELECT COALESCE(SUM(paid_amount),0) FROM sales WHERE store_id=? AND sale_status='Completed' AND DATE(sale_date)=?");
         $salesStmt->execute([(int)$session['store_id'], $session['business_date']]);
         $expected = round((float)$salesStmt->fetchColumn(), 2);
         $variance = round($received - $expected, 2);
