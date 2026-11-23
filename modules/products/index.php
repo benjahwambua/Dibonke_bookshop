@@ -117,8 +117,8 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <div class="form-grid">
 <label>Barcode *<input id="productBarcode" name="barcode" type="text" maxlength="80" placeholder="Scan barcode or type it manually" autocomplete="off" inputmode="none"><small>Scan this first. The barcode will be saved with the product when you complete the form.</small></label>
 <label>Product Name *<input name="product_name" required maxlength="160"></label>
-<label>Item Type<select name="product_type"><option value="Book">Book</option><option value="Stationery">Stationery</option><option value="General" selected>General</option></select></label>
-<label>ISBN (optional)<input name="isbn" maxlength="20" placeholder="ISBN-10 or ISBN-13"></label>
+<label>Item Type<select id="newProductType" name="product_type"><option value="Book">Book</option><option value="Stationery">Stationery</option><option value="General" selected>General</option></select></label>
+<label id="newProductIsbnField">ISBN (optional for books)<input id="newProductIsbn" name="isbn" maxlength="20" placeholder="ISBN-10 or ISBN-13"></label>
 <label>SKU<input name="sku" maxlength="80" placeholder="Generated automatically if left blank"><small>Leave blank and the system will create a unique SKU when you save.</small></label>
 <label>Category<input name="category_name" list="productCategoryOptions" maxlength="120" placeholder="Type or choose a category" autocomplete="off"><datalist id="productCategoryOptions"><?php foreach($categories as $c):?><option value="<?=e($c['category_name'])?>"><?php endforeach;?></datalist><small>Choose an existing category or type a new one.</small></label>
 <label>Brand / Publisher<input name="brand_name" list="productBrandOptions" maxlength="120" placeholder="Type or choose a brand / publisher" autocomplete="off"><datalist id="productBrandOptions"><?php foreach($brands as $b):?><option value="<?=e($b['brand_name'])?>"><?php endforeach;?></datalist><small>Choose an existing brand or type a new one.</small></label>
@@ -148,6 +148,20 @@ function openProductModal() {
     window.setTimeout(() => barcode && barcode.focus(), 80);
 }
 document.addEventListener('DOMContentLoaded', function () {
+    const productType = document.getElementById('newProductType');
+    const isbnField = document.getElementById('newProductIsbnField');
+    const isbnInput = document.getElementById('newProductIsbn');
+    const syncIsbnField = function () {
+        const isBook = productType && productType.value === 'Book';
+        if (isbnField) isbnField.hidden = !isBook;
+        if (isbnInput) {
+            isbnInput.disabled = !isBook;
+            if (!isBook) isbnInput.value = '';
+        }
+    };
+    if (productType) productType.addEventListener('change', syncIsbnField);
+    syncIsbnField();
+
     const barcode = document.getElementById('productBarcode');
     if (barcode) {
         // Many USB scanners send Enter after the barcode. Keep that Enter
