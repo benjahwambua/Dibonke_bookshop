@@ -11,7 +11,7 @@ unset($_SESSION['store_operations_flash']);
 
 $stores = $conn->query("SELECT id,store_code,store_name,store_type,status FROM stores ORDER BY store_type='Main' DESC,store_name")->fetchAll(PDO::FETCH_ASSOC);
 $sellingStores = array_values(array_filter($stores, static fn($s) => $s['store_type'] === 'Selling' && $s['status'] === 'Active'));
-$products = $conn->query("SELECT id,product_name,sku,stock_quantity,unit,selling_price FROM products WHERE status='Active' ORDER BY product_name")->fetchAll(PDO::FETCH_ASSOC);
+$products = $conn->query("SELECT id,product_name,sku,stock_quantity,unit,selling_price FROM products WHERE status='Active' AND stock_quantity>0 ORDER BY product_name")->fetchAll(PDO::FETCH_ASSOC);
 $sessions = $conn->query("
     SELECT ds.*,s.store_name,st.transfer_number issue_number,rt.transfer_number return_number,
            (SELECT COUNT(*) FROM store_daily_items di WHERE di.session_id=ds.id AND di.quantity_variance<>0) stock_variance_items
@@ -54,7 +54,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 .store-table-wrap{overflow:auto}.store-table{width:100%;border-collapse:collapse;min-width:680px}
 .store-table th{background:#f4f7fa;color:#526477;text-align:left;font-size:11px;padding:11px}
 .store-table td{padding:10px 11px;border-top:1px solid #edf1f5;font-size:12px}
-.store-table input{width:100px;min-height:34px;padding:6px 8px;border:1px solid #d7e0e9;border-radius:6px}
+.store-table input{width:100px;min-height:34px;padding:6px 8px;border:1px solid #d7e0e9;border-radius:6px}\n.store-search{width:100%;max-width:440px;min-height:42px;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:8px;padding:10px 12px;font:inherit;font-size:13px;margin:4px 0 12px}\n.store-no-match td{color:#64748b;text-align:center;padding:18px}
 .store-btn{display:inline-flex;align-items:center;gap:7px;background:#174a7e;color:#fff;border:0;border-radius:7px;padding:10px 14px;text-decoration:none;font-size:12px;font-weight:700;cursor:pointer}
 .store-btn.secondary{background:#eef2f7;color:#334155}
 .store-flash{padding:12px 14px;border-radius:8px;background:#eff6ff;color:#1e40af;margin:12px 0;font-size:13px}
@@ -125,13 +125,17 @@ require_once __DIR__ . '/../../includes/sidebar.php';
             <div class="store-field"><label for="issue_store">Selling store</label><select id="issue_store" name="store_id" required><option value="">Select store</option><?php foreach ($sellingStores as $s): ?><option value="<?= (int)$s['id'] ?>"><?= e($s['store_name']) ?></option><?php endforeach; ?></select></div>
             <div class="store-field"><label for="responsible_person">Person taking charge today</label><input id="responsible_person" name="responsible_person" required maxlength="160" placeholder="Enter name"></div>
         </div>
-        <div class="store-table-wrap"><table class="store-table">
+        <label class="store-muted" for="issue_product_search">Search inventory by product name or SKU</label><br>
+        <input class="store-search" type="search" id="issue_product_search" placeholder="Start typing a product name or SKU..." autocomplete="off">
+        <div class="store-muted" id="issue_product_count" style="margin:0 0 8px"><?= count($products) ?> stocked product(s) available in Main Store</div>
+        <div class="store-table-wrap"><table class="store-table" id="issue_products_table">
             <thead><tr><th>Product</th><th>SKU</th><th>Main Store available</th><th>Quantity to issue</th></tr></thead>
-            <tbody><?php foreach ($products as $p): ?><tr>
+            <tbody><?php foreach ($products as $p): ?><tr class="issue-product-row" data-search="<?= e(mb_strtolower($p['product_name'].' '.($p['sku'] ?? ''))) ?>">
                 <td><?= e($p['product_name']) ?></td><td><?= e($p['sku'] ?: '—') ?></td><td><?= number_format((float)$p['stock_quantity'],3) ?> <?= e($p['unit'] ?: 'units') ?></td>
                 <td><input type="number" name="quantity[<?= (int)$p['id'] ?>]" min="0" max="<?= e((string)$p['stock_quantity']) ?>" step="0.001" value="0" aria-label="Quantity to issue for <?= e($p['product_name']) ?>"></td>
             </tr><?php endforeach; ?></tbody>
         </table></div>
+        <p id="issue_no_products" class="store-muted" hidden>No matching products found in Main Store inventory.</p>
         <p style="margin:14px 0 0"><button class="store-btn" type="submit"><i class="fas fa-share"></i> Issue Stock &amp; Open Daily Record</button></p>
     </form>
     <?php endif; ?>
@@ -185,3 +189,24 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 </section>
 </main>
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>
+<script>
+(() => {
+    const search = document.getElementById('issue_product_search');
+    const rows = Array.from(document.querySelectorAll('#issue_products_table .issue-product-row'));
+    if (!search) return;
+    const count = document.getElementById('issue_product_count');
+    const empty = document.getElementById('issue_no_products');
+    const filter = () => {
+        const term = search.value.trim().toLocaleLowerCase();
+        let visible = 0;
+        rows.forEach(row => {
+            const match = row.dataset.search.includes(term);
+            row.hidden = !match;
+            if (match) visible++;
+        });
+        count.textContent = visible + ' of ' + rows.length + ' stocked product(s) shown';
+        empty.hidden = visible !== 0;
+    };
+    search.addEventListener('input', filter);
+})();
+</script>
