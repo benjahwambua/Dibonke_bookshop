@@ -287,3 +287,22 @@ main.content .actions .btn{white-space:nowrap}
  .supplier-modal .supplier-modal-actions{margin:0 -17px;padding:13px 17px 0}
  .supplier-modal .supplier-modal-actions .btn{flex:1;min-width:0}
 }
+
+
+/* Supplier dialog: explicitly hidden until the Add Supplier action is used. */
+#supplierModal{display:none;position:fixed;inset:0;z-index:3000;align-items:center;justify-content:center;padding:20px;background:rgba(16,38,59,.58);overflow-y:auto}
+#supplierModal[hidden]{display:none!important}
+#supplierModal.show{display:flex!important}
+#supplierModal .modal-box{width:min(760px,100%);max-height:90vh;overflow-y:auto;margin:auto;padding:22px;background:#fff;border:1px solid #dfe6ed;border-radius:14px;box-shadow:0 24px 70px rgba(16,38,59,.22)}
+#supplierModal .modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin:0 0 16px}
+#supplierModal .modal-head h2{margin:0;color:var(--db-navy);font-size:20px}
+#supplierModal .modal-head p{margin:6px 0 0;color:var(--db-muted);font-size:12px}
+#supplierModal .modal-head .close{position:static;flex:0 0 34px;width:34px;height:34px;padding:0}
+#supplierModal .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px}
+#supplierModal .form-grid>div{min-width:0}
+#supplierModal .form-grid .full{grid-column:1/-1}
+#supplierModal .form-grid label{display:block;margin:0 0 5px;color:#526277;font-size:11px;font-weight:750}
+#supplierModal .form-grid input,#supplierModal .form-grid select,#supplierModal .form-grid textarea{display:block;width:100%;min-height:39px;box-sizing:border-box;margin:0;padding:9px 11px;border:1px solid #d9e1e9;border-radius:8px;background:#fff;color:var(--db-ink);font:inherit;font-size:12px}
+#supplierModal .form-grid textarea{min-height:76px;resize:vertical}
+#supplierModal .modal-actions{display:flex;justify-content:flex-end;gap:9px;margin-top:18px}
+@media(max-width:700px){#supplierModal{align-items:flex-start;padding:10px}#supplierModal .modal-box{max-height:calc(100vh - 20px);padding:17px}#supplierModal .form-grid{grid-template-columns:1fr}#supplierModal .form-grid .full{grid-column:auto}#supplierModal .modal-actions{flex-wrap:wrap}}
