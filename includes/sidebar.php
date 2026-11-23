@@ -154,7 +154,7 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <?php if (canAccessModule('analytics')): ?><a href="<?= BASE_URL ?>/modules/analytics/index.php" class="<?= navActive('/analytics/') ?>"><i class="fas fa-chart-line icon-main"></i>Analytics</a><?php endif; ?>
         <?php endif; ?>
 
-        <?php if (canAccessModule('staff') || canAccessModule('hr_self_service') || isAdministrator()): ?>
+        <?php if (canAccessModule('staff') || canAccessModule('hr') || canAccessModule('hr_self_service') || isAdministrator()): ?>
         <button type="button" class="menu-title nav-group-toggle" aria-expanded="false"><span>Staff &amp; Access</span><span class="nav-group-chevron" aria-hidden="true"></span></button>
         <?php if (canAccessModule('hr_self_service')): ?><a href="<?= BASE_URL ?>/modules/hr/my.php" class="<?= navActive('/hr/my.php') ?>"><i class="fas fa-clock icon-main"></i>My HR Self-Service</a><?php endif; ?>
         <?php if (canAccessModule('hr')): ?><a href="<?= BASE_URL ?>/modules/hr/index.php" class="<?= navActive('/hr/index.php') ?>"><i class="fas fa-user-tie icon-main"></i>Human Resources</a><?php endif; ?>
