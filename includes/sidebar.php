@@ -91,9 +91,10 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <?php if (canAccessModule('supply_chain')): ?><a href="<?= BASE_URL ?>/modules/supply_chain/index.php" class="<?= navActive('/supply_chain/') ?>"><i class="fas fa-diagram-project icon-main"></i>Purchase Orders &amp; Receiving</a><?php endif; ?>
         <?php endif; ?>
 
-        <?php if (canAccessModule('customers') || canAccessModule('sales') || canAccessModule('customer_orders') || canAccessModule('deliveries')): ?>
+        <?php if (canAccessModule('customers') || canAccessModule('sales') || canAccessModule('customer_orders') || canAccessModule('deliveries') || canAccessModule('fleet') || canAccessModule('sales_returns')): ?>
         <button type="button" class="menu-title nav-group-toggle" aria-expanded="false"><span>Sales &amp; Customer Service</span><span class="nav-group-chevron" aria-hidden="true"></span></button>
         <?php if (canAccessModule('customers')): ?><a href="<?= BASE_URL ?>/modules/customers/index.php" class="<?= navActive('/customers/') ?>"><i class="fas fa-users icon-main"></i>Customers</a><?php endif; ?>
+        <?php if (canAccessModule('sales_returns')): ?><a href="<?= BASE_URL ?>/modules/sales/returns.php" class="<?= navActive('/sales/returns.php') ?>"><i class="fas fa-undo icon-main"></i>Sales Returns &amp; Refunds</a><?php endif; ?>
         <?php if (canAccessModule('sales')): ?><a href="<?= BASE_URL ?>/modules/sales/index.php" class="<?= navActive('/sales/') ?>"><i class="fas fa-cash-register icon-main"></i>Sales &amp; POS</a><?php endif; ?>
         <?php if (canAccessModule('customer_orders')): ?><a href="<?= BASE_URL ?>/modules/customer_orders/index.php" class="<?= navActive('/customer_orders/') ?>"><i class="fas fa-file-signature icon-main"></i>Customer Sales Orders</a><a href="<?= BASE_URL ?>/modules/customer_orders/pending.php" class="<?= navActive('/customer_orders/pending.php') ?>"><i class="fas fa-file-invoice-dollar icon-main"></i>Pending Invoices</a><?php endif; ?>
         <?php if (hasModulePermission('cash_management','view') || hasModulePermission('cash_management','create')): ?><a href="<?= BASE_URL ?>/modules/sales/my_shift.php" class="<?= navActive('/sales/my_shift.php') ?>"><i class="fas fa-cash-register icon-main"></i>My Cashier Shift</a><?php endif; ?>
@@ -101,7 +102,7 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <?php if (canAccessModule('fleet')): ?><a href="<?= BASE_URL ?>/modules/deliveries/fleet.php" class="<?= navActive('/deliveries/fleet.php') ?>"><i class="fas fa-truck icon-main"></i>Fleet Management</a><?php endif; ?>
         <?php endif; ?>
 
-        <?php if (canAccessModule('finance') || canAccessModule('chart_of_accounts') || canAccessModule('journals') || canAccessModule('general_ledger') || canAccessModule('trial_balance') || canAccessModule('aged_receivables') || canAccessModule('accounting_mappings')): ?>
+        <?php if (canAccessModule('finance') || canAccessModule('chart_of_accounts') || canAccessModule('journals') || canAccessModule('general_ledger') || canAccessModule('trial_balance') || canAccessModule('aged_receivables') || canAccessModule('aged_payables') || canAccessModule('accounting_mappings')): ?>
         <button type="button" class="menu-title nav-group-toggle" aria-expanded="false"><span>Finance &amp; Accounting</span><span class="nav-group-chevron" aria-hidden="true"></span></button>
         <?php if (canAccessModule('accounting_mappings')): ?><a href="<?= BASE_URL ?>/modules/finance/posting_mappings.php" class="<?= navActive('/finance/posting_mappings.php') ?>"><i class="fas fa-random icon-main"></i>Posting Mappings</a><?php endif; ?>
         <?php if (canAccessModule('chart_of_accounts')): ?><a href="<?= BASE_URL ?>/modules/finance/chart_of_accounts.php" class="<?= navActive('/finance/chart_of_accounts.php') ?>"><i class="fas fa-list-ol icon-main"></i>Chart of Accounts</a><?php endif; ?>
@@ -109,6 +110,7 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <?php if (canAccessModule('general_ledger')): ?><a href="<?= BASE_URL ?>/modules/finance/general_ledger.php" class="<?= navActive('/finance/general_ledger.php') ?>"><i class="fas fa-book icon-main"></i>General Ledger</a><?php endif; ?>
         <?php if (canAccessModule('trial_balance')): ?><a href="<?= BASE_URL ?>/modules/finance/trial_balance.php" class="<?= navActive('/finance/trial_balance.php') ?>"><i class="fas fa-balance-scale icon-main"></i>Trial Balance</a><?php endif; ?>
         <?php if (canAccessModule('aged_receivables')): ?><a href="<?= BASE_URL ?>/modules/finance/aged_receivables.php" class="<?= navActive('/finance/aged_receivables.php') ?>"><i class="fas fa-hourglass-half icon-main"></i>Aged Receivables</a><?php endif; ?>
+        <?php if (canAccessModule('aged_payables')): ?><a href="<?= BASE_URL ?>/modules/finance/aged_payables.php" class="<?= navActive('/finance/aged_payables.php') ?>"><i class="fas fa-hourglass-half icon-main"></i>Aged Payables</a><?php endif; ?>
         <?php if (canAccessModule('finance')): ?>
         <a href="<?= BASE_URL ?>/modules/finance/index.php" class="<?= navActive('/finance/') ?>"><i class="fas fa-chart-pie icon-main"></i>Finance Overview</a>
         <a href="<?= BASE_URL ?>/modules/finance/ledger.php" class="<?= navActive('/finance/ledger.php') ?>"><i class="fas fa-book icon-main"></i>Ledger</a>
