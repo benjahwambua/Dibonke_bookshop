@@ -7,9 +7,31 @@ $vatRate=(float)($conn->query("SELECT setting_value FROM settings WHERE setting_
 $vatMode=(string)($conn->query("SELECT setting_value FROM settings WHERE setting_key='vat_mode' LIMIT 1")->fetchColumn()?:'inclusive');
 if(!in_array($vatMode,['exclusive','inclusive'],true))$vatMode='inclusive';
 
+$storeOperationsEnabled = (bool)$conn->query("SHOW TABLES LIKE 'stores'")->fetchColumn()
+    && (bool)$conn->query("SHOW TABLES LIKE 'store_stock'")->fetchColumn();
+$posStores = $storeOperationsEnabled
+    ? $conn->query("SELECT id,store_code,store_name,store_type FROM stores WHERE status='Active' ORDER BY store_type='Main' DESC,store_name")->fetchAll(PDO::FETCH_ASSOC)
+    : [];
+$mainStoreId = 0;
+foreach ($posStores as $posStore) {
+    if ($posStore['store_type'] === 'Main') { $mainStoreId = (int)$posStore['id']; break; }
+}
+$selectedStoreId = $mainStoreId;
+if ($storeOperationsEnabled && isset($_GET['store_id'])) {
+    $requestedStoreId = (int)$_GET['store_id'];
+    foreach ($posStores as $posStore) {
+        if ((int)$posStore['id'] === $requestedStoreId) { $selectedStoreId = $requestedStoreId; break; }
+    }
+}
 $productImageColumn = (bool)$conn->query("SHOW COLUMNS FROM products LIKE 'image_path'")->fetchColumn();
 $imageSelect = $productImageColumn ? 'p.image_path' : 'NULL AS image_path';
-$products=$conn->query("SELECT p.id,p.product_name,p.category,p.sku,p.barcode,p.isbn,{$imageSelect},p.selling_price,p.wholesale_price,p.bulk_selling_price,p.bulk_wholesale_price,p.purchase_unit,p.units_per_purchase,p.stock_quantity,p.unit,b.brand_name FROM products p LEFT JOIN brands b ON b.id=p.brand_id WHERE p.status='Active' ORDER BY p.product_name")->fetchAll();
+$stockSelect = $storeOperationsEnabled && $selectedStoreId !== $mainStoreId
+    ? 'COALESCE(ss.quantity,0) AS stock_quantity'
+    : 'p.stock_quantity AS stock_quantity';
+$stockJoin = $storeOperationsEnabled && $selectedStoreId !== $mainStoreId
+    ? " LEFT JOIN store_stock ss ON ss.product_id=p.id AND ss.store_id={$selectedStoreId} "
+    : '';
+$products=$conn->query("SELECT p.id,p.product_name,p.category,p.sku,p.barcode,p.isbn,{$imageSelect},p.selling_price,p.wholesale_price,p.bulk_selling_price,p.bulk_wholesale_price,p.purchase_unit,p.units_per_purchase,{$stockSelect},p.unit,b.brand_name FROM products p LEFT JOIN brands b ON b.id=p.brand_id {$stockJoin} WHERE p.status='Active' ORDER BY p.product_name")->fetchAll();
 $coveringRules=[];
 if ((bool)$conn->query("SHOW TABLES LIKE 'book_covering_service_rules'")->fetchColumn()) {
     $coveringRules=$conn->query("SELECT book_product_id,charge_per_book FROM book_covering_service_rules WHERE status='Active'")->fetchAll(PDO::FETCH_ASSOC);
@@ -236,12 +258,12 @@ body.counter-mode .product .badge {
 </style>
 
 <div class="pos-wrap">
-<div class="pos-title"><div><h1><i class="fas fa-cash-register"></i> Retail POS</h1><div class="muted">Scan ISBN / barcode, add items, collect payment and print receipt</div></div><div class="pos-actions"><span class="counter-label"><i class="fas fa-barcode"></i> Scanner ready</span><button type="button" class="btn light" id="counterModeBtn" onclick="toggleCounterMode()"><i class="fas fa-expand"></i> Counter mode</button><?php if($canManageOwnShift):?><a class="btn light shift-shortcut" target="_blank" rel="noopener" href="<?=BASE_URL?>/modules/sales/my_shift.php"><i class="fas fa-cash-register"></i> My Shift</a><?php endif;?><?php if(canAccessModule('customer_orders')): ?><a class="btn light" href="<?=BASE_URL?>/modules/customer_orders/index.php"><i class="fas fa-file-signature"></i> Customer Orders</a><?php endif; ?></div></div>
+<div class="pos-title"><div><h1><i class="fas fa-cash-register"></i> Retail POS</h1><div class="muted">Scan ISBN / barcode, add items, collect payment and print receipt</div></div><div class="pos-actions"><?php if($storeOperationsEnabled): ?><label class="counter-label" style="display:flex;align-items:center;gap:7px">Store <select aria-label="POS store" onchange="window.location.href='index.php?store_id='+encodeURIComponent(this.value)" style="max-width:150px;padding:6px;border:1px solid #dbe3ec;border-radius:7px"><?php foreach($posStores as $posStore): ?><option value="<?= (int)$posStore['id'] ?>" <?= $selectedStoreId===(int)$posStore['id']?'selected':'' ?>><?= e($posStore['store_name']) ?></option><?php endforeach; ?></select></label><?php endif; ?><span class="counter-label"><i class="fas fa-barcode"></i> Scanner ready</span><button type="button" class="btn light" id="counterModeBtn" onclick="toggleCounterMode()"><i class="fas fa-expand"></i> Counter mode</button><?php if($canManageOwnShift):?><a class="btn light shift-shortcut" target="_blank" rel="noopener" href="<?=BASE_URL?>/modules/sales/my_shift.php"><i class="fas fa-cash-register"></i> My Shift</a><?php endif;?><?php if(canAccessModule('customer_orders')): ?><a class="btn light" href="<?=BASE_URL?>/modules/customer_orders/index.php"><i class="fas fa-file-signature"></i> Customer Orders</a><?php endif; ?></div></div>
 <?php if($flash): ?><div class="flash"><?=e($flash)?></div><?php endif; ?>
 
 
 <form method="post" action="store.php" id="saleForm">
-<input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>">
+<input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>"><?php if($storeOperationsEnabled): ?><input type="hidden" name="store_id" value="<?= (int)$selectedStoreId ?>"><?php endif; ?>
 <div class="cashier">
 <section class="catalog">
 <div class="scan-panel"><label for="productSearch"><i class="fas fa-barcode"></i> SCAN ITEM OR SEARCH</label><div class="toolbar"><input id="productSearch" autofocus autocomplete="off" inputmode="search" placeholder="Scan barcode / ISBN / SKU or type product name..."><button type="button" class="btn light" onclick="clearSearch()" aria-label="Clear search"><i class="fas fa-times"></i></button></div><small class="scan-help">Keep the cursor here. Most USB scanners type the code and press Enter automatically. Shortcuts: F2 scan · F4 amount paid · Ctrl+Enter complete sale.</small><div id="scanFeedback" class="scan-feedback" aria-live="polite">Ready to scan or search products</div><div id="searchResults" class="search-results" role="listbox" aria-label="Matching products"></div></div>
