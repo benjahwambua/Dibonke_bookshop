@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__.'/../../includes/auth.php';require_once __DIR__.'/../../config/db.php';require_once __DIR__.'/../../includes/audit.php';
-if(!isSuperUser()){http_response_code(403);exit('Access denied.');}
+if(!isAdministrator()){http_response_code(403);exit('Access denied. Administrator access is required.');}
 if($_SERVER['REQUEST_METHOD']!=='POST'){header('Location:index.php');exit;}verify_csrf();
 $modules=['products','categories','brands','price_lists','customers','suppliers','purchases','sales','customer_payments','supplier_payments','deliveries','stock_movements','expenses','finance','billing','reports','analytics','supply_chain','mpesa','staff','sales_returns','cash_management','stocktaking','audit_logs','etims','launch_controls','hr','chart_of_accounts','journals','general_ledger','trial_balance','aged_receivables','aged_payables','hr_self_service','accounting_mappings'];
 try{$action=(string)($_POST['action']??'');
