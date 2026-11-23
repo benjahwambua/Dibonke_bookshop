@@ -242,13 +242,20 @@ try {
         }
 
         $received = round($cash + $mpesa + $bank + $other, 2);
-        $salesStmt = $conn->prepare("SELECT COALESCE(SUM(paid_amount),0) FROM sales WHERE store_id=? AND sale_status='Completed' AND DATE(sale_date)=?");
+        $salesStmt = $conn->prepare("SELECT
+                COALESCE(SUM(paid_amount),0) expected_total,
+                COALESCE(SUM(CASE WHEN payment_method='Cash' THEN paid_amount ELSE 0 END),0) expected_cash,
+                COALESCE(SUM(CASE WHEN payment_method='M-Pesa' THEN paid_amount ELSE 0 END),0) expected_mpesa
+            FROM sales WHERE store_id=? AND sale_status='Completed' AND DATE(sale_date)=?");
         $salesStmt->execute([(int)$session['store_id'], $session['business_date']]);
-        $expected = round((float)$salesStmt->fetchColumn(), 2);
+        $expectedRow = $salesStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+        $expected = round((float)($expectedRow['expected_total'] ?? 0), 2);
+        $expectedCash = round((float)($expectedRow['expected_cash'] ?? 0), 2);
+        $expectedMpesa = round((float)($expectedRow['expected_mpesa'] ?? 0), 2);
         $variance = round($received - $expected, 2);
 
-        $update = $conn->prepare("UPDATE store_daily_sessions SET status='Reconciled',return_transfer_id=?,expected_sales=?,cash_received=?,mpesa_received=?,bank_received=?,other_received=?,total_received=?,money_variance=?,notes=?,reconciled_by=?,reconciled_at=NOW() WHERE id=?");
-        $update->execute([$returnTransferId, $expected, $cash, $mpesa, $bank, $other, $received, $variance, $notes ?: null, (int)$_SESSION['user_id'], $sessionId]);
+        $update = $conn->prepare("UPDATE store_daily_sessions SET status='Reconciled',return_transfer_id=?,expected_sales=?,expected_cash=?,expected_mpesa=?,cash_received=?,mpesa_received=?,bank_received=?,other_received=?,total_received=?,money_variance=?,notes=?,reconciled_by=?,reconciled_at=NOW() WHERE id=?");
+        $update->execute([$returnTransferId, $expected, $expectedCash, $expectedMpesa, $cash, $mpesa, $bank, $other, $received, $variance, $notes ?: null, (int)$_SESSION['user_id'], $sessionId]);
 
         recordAuditEvent($conn, 'Reconcile', 'store_operations', 'Reconciled ' . $session['store_name'] . ' for ' . $session['business_date'], 'store_daily_session', $sessionId);
         $conn->commit();
