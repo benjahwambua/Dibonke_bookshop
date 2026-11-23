@@ -152,6 +152,15 @@ UPDATE sales
 SET store_id=(SELECT id FROM stores WHERE store_code='MAIN' LIMIT 1)
 WHERE store_id IS NULL;
 
--- Grant Store Operations to existing Administrator and Manager roles only.
-INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete)
-SELECT id,'store_operations',1,1,1,0 FROM roles WHERE role_code IN ('ADMIN','MANAGER');
+-- Grant Store Operations to existing Administrator and Manager roles.
+-- Match both role codes and display names because installations may use
+-- ADMINISTRATOR / Administrator rather than the shorter ADMIN code.
+INSERT INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete)
+SELECT id,'store_operations',1,1,1,0
+FROM roles
+WHERE UPPER(TRIM(role_code)) IN ('ADMIN','ADMINISTRATOR','MANAGER')
+   OR UPPER(TRIM(role_name)) IN ('ADMIN','ADMINISTRATOR','MANAGER')
+ON DUPLICATE KEY UPDATE
+    can_view=1,
+    can_create=1,
+    can_edit=1;
