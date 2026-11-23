@@ -54,11 +54,13 @@ Do not attempt to create a production database by importing extension migrations
 
 ### 2. High — Store Operations stock movement attribution
 
-**Code change made during this review:** the Store Operations migration now adds a nullable `stock_movements.store_id` column and an index idempotently. New POS sale movements write the selected store ID when the migration is present, and the Stock Movements register can display, search and filter by store. The POS retains a legacy insert fallback until the additive migration is applied.
+**Code change made during this review:** the Store Operations migration now adds a nullable `stock_movements.store_id` column and an index idempotently. New movement records are attributed to Main Store or the selected selling store for POS sales, opening stock, direct purchases, goods receipts, customer-order invoices, manual adjustments, approved customer returns, stock counts and internal book-covering use. The Stock Movements register can display, search and filter by store. Existing handlers retain a legacy insert fallback until the additive migration is applied.
 
-Historical movements have not been backfilled because their store cannot always be proven from old free-text notes. Issue/return transfers remain traceable in the dedicated Store Transfers register.
+Stock count approval now rolls forward only Main Store stock movements and also accounts for posted store transfers into and out of Main Store after an item was counted. This prevents selling-store POS movements from being incorrectly applied to the Main Store physical count. Issue/return transfers remain traceable in the dedicated Store Transfers register and are included in the stock-count roll-forward.
 
-**Remaining action:** re-import the updated `database/dibonke_store_operations.sql` after backing up the local database, then test Main Store and selling-store sales and verify the movement register.
+Historical movement rows have not been backfilled because their store cannot always be proven from old free-text notes.
+
+**Remaining action:** re-import the updated `database/dibonke_store_operations.sql` after backing up the local database. Complete or cancel any active physical stock count before importing it, then test purchases, GRNs, Main Store sales, selling-store sales, transfers and stock-count approval.
 
 ### 3. High — payment confirmation timing during store reconciliation
 
@@ -96,8 +98,10 @@ The system includes manual journals and source-module posting integration points
 ## Changes made during this review
 
 - Corrected a stylesheet formatting issue in the Store Operations product-search field.
-- Added idempotent store-location attribution to the stock movement migration; updated POS sale movements and the Stock Movements register to use/display/filter by store when the migration is present.
-- No live database or business data was changed. The new migration still needs to be imported locally after a backup.
+- Added idempotent store-location attribution to the stock movement migration and updated the stock-writing paths for POS, opening stock, direct purchases, GRNs, customer-order invoices, adjustments, sales returns, stock counts and internal book-covering use.
+- Updated stock-count roll-forward to use Main Store movements plus posted transfers, excluding selling-store sales from Main Store count calculations.
+- Updated the Stock Movements register with store display/search/filter and fixed repeated named PDO search placeholders.
+- No live database or business data was changed. The updated migration still needs to be imported locally after a backup.
 - No unverified changes were made to payment callbacks or accounting postings because those require end-to-end testing against the live database.
 
 ## Required acceptance tests before release
