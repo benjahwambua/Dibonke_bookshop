@@ -84,6 +84,11 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
         <?php if (canAccessModule('stock_movements')): ?><a href="<?= BASE_URL ?>/modules/stock_movements/index.php" class="<?= navActive('/stock_movements/') ?>"><i class="fas fa-exchange-alt icon-main"></i>Stock Movements</a><?php endif; ?>
         <?php endif; ?>
 
+        <?php if (canAccessModule('store_operations')): ?>
+        <button type="button" class="menu-title nav-group-toggle" aria-expanded="false"><span>Store Operations</span><span class="nav-group-chevron" aria-hidden="true"></span></button>
+        <a href="<?= BASE_URL ?>/modules/store_operations/index.php" class="<?= navActive('/store_operations/') ?>"><i class="fas fa-store icon-main"></i>Daily Store Issue &amp; Reconciliation</a>
+        <?php endif; ?>
+
         <?php if (canAccessModule('suppliers') || canAccessModule('purchases') || canAccessModule('supply_chain')): ?>
         <button type="button" class="menu-title nav-group-toggle" aria-expanded="false"><span>Procurement</span><span class="nav-group-chevron" aria-hidden="true"></span></button>
         <?php if (canAccessModule('suppliers')): ?><a href="<?= BASE_URL ?>/modules/suppliers/index.php" class="<?= navActive('/suppliers/') ?>"><i class="fas fa-truck icon-main"></i>Suppliers</a><?php endif; ?>
