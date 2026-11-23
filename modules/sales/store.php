@@ -69,7 +69,10 @@ $uid=(int)$_SESSION['user_id'];$s=$conn->prepare("INSERT INTO sales (invoice_num
 $si=$conn->prepare("INSERT INTO sale_items (sale_id,product_id,quantity,price,discount,subtotal,buying_price,entered_quantity,sale_unit,conversion_factor,entered_unit_price,covering_quantity,covering_material_product_id,covering_cm_per_book,covering_charge_per_book,covering_total_material_cm) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
 $up=$conn->prepare("UPDATE products SET stock_quantity=stock_quantity-? WHERE id=?");
 $storeStockDown=$conn->prepare("UPDATE store_stock SET quantity=quantity-? WHERE store_id=? AND product_id=? AND quantity>=?");
-$sm=$conn->prepare("INSERT INTO stock_movements (product_id,user_id,movement_type,quantity,stock_before,stock_after,reference_type,reference_id,notes,movement_date) VALUES (?,?,?,?,?,?,?,?,?,?)");
+$hasMovementStoreId=(bool)$conn->query("SHOW COLUMNS FROM stock_movements LIKE 'store_id'")->fetchColumn();
+$sm=$hasMovementStoreId
+    ? $conn->prepare("INSERT INTO stock_movements (product_id,store_id,user_id,movement_type,quantity,stock_before,stock_after,reference_type,reference_id,notes,movement_date) VALUES (?,?,?,?,?,?,?,?,?,?,?)")
+    : $conn->prepare("INSERT INTO stock_movements (product_id,user_id,movement_type,quantity,stock_before,stock_after,reference_type,reference_id,notes,movement_date) VALUES (?,?,?,?,?,?,?,?,?,?)");
 $runningStock=[];
 foreach($lines as $l){
     $productId=(int)$l['p']['id'];
@@ -80,7 +83,11 @@ foreach($lines as $l){
     $si->execute([$saleId,$productId,$l['qty'],$l['price'],0,$l['subtotal'],$l['p']['buying_price'],$l['entered_qty'],$l['sale_unit'],$l['factor'],$l['entered_price'],$l['cover_quantity'],$l['cover_material_id'],$l['cover_cm_per_book'],$l['cover_charge_per_book'],$l['cover_total_cm']]);
     if($storeId===$mainStoreId){$up->execute([$l['qty'],$productId]);}
     else{$storeStockDown->execute([$l['qty'],$storeId,$productId,$l['qty']]);if($storeStockDown->rowCount()!==1)throw new RuntimeException('Store stock changed before the sale could be completed. Refresh the POS and try again.');}
-    $sm->execute([$productId,$uid,'Sale',$l['qty'],$before,$after,'sale',$saleId,'Sale '.$invoice.' at store '.$storeId,date('Y-m-d H:i:s')]);
+    if($hasMovementStoreId){
+        $sm->execute([$productId,$storeId,$uid,'Sale',$l['qty'],$before,$after,'sale',$saleId,'Sale '.$invoice.' at store '.$storeId,date('Y-m-d H:i:s')]);
+    }else{
+        $sm->execute([$productId,$uid,'Sale',$l['qty'],$before,$after,'sale',$saleId,'Sale '.$invoice.' at store '.$storeId,date('Y-m-d H:i:s')]);
+    }
 }
 
 if($customer&&$balance>0){$s=$conn->prepare("UPDATE customers SET balance=balance+? WHERE id=?");$s->execute([$balance,$customerId]);}
