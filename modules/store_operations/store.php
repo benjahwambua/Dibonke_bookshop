@@ -50,6 +50,10 @@ try {
         if (!$store) throw new RuntimeException('The selected selling store is unavailable.');
 
         $today = date('Y-m-d');
+        $unclosed = $conn->prepare("SELECT business_date FROM store_daily_sessions WHERE store_id=? AND status='Open' AND business_date<? ORDER BY business_date LIMIT 1 FOR UPDATE");
+        $unclosed->execute([$storeId, $today]);
+        $unclosedDate = $unclosed->fetchColumn();
+        if ($unclosedDate) throw new RuntimeException('The previous daily record for ' . $store['store_name'] . ' (' . $unclosedDate . ') must be reconciled before issuing fresh stock.');
         $existing = $conn->prepare("SELECT id FROM store_daily_sessions WHERE store_id=? AND business_date=? FOR UPDATE");
         $existing->execute([$storeId, $today]);
         if ($existing->fetchColumn()) throw new RuntimeException('A daily issue already exists for this store today. Open its daily record instead.');
