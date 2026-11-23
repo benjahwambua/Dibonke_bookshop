@@ -57,6 +57,8 @@ FROM (
     SELECT 'products', 'purchase_unit' UNION ALL
     SELECT 'products', 'units_per_purchase' UNION ALL
     SELECT 'products', 'bulk_selling_price' UNION ALL
+    SELECT 'products', 'bulk_wholesale_price' UNION ALL
+    SELECT 'products', 'image_path' UNION ALL
     SELECT 'products', 'buying_price' UNION ALL
     SELECT 'products', 'selling_price' UNION ALL
     SELECT 'products', 'wholesale_price' UNION ALL
