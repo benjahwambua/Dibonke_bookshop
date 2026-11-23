@@ -118,6 +118,11 @@ function requireModulePermission(string $module, string $action): void
 
 function requireModuleAccess(string $module): void
 {
+    // Help and the user manual are available to every authenticated staff member.
+    if ($module === 'help') {
+        return;
+    }
+
     if (in_array($module, ['users', 'roles', 'settings'], true)) {
         if (isAdministrator()) {
             return;
