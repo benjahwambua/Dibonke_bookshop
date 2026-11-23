@@ -116,12 +116,6 @@ DEALLOCATE PREPARE stmt_sales_store_id;
 INSERT IGNORE INTO stores (store_code,store_name,store_type,status)
 VALUES ('MAIN','Main Store','Main','Active');
 
-INSERT IGNORE INTO store_stock (store_id,product_id,quantity)
-SELECT s.id,p.id,GREATEST(0,p.stock_quantity)
-FROM stores s
-CROSS JOIN products p
-WHERE s.store_code='MAIN';
-
 UPDATE sales
 SET store_id=(SELECT id FROM stores WHERE store_code='MAIN' LIMIT 1)
 WHERE store_id IS NULL;
