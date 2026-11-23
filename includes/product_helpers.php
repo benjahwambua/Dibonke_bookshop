@@ -41,6 +41,23 @@ function normalizeProductIsbn($value): ?string
 }
 
 /**
+ * ISBNs identify books, not stationery or general merchandise.
+ * Blank ISBNs remain valid for every product type.
+ */
+function normalizeProductIsbnForType($value, string $productType): ?string
+{
+    if (trim((string)$value) === '') {
+        return null;
+    }
+
+    if ($productType !== 'Book') {
+        throw new RuntimeException('ISBN can only be entered for products with the Book item type.');
+    }
+
+    return normalizeProductIsbn($value);
+}
+
+/**
  * Product types describe the broad retail item class. Detailed grouping
  * remains data-driven through the Categories module.
  */
