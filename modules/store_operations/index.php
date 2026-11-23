@@ -13,7 +13,8 @@ $stores = $conn->query("SELECT id,store_code,store_name,store_type,status FROM s
 $sellingStores = array_values(array_filter($stores, static fn($s) => $s['store_type'] === 'Selling' && $s['status'] === 'Active'));
 $products = $conn->query("SELECT id,product_name,sku,stock_quantity,unit,selling_price FROM products WHERE status='Active' ORDER BY product_name")->fetchAll(PDO::FETCH_ASSOC);
 $sessions = $conn->query("
-    SELECT ds.*,s.store_name,st.transfer_number issue_number,rt.transfer_number return_number
+    SELECT ds.*,s.store_name,st.transfer_number issue_number,rt.transfer_number return_number,
+           (SELECT COALESCE(SUM(di.quantity_variance),0) FROM store_daily_items di WHERE di.session_id=ds.id) stock_variance
     FROM store_daily_sessions ds
     INNER JOIN stores s ON s.id=ds.store_id
     LEFT JOIN store_transfers st ON st.id=ds.issue_transfer_id
@@ -149,14 +150,15 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <section class="store-panel">
     <h2>Daily Store Records</h2>
     <div class="store-table-wrap"><table class="store-table">
-        <thead><tr><th>Date</th><th>Store</th><th>Person in charge</th><th>Stock Issue</th><th>Returned Stock</th><th>Expected Sales</th><th>Money Received</th><th>Variance</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>Date</th><th>Store</th><th>Person in charge</th><th>Stock Issue</th><th>Returned Stock</th><th>Expected Collections</th><th>Money Received</th><th>Money Variance</th><th>Stock Difference</th><th>Status</th><th></th></tr></thead>
         <tbody>
-        <?php if (!$sessions): ?><tr><td colspan="10" class="store-muted">No daily store records yet.</td></tr>
+        <?php if (!$sessions): ?><tr><td colspan="11" class="store-muted">No daily store records yet.</td></tr>
         <?php else: foreach ($sessions as $s): ?><tr>
             <td><?= e(date('d M Y',strtotime($s['business_date']))) ?></td><td><?= e($s['store_name']) ?></td><td><?= e($s['responsible_person']) ?></td>
             <td><?= e($s['issue_number'] ?: '—') ?></td><td><?= e($s['return_number'] ?: 'Pending') ?></td>
             <td>KES <?= number_format((float)$s['expected_sales'],2) ?></td><td>KES <?= number_format((float)$s['total_received'],2) ?></td>
             <td><strong><?= $s['status']==='Reconciled' ? 'KES '.number_format((float)$s['money_variance'],2) : '—' ?></strong></td>
+            <td><?= $s['status']==='Reconciled' ? number_format((float)$s['stock_variance'],3) : '—' ?></td>
             <td><span class="store-status <?= $s['status']==='Reconciled'?'done':'' ?>"><?= e($s['status']) ?></span></td>
             <td><?php if ($s['status']==='Open'): ?><a class="store-btn" href="index.php?reconcile=<?= (int)$s['id'] ?>">Reconcile</a><?php endif; ?></td>
         </tr><?php endforeach; endif; ?>
