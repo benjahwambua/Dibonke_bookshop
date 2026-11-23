@@ -121,7 +121,8 @@ The system includes manual journals and source-module posting integration points
 
 ## Test evidence and limitations
 
+- GitHub Actions PHP syntax checks passed on PHP 8.0 and PHP 8.2, and the product helper tests passed (workflow run 45182698506).
 - This review is based on repository source and documentation, not execution against the user's XAMPP installation.
 - The assistant cannot see the local database, browser, receipt printer or hosting account in this review.
-- No claim is made that the full workflows above have passed.
+- No claim is made that the full business workflows above have passed.
 - The application should not be declared production-ready until the database restore and acceptance tests have been completed.
