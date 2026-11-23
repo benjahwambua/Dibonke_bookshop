@@ -128,7 +128,7 @@ try {
         if (!$items) throw new RuntimeException('No issued products were found for this daily record.');
 
         $returnTotal = 0.0;
-        $soldStmt = $conn->prepare("SELECT si.product_id,COALESCE(SUM(si.quantity),0) sold_quantity
+        $soldStmt = $conn->prepare("SELECT si.product_id,COALESCE(SUM(si.quantity),0) sold_quantity,COALESCE(SUM(si.subtotal),0) sales_amount
             FROM sale_items si
             INNER JOIN sales s ON s.id=si.sale_id
             WHERE s.store_id=? AND s.sale_status='Completed' AND DATE(s.sale_date)=?
@@ -136,12 +136,12 @@ try {
         $soldStmt->execute([(int)$session['store_id'], $session['business_date']]);
         $soldRows = $soldStmt->fetchAll(PDO::FETCH_ASSOC);
         $soldByProduct = [];
-        foreach ($soldRows as $soldRow) $soldByProduct[(int)$soldRow['product_id']] = (float)$soldRow['sold_quantity'];
+        foreach ($soldRows as $soldRow) $soldByProduct[(int)$soldRow['product_id']] = ['quantity'=>(float)$soldRow['sold_quantity'],'amount'=>(float)$soldRow['sales_amount']];
 
         foreach ($items as $item) {
             $productId = (int)$item['product_id'];
             $qty = isset($returns[$productId]) && is_numeric($returns[$productId]) ? (float)$returns[$productId] : 0.0;
-            $sold = (float)($soldByProduct[$productId] ?? 0);
+            $sold = (float)($soldByProduct[$productId]['quantity'] ?? 0);
             if ($qty < 0 || $qty > (float)$item['quantity_issued']) {
                 throw new RuntimeException('Returned quantity for ' . $item['product_name'] . ' must be between zero and the quantity issued.');
             }
@@ -164,7 +164,7 @@ try {
         $stockDown = $conn->prepare("UPDATE store_stock SET quantity=quantity-? WHERE store_id=? AND product_id=? AND quantity>=?");
         $mainUp = $conn->prepare("UPDATE products SET stock_quantity=stock_quantity+? WHERE id=?");
         $transferItem = $conn->prepare("INSERT INTO store_transfer_items (transfer_id,product_id,quantity,unit_cost) VALUES (?,?,?,?)");
-        $dailyUpdate = $conn->prepare("UPDATE store_daily_items SET quantity_returned=?,quantity_sold=?,quantity_variance=? WHERE id=?");
+        $dailyUpdate = $conn->prepare("UPDATE store_daily_items SET quantity_returned=?,quantity_sold=?,quantity_variance=?,expected_amount=? WHERE id=?");
 
         foreach ($items as $item) {
             $productId = (int)$item['product_id'];
@@ -187,7 +187,8 @@ try {
                 $stockDown->execute([$stockVariance, (int)$session['store_id'], $productId, $stockVariance]);
                 if ($stockDown->rowCount() !== 1) throw new RuntimeException('Could not record the stock variance for ' . $item['product_name'] . '.');
             }
-            $dailyUpdate->execute([$returned, $sold, $stockVariance, (int)$item['id']]);
+            $expectedLineAmount = (float)($soldByProduct[$productId]['amount'] ?? 0);
+            $dailyUpdate->execute([$returned, $sold, $stockVariance, $expectedLineAmount, (int)$item['id']]);
         }
 
         $received = round($cash + $mpesa + $bank + $other, 2);
