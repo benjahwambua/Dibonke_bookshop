@@ -14,7 +14,7 @@ $sellingStores = array_values(array_filter($stores, static fn($s) => $s['store_t
 $products = $conn->query("SELECT id,product_name,sku,stock_quantity,unit,selling_price FROM products WHERE status='Active' ORDER BY product_name")->fetchAll(PDO::FETCH_ASSOC);
 $sessions = $conn->query("
     SELECT ds.*,s.store_name,st.transfer_number issue_number,rt.transfer_number return_number,
-           (SELECT COALESCE(SUM(di.quantity_variance),0) FROM store_daily_items di WHERE di.session_id=ds.id) stock_variance
+           (SELECT COUNT(*) FROM store_daily_items di WHERE di.session_id=ds.id AND di.quantity_variance<>0) stock_variance_items
     FROM store_daily_sessions ds
     INNER JOIN stores s ON s.id=ds.store_id
     LEFT JOIN store_transfers st ON st.id=ds.issue_transfer_id
@@ -158,7 +158,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
             <td><?= e($s['issue_number'] ?: '—') ?></td><td><?= e($s['return_number'] ?: 'Pending') ?></td>
             <td>KES <?= number_format((float)$s['expected_sales'],2) ?></td><td>KES <?= number_format((float)$s['total_received'],2) ?></td>
             <td><strong><?= $s['status']==='Reconciled' ? 'KES '.number_format((float)$s['money_variance'],2) : '—' ?></strong></td>
-            <td><?= $s['status']==='Reconciled' ? number_format((float)$s['stock_variance'],3) : '—' ?></td>
+            <td><?= $s['status']==='Reconciled' ? number_format((int)$s['stock_variance_items']).' item(s)' : '—' ?></td>
             <td><span class="store-status <?= $s['status']==='Reconciled'?'done':'' ?>"><?= e($s['status']) ?></span></td>
             <td><?php if ($s['status']==='Open'): ?><a class="store-btn" href="index.php?reconcile=<?= (int)$s['id'] ?>">Reconcile</a><?php endif; ?></td>
         </tr><?php endforeach; endif; ?>
