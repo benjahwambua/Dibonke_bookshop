@@ -46,8 +46,14 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
             if($quantity>$before) throw new RuntimeException('Not enough rolls in stock. Available: '.$before.'.');
             $after=$before-$quantity;
             $conn->prepare("UPDATE products SET stock_quantity=? WHERE id=?")->execute([$after,$rollId]);
-            $movement=$conn->prepare("INSERT INTO stock_movements(product_id,user_id,movement_type,quantity,stock_before,stock_after,reference_type,reference_id,notes,movement_date) VALUES(?,?,'Adjustment',?,?,?,'book_covering_internal_use',?, ?, NOW())");
-            $movement->execute([$rollId,$uid,$quantity,$before,$after,$rollId,'Internal book-covering use: '.$notes]);
+            $hasMovementStoreId=(bool)$conn->query("SHOW COLUMNS FROM stock_movements LIKE 'store_id'")->fetchColumn();
+            $mainStoreId=$hasMovementStoreId?(int)$conn->query("SELECT id FROM stores WHERE store_code='MAIN' LIMIT 1")->fetchColumn():0;
+            if($hasMovementStoreId&&$mainStoreId<=0)throw new RuntimeException('Main Store is missing. Complete the Store Operations migration before recording internal use.');
+            $movement=$hasMovementStoreId
+                ?$conn->prepare("INSERT INTO stock_movements(product_id,store_id,user_id,movement_type,quantity,stock_before,stock_after,reference_type,reference_id,notes,movement_date) VALUES(?,?,?,'Adjustment',?,?,?,'book_covering_internal_use',?,?,NOW())")
+                :$conn->prepare("INSERT INTO stock_movements(product_id,user_id,movement_type,quantity,stock_before,stock_after,reference_type,reference_id,notes,movement_date) VALUES(?,?,'Adjustment',?,?,?,'book_covering_internal_use',?,?,NOW())");
+            if($hasMovementStoreId){$movement->execute([$rollId,$mainStoreId,$uid,$quantity,$before,$after,$rollId,'Internal book-covering use: '.$notes]);}
+            else{$movement->execute([$rollId,$uid,$quantity,$before,$after,$rollId,'Internal book-covering use: '.$notes]);}
             $movementId=(int)$conn->lastInsertId();
             $usageCost=round((float)$roll['buying_price']*$quantity,2);
             $journalPosted=false;
