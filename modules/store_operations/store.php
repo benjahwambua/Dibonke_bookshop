@@ -150,7 +150,8 @@ try {
 
         recordAuditEvent($conn, 'Issue Stock', 'store_operations', 'Issued stock to ' . $store['store_name'] . ' for ' . $today, 'store_daily_session', $sessionId);
         $conn->commit();
-        storeFail('Stock issued to ' . $store['store_name'] . '. Daily record opened for ' . $person . '.');
+        header('Location: print_issue.php?id=' . $sessionId);
+        exit;
     }
 
     if ($action === 'reconcile_day') {
