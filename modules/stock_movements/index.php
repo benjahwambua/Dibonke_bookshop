@@ -115,17 +115,30 @@ if (!preg_match($validDate, $from)) $from = date('Y-m-01');
 if (!preg_match($validDate, $to)) $to = date('Y-m-d');
 if ($from > $to) { [$from, $to] = [$to, $from]; }
 $productId = (int)($_GET['product_id'] ?? 0);
+$hasMovementStoreId = (bool)$conn->query("SHOW COLUMNS FROM stock_movements LIKE 'store_id'")->fetchColumn();
+$storeFilter = (int)($_GET['store_id'] ?? 0);
+$movementStoreSelect = $hasMovementStoreId ? 'st.store_name' : "NULL AS store_name";
+$movementStoreJoin = $hasMovementStoreId ? 'LEFT JOIN stores st ON st.id = sm.store_id' : '';
+$movementStores = $hasMovementStoreId
+    ? $conn->query("SELECT id,store_name FROM stores ORDER BY store_type='Main' DESC,store_name")->fetchAll(PDO::FETCH_ASSOC)
+    : [];
 
-$sql = "SELECT sm.*, p.product_name, p.sku, u.full_name
+$sql = "SELECT sm.*, p.product_name, p.sku, u.full_name, {$movementStoreSelect}
         FROM stock_movements sm
         INNER JOIN products p ON p.id = sm.product_id
         LEFT JOIN users u ON u.id = sm.user_id
+        {$movementStoreJoin}
         WHERE DATE(sm.movement_date) BETWEEN :from_date AND :to_date";
 $params = [':from_date' => $from, ':to_date' => $to];
 
 if ($search !== '') {
-    $sql .= " AND (p.product_name LIKE :q OR p.sku LIKE :q OR sm.notes LIKE :q OR CAST(sm.reference_id AS CHAR) LIKE :q)";
+    $searchStore = $hasMovementStoreId ? " OR st.store_name LIKE :q" : '';
+    $sql .= " AND (p.product_name LIKE :q OR p.sku LIKE :q OR sm.notes LIKE :q OR CAST(sm.reference_id AS CHAR) LIKE :q{$searchStore})";
     $params[':q'] = "%{$search}%";
+}
+if ($hasMovementStoreId && $storeFilter > 0) {
+    $sql .= " AND sm.store_id = :store_id";
+    $params[':store_id'] = $storeFilter;
 }
 
 $types = ['Purchase', 'Sale', 'Return', 'Adjustment', 'Damage', 'Opening Stock'];
@@ -141,8 +154,8 @@ $stmt = $conn->prepare($sql);
 $stmt->execute($params);
 $movements = $stmt->fetchAll();
 $exportRows = [];
-foreach ($movements as $m) { $exportRows[] = [$m['movement_date'],$m['product_name'],$m['sku'],$m['movement_type'],$m['quantity'],$m['stock_before'],$m['stock_after'],$m['reference_type'],$m['reference_id'],$m['full_name'],$m['notes']]; }
-dibonkeReportExport('stock_movements_'.$from.'_to_'.$to,['Date','Product','SKU','Movement Type','Quantity','Stock Before','Stock After','Reference Type','Reference ID','User','Notes'],$exportRows);
+foreach ($movements as $m) { $exportRows[] = [$m['movement_date'],$m['product_name'],$m['sku'],$m['store_name'] ?? '',$m['movement_type'],$m['quantity'],$m['stock_before'],$m['stock_after'],$m['reference_type'],$m['reference_id'],$m['full_name'],$m['notes']]; }
+dibonkeReportExport('stock_movements_'.$from.'_to_'.$to,['Date','Product','SKU','Store','Movement Type','Quantity','Stock Before','Stock After','Reference Type','Reference ID','User','Notes'],$exportRows);
 $filterProducts = $conn->query("SELECT id, product_name FROM products ORDER BY product_name")->fetchAll(PDO::FETCH_ASSOC);
 
 $stats = [
@@ -201,6 +214,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
             <?php endforeach; ?>
         </select>
         <select name="product_id"><option value="0">All products</option><?php foreach ($filterProducts as $fp): ?><option value="<?= (int)$fp['id'] ?>" <?= $productId === (int)$fp['id'] ? 'selected' : '' ?>><?= e($fp['product_name']) ?></option><?php endforeach; ?></select>
+        <?php if ($hasMovementStoreId): ?><select name="store_id"><option value="0">All stores</option><?php foreach ($movementStores as $movementStore): ?><option value="<?= (int)$movementStore['id'] ?>" <?= $storeFilter === (int)$movementStore['id'] ? 'selected' : '' ?>><?= e($movementStore['store_name']) ?></option><?php endforeach; ?></select><?php endif; ?>
         <label>From <input type="date" name="from" value="<?= e($from) ?>"></label>
         <label>To <input type="date" name="to" value="<?= e($to) ?>"></label>
         <button class="btn btn-light" type="submit"><i class="fas fa-search"></i> Filter</button>
@@ -213,15 +227,16 @@ require_once __DIR__ . '/../../includes/sidebar.php';
         <div class="table-wrap">
             <table class="table">
                 <thead>
-                    <tr><th>Date</th><th>Product</th><th>Type</th><th>Quantity</th><th>Stock Before</th><th>Stock After</th><th>Reference</th><th>User</th><th>Notes</th></tr>
+                    <tr><th>Date</th><th>Product</th><th>Store</th><th>Type</th><th>Quantity</th><th>Stock Before</th><th>Stock After</th><th>Reference</th><th>User</th><th>Notes</th></tr>
                 </thead>
                 <tbody>
                 <?php if (!$movements): ?>
-                    <tr><td colspan="9" class="empty-state">No stock movements found.</td></tr>
+                    <tr><td colspan="10" class="empty-state">No stock movements found.</td></tr>
                 <?php else: foreach ($movements as $movement): ?>
                     <tr>
                         <td><?= e(date('d M Y H:i', strtotime($movement['movement_date']))) ?></td>
                         <td><strong><?= e($movement['product_name']) ?></strong><br><small class="muted"><?= e($movement['sku'] ?: 'No SKU') ?></small></td>
+                        <td><?= e($movement['store_name'] ?: '—') ?></td>
                         <td><span class="type <?= strtolower(str_replace(' ', '-', $movement['movement_type'])) ?>"><?= e($movement['movement_type']) ?></span></td>
                         <td><strong><?= number_format((int)$movement['quantity']) ?></strong></td>
                         <td><?= number_format((int)$movement['stock_before']) ?></td>
