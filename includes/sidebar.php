@@ -184,8 +184,8 @@ $initial = strtoupper(substr(trim($fullName), 0, 1)) ?: 'U';
             members.push(next);
             next=next.nextElementSibling;
         }
-        const hasActive=members.some(node=>node.matches('a.active'));
-        const expanded=hasActive;
+        // Keep every navigation section visible on page load. Staff can still collapse sections manually.
+        const expanded=true;
         heading.setAttribute('aria-expanded',String(expanded));
         members.forEach(node=>{node.hidden=!expanded;});
         heading.addEventListener('click',()=>{
