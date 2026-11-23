@@ -124,11 +124,25 @@ try {
         if (!$items) throw new RuntimeException('No issued products were found for this daily record.');
 
         $returnTotal = 0.0;
+        $soldStmt = $conn->prepare("SELECT si.product_id,COALESCE(SUM(si.quantity),0) sold_quantity
+            FROM sale_items si
+            INNER JOIN sales s ON s.id=si.sale_id
+            WHERE s.store_id=? AND s.sale_status='Completed' AND DATE(s.sale_date)=?
+            GROUP BY si.product_id");
+        $soldStmt->execute([(int)$session['store_id'], $session['business_date']]);
+        $soldRows = $soldStmt->fetchAll(PDO::FETCH_ASSOC);
+        $soldByProduct = [];
+        foreach ($soldRows as $soldRow) $soldByProduct[(int)$soldRow['product_id']] = (float)$soldRow['sold_quantity'];
+
         foreach ($items as $item) {
             $productId = (int)$item['product_id'];
             $qty = isset($returns[$productId]) && is_numeric($returns[$productId]) ? (float)$returns[$productId] : 0.0;
+            $sold = (float)($soldByProduct[$productId] ?? 0);
             if ($qty < 0 || $qty > (float)$item['quantity_issued']) {
                 throw new RuntimeException('Returned quantity for ' . $item['product_name'] . ' must be between zero and the quantity issued.');
+            }
+            if ($sold > (float)$item['quantity_issued'] - $qty + 0.0001) {
+                throw new RuntimeException('Recorded POS sales for ' . $item['product_name'] . ' exceed the issued stock after returns. Check the store issue and sales records.');
             }
             $returnTotal += $qty;
         }
@@ -143,25 +157,33 @@ try {
         }
 
         $stockLock = $conn->prepare("SELECT quantity FROM store_stock WHERE store_id=? AND product_id=? FOR UPDATE");
-        $stockDown = $conn->prepare("UPDATE store_stock SET quantity=quantity-? WHERE store_id=? AND product_id=?");
+        $stockDown = $conn->prepare("UPDATE store_stock SET quantity=quantity-? WHERE store_id=? AND product_id=? AND quantity>=?");
         $mainUp = $conn->prepare("UPDATE products SET stock_quantity=stock_quantity+? WHERE id=?");
         $transferItem = $conn->prepare("INSERT INTO store_transfer_items (transfer_id,product_id,quantity,unit_cost) VALUES (?,?,?,?)");
-        $dailyUpdate = $conn->prepare("UPDATE store_daily_items SET quantity_returned=?,quantity_sold=? WHERE id=?");
+        $dailyUpdate = $conn->prepare("UPDATE store_daily_items SET quantity_returned=?,quantity_sold=?,quantity_variance=? WHERE id=?");
 
         foreach ($items as $item) {
             $productId = (int)$item['product_id'];
             $issued = (float)$item['quantity_issued'];
             $returned = isset($returns[$productId]) && is_numeric($returns[$productId]) ? (float)$returns[$productId] : 0.0;
-            $sold = $issued - $returned;
+            $sold = (float)($soldByProduct[$productId] ?? 0);
+            $stockVariance = $issued - $returned - $sold;
+            $stockLock->execute([(int)$session['store_id'], $productId]);
+            $available = $stockLock->fetchColumn();
+            if ($available === false || (float)$available < ($returned + $stockVariance) - 0.0001) {
+                throw new RuntimeException('The store stock balance does not match the issue, sales and returns for ' . $item['product_name'] . '.');
+            }
             if ($returned > 0) {
-                $stockLock->execute([(int)$session['store_id'], $productId]);
-                $available = $stockLock->fetchColumn();
-                if ($available === false || (float)$available < $returned) throw new RuntimeException('The store stock balance is lower than the returned quantity for ' . $item['product_name'] . '.');
-                $stockDown->execute([$returned, (int)$session['store_id'], $productId]);
+                $stockDown->execute([$returned, (int)$session['store_id'], $productId, $returned]);
+                if ($stockDown->rowCount() !== 1) throw new RuntimeException('Could not process returned stock for ' . $item['product_name'] . '.');
                 $mainUp->execute([$returned, $productId]);
                 $transferItem->execute([$returnTransferId, $productId, $returned, (float)$item['buying_price']]);
             }
-            $dailyUpdate->execute([$returned, $sold, (int)$item['id']]);
+            if ($stockVariance > 0) {
+                $stockDown->execute([$stockVariance, (int)$session['store_id'], $productId, $stockVariance]);
+                if ($stockDown->rowCount() !== 1) throw new RuntimeException('Could not record the stock variance for ' . $item['product_name'] . '.');
+            }
+            $dailyUpdate->execute([$returned, $sold, $stockVariance, (int)$item['id']]);
         }
 
         $received = round($cash + $mpesa + $bank + $other, 2);
