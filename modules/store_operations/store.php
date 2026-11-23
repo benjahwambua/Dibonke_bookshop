@@ -10,7 +10,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 verify_csrf();
-requireModulePermission('store_operations', 'create');
 
 function storeFail(string $message): void
 {
@@ -22,6 +21,8 @@ function storeFail(string $message): void
 try {
     $action = (string)($_POST['action'] ?? '');
     $userId = (int)$_SESSION['user_id'];
+    $requiredPermission = in_array($action, ['rename_store', 'toggle_store_status'], true) ? 'edit' : 'create';
+    requireModulePermission('store_operations', $requiredPermission);
 
     if ($action === 'create_store') {
         $name = trim((string)($_POST['store_name'] ?? ''));
@@ -33,6 +34,51 @@ try {
         $stmt->execute([$code, $name, $userId]);
         recordAuditEvent($conn, 'Create', 'store_operations', 'Created selling store ' . $name, 'store', (int)$conn->lastInsertId());
         storeFail('Selling store created successfully.');
+    }
+
+
+    if ($action === 'rename_store') {
+        $storeId = (int)($_POST['store_id'] ?? 0);
+        $name = trim((string)($_POST['store_name'] ?? ''));
+        if ($storeId <= 0 || $name === '' || mb_strlen($name) > 120) {
+            throw new RuntimeException('Enter a valid store name (up to 120 characters).');
+        }
+        $stmt = $conn->prepare("SELECT id,store_name,store_type FROM stores WHERE id=? LIMIT 1");
+        $stmt->execute([$storeId]);
+        $store = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$store) throw new RuntimeException('The selected store could not be found.');
+        if ($store['store_name'] === $name) storeFail('No changes were needed.');
+        $update = $conn->prepare("UPDATE stores SET store_name=? WHERE id=?");
+        $update->execute([$name, $storeId]);
+        recordAuditEvent($conn, 'Rename', 'store_operations', 'Renamed ' . $store['store_type'] . ' store from ' . $store['store_name'] . ' to ' . $name, 'store', $storeId);
+        storeFail('Store name updated. All previous records remain linked to this store.');
+    }
+
+    if ($action === 'toggle_store_status') {
+        $storeId = (int)($_POST['store_id'] ?? 0);
+        if ($storeId <= 0) throw new RuntimeException('Select a valid store.');
+        $conn->beginTransaction();
+        $stmt = $conn->prepare("SELECT id,store_name,store_type,status FROM stores WHERE id=? FOR UPDATE");
+        $stmt->execute([$storeId]);
+        $store = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$store) throw new RuntimeException('The selected store could not be found.');
+        if ($store['store_type'] === 'Main') throw new RuntimeException('The Main Store cannot be deactivated.');
+        if ($store['status'] === 'Active') {
+            $open = $conn->prepare("SELECT COUNT(*) FROM store_daily_sessions WHERE store_id=? AND status='Open'");
+            $open->execute([$storeId]);
+            if ((int)$open->fetchColumn() > 0) throw new RuntimeException('Reconcile all open daily records before deactivating this store.');
+            $stock = $conn->prepare("SELECT COALESCE(SUM(quantity),0) FROM store_stock WHERE store_id=?");
+            $stock->execute([$storeId]);
+            if ((float)$stock->fetchColumn() > 0.0001) throw new RuntimeException('Return all remaining store stock to Main Store before deactivating this store.');
+            $newStatus = 'Inactive';
+        } else {
+            $newStatus = 'Active';
+        }
+        $update = $conn->prepare("UPDATE stores SET status=? WHERE id=?");
+        $update->execute([$newStatus, $storeId]);
+        recordAuditEvent($conn, $newStatus === 'Active' ? 'Reactivate' : 'Deactivate', 'store_operations', $newStatus . ' store ' . $store['store_name'], 'store', $storeId);
+        $conn->commit();
+        storeFail('Store ' . strtolower($newStatus) . ' successfully. Historical records have been retained.');
     }
 
     if ($action === 'issue_stock') {
