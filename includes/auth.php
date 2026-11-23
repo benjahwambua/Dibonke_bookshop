@@ -152,6 +152,8 @@ if ($markerPosition !== false) {
         'finance/trial_balance.php' => 'trial_balance',
         'finance/aged_receivables.php' => 'aged_receivables',
         'finance/aged_payables.php' => 'aged_payables',
+        'deliveries/fleet.php' => 'fleet',
+        'finance/aged_payables.php' => 'aged_payables',
         'finance/posting_mappings.php' => 'accounting_mappings',
         'sales/my_shift.php' => 'cash_management',
         'sales/returns.php' => 'sales_returns',
