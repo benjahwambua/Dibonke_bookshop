@@ -77,11 +77,29 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 </div>
 
 <section class="store-panel">
-    <h2>Stores</h2>
+    <h2>Manage Stores</h2>
+    <p class="store-muted">Rename stores at any time. Store codes and historical records stay unchanged. Deactivated stores are kept for reporting and can be reactivated.</p>
     <div class="store-table-wrap"><table class="store-table">
-        <thead><tr><th>Store</th><th>Code</th><th>Type</th><th>Status</th></tr></thead>
+        <thead><tr><th>Store name</th><th>Code</th><th>Type</th><th>Status</th><th>Management</th></tr></thead>
         <tbody><?php foreach ($stores as $store): ?><tr>
-            <td><strong><?= e($store['store_name']) ?></strong></td><td><?= e($store['store_code']) ?></td><td><?= e($store['store_type']) ?></td><td><?= e($store['status']) ?></td>
+            <td>
+                <?php if (hasModulePermission('store_operations','edit')): ?>
+                <form method="post" action="store.php" style="display:flex;gap:6px;align-items:center;min-width:220px">
+                    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="action" value="rename_store"><input type="hidden" name="store_id" value="<?= (int)$store['id'] ?>">
+                    <input type="text" name="store_name" value="<?= e($store['store_name']) ?>" required maxlength="120" aria-label="Store name" style="width:100%;min-width:130px">
+                    <button class="store-btn secondary" type="submit" title="Save store name"><i class="fas fa-save"></i> Save</button>
+                </form>
+                <?php else: ?><strong><?= e($store['store_name']) ?></strong><?php endif; ?>
+            </td>
+            <td><?= e($store['store_code']) ?></td><td><?= e($store['store_type']) ?></td><td><?= e($store['status']) ?></td>
+            <td>
+                <?php if (hasModulePermission('store_operations','edit') && $store['store_type'] !== 'Main'): ?>
+                <form method="post" action="store.php" onsubmit="return confirm('<?= $store['status']==='Active' ? 'Deactivate' : 'Reactivate' ?> this store?')" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>"><input type="hidden" name="action" value="toggle_store_status"><input type="hidden" name="store_id" value="<?= (int)$store['id'] ?>">
+                    <button class="store-btn <?= $store['status']==='Active' ? 'secondary' : '' ?>" type="submit"><?= $store['status']==='Active' ? 'Deactivate' : 'Reactivate' ?></button>
+                </form>
+                <?php elseif ($store['store_type'] === 'Main'): ?><span class="store-muted">Central stock location</span><?php endif; ?>
+            </td>
         </tr><?php endforeach; ?></tbody>
     </table></div>
     <?php if (hasModulePermission('store_operations','create')): ?>
