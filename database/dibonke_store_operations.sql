@@ -130,7 +130,10 @@ EXECUTE stmt_sales_store_id;
 DEALLOCATE PREPARE stmt_sales_store_id;
 
 INSERT IGNORE INTO stores (store_code,store_name,store_type,status)
-VALUES ('MAIN','Main Store','Main','Active');
+VALUES
+    ('MAIN','Main Store','Main','Active'),
+    ('STORE1','Store 1','Selling','Active'),
+    ('STORE2','Store 2','Selling','Active');
 
 UPDATE sales
 SET store_id=(SELECT id FROM stores WHERE store_code='MAIN' LIMIT 1)
