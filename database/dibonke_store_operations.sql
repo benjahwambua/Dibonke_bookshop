@@ -129,6 +129,19 @@ PREPARE stmt_sales_store_id FROM @sql_sales_store_id;
 EXECUTE stmt_sales_store_id;
 DEALLOCATE PREPARE stmt_sales_store_id;
 
+SET @has_sales_store_date_index := (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='sales' AND INDEX_NAME='idx_sales_store_date'
+);
+SET @sql_sales_store_date_index := IF(
+    @has_sales_store_date_index=0,
+    'ALTER TABLE sales ADD INDEX idx_sales_store_date (store_id,sale_date)',
+    'SELECT 1'
+);
+PREPARE stmt_sales_store_date_index FROM @sql_sales_store_date_index;
+EXECUTE stmt_sales_store_date_index;
+DEALLOCATE PREPARE stmt_sales_store_date_index;
+
 INSERT IGNORE INTO stores (store_code,store_name,store_type,status)
 VALUES
     ('MAIN','Main Store','Main','Active'),
