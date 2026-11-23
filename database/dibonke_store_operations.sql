@@ -191,3 +191,31 @@ ON DUPLICATE KEY UPDATE
     can_view=1,
     can_create=1,
     can_edit=1;
+
+-- Attribute stock ledger entries to the physical store where the movement occurred.
+-- Nullable and without a foreign key to remain compatible with legacy stock_movements schemas.
+SET @has_stock_movements_store_id := (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='stock_movements' AND COLUMN_NAME='store_id'
+);
+SET @sql_stock_movements_store_id := IF(
+    @has_stock_movements_store_id=0,
+    'ALTER TABLE stock_movements ADD COLUMN store_id INT UNSIGNED NULL AFTER product_id',
+    'SELECT 1'
+);
+PREPARE stmt_stock_movements_store_id FROM @sql_stock_movements_store_id;
+EXECUTE stmt_stock_movements_store_id;
+DEALLOCATE PREPARE stmt_stock_movements_store_id;
+
+SET @has_stock_movements_store_index := (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS
+    WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='stock_movements' AND INDEX_NAME='idx_stock_movements_store_date'
+);
+SET @sql_stock_movements_store_index := IF(
+    @has_stock_movements_store_index=0,
+    'ALTER TABLE stock_movements ADD INDEX idx_stock_movements_store_date (store_id,movement_date)',
+    'SELECT 1'
+);
+PREPARE stmt_stock_movements_store_index FROM @sql_stock_movements_store_index;
+EXECUTE stmt_stock_movements_store_index;
+DEALLOCATE PREPARE stmt_stock_movements_store_index;
