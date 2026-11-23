@@ -85,7 +85,12 @@ try {
 
     $itemStmt = $conn->prepare("INSERT INTO purchase_items (purchase_id,product_id,quantity,buying_price,subtotal,entered_quantity,purchase_unit,conversion_factor,entered_unit_price) VALUES (?,?,?,?,?,?,?,?,?)");
     $stockStmt = $conn->prepare("UPDATE products SET buying_price=CASE WHEN stock_quantity+? > 0 THEN ((stock_quantity*buying_price)+(?*?))/(stock_quantity+?) ELSE ? END, stock_quantity=stock_quantity+? WHERE id=?");
-    $movementStmt = $conn->prepare("INSERT INTO stock_movements (product_id,user_id,movement_type,quantity,stock_before,stock_after,reference_type,reference_id,notes,movement_date) VALUES (?,?,?,?,?,?,?,?,?,?)");
+    $hasMovementStoreId = (bool)$conn->query("SHOW COLUMNS FROM stock_movements LIKE 'store_id'")->fetchColumn();
+    $mainStoreId = $hasMovementStoreId ? (int)$conn->query("SELECT id FROM stores WHERE store_code='MAIN' LIMIT 1")->fetchColumn() : 0;
+    if ($hasMovementStoreId && $mainStoreId <= 0) throw new RuntimeException('Main Store is missing. Complete the Store Operations migration before receiving purchases.');
+    $movementStmt = $hasMovementStoreId
+        ? $conn->prepare("INSERT INTO stock_movements (product_id,store_id,user_id,movement_type,quantity,stock_before,stock_after,reference_type,reference_id,notes,movement_date) VALUES (?,?,?,'Purchase',?,?,?,?,?,?,?)")
+        : $conn->prepare("INSERT INTO stock_movements (product_id,user_id,movement_type,quantity,stock_before,stock_after,reference_type,reference_id,notes,movement_date) VALUES (?,?, 'Purchase',?,?,?,?,?,?,?)");
 
     $runningStock = [];
     foreach ($cleanItems as $item) {
@@ -94,11 +99,11 @@ try {
         $runningStock[$item['product_id']] = $stockAfter;
         $itemStmt->execute([$purchaseId,$item['product_id'],$item['quantity'],$item['buying_price'],$item['line_total'],$item['entered_quantity'],$item['purchase_unit'],$item['conversion_factor'],$item['entered_unit_price']]);
         $stockStmt->execute([$item['quantity'],$item['quantity'],$item['buying_price'],$item['quantity'],$item['buying_price'],$item['quantity'],$item['product_id']]);
-        $movementStmt->execute([
-            $item['product_id'],(int)$_SESSION['user_id'],'Purchase',$item['quantity'],
-            $stockBefore,$stockAfter,'purchase',$purchaseId,
-            'Purchase '.$purchaseNumber.' - '.$item['product_name'],$purchaseDate
-        ]);
+        if ($hasMovementStoreId) {
+            $movementStmt->execute([$item['product_id'],$mainStoreId,(int)$_SESSION['user_id'],$item['quantity'],$stockBefore,$stockAfter,'purchase',$purchaseId,'Purchase '.$purchaseNumber.' - '.$item['product_name'],$purchaseDate]);
+        } else {
+            $movementStmt->execute([$item['product_id'],(int)$_SESSION['user_id'],'Purchase',$item['quantity'],$stockBefore,$stockAfter,'purchase',$purchaseId,'Purchase '.$purchaseNumber.' - '.$item['product_name'],$purchaseDate]);
+        }
     }
 
     if ($balance > 0) {
