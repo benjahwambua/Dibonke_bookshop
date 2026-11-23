@@ -24,6 +24,15 @@ function lcExpectedCash(PDO $db,array $shift):array{
 function lcFlash(string $s):void{$_SESSION['launch_flash']=$s;header('Location: index.php?tab='.urlencode((string)($_POST['tab']??'overview')));exit;}
 $tab=(string)($_GET['tab']??'overview');
 $allowedTabs=['overview','returns','shifts','stocktaking','audit','etims'];if(!in_array($tab,$allowedTabs,true))$tab='overview';
+$launchTabPermissions=['returns'=>'sales_returns','shifts'=>'cash_management','stocktaking'=>'stocktaking','audit'=>'audit_logs','etims'=>'etims'];
+$canOpenLaunchOverview=canAccessModule('launch_controls');
+if(!$canOpenLaunchOverview&&($tab==='overview'||!hasModulePermission($launchTabPermissions[$tab]??'', 'view'))){
+ $firstAvailableTab=null;
+ foreach($launchTabPermissions as $candidateTab=>$candidateModule){if(hasModulePermission($candidateModule,'view')){$firstAvailableTab=$candidateTab;break;}}
+ if($firstAvailableTab!==null){header('Location: index.php?tab='.urlencode($firstAvailableTab));exit;}
+ requireModuleAccess('launch_controls');
+}
+if($canOpenLaunchOverview&&$tab!=='overview'&&!hasModulePermission($launchTabPermissions[$tab]??'', 'view')){header('Location: index.php?tab=overview');exit;}
 $uid=(int)$_SESSION['user_id'];
 $canReturn=hasModulePermission('sales_returns','view');
 $canReturnCreate=hasModulePermission('sales_returns','create');
