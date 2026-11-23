@@ -223,3 +223,36 @@ main.content .status.active{background:#e8f7ef;color:#16734d}
 main.content .status.inactive{background:#fff0f0;color:#b42318}
 main.content .flash-error{border-color:#fecaca;background:#fff1f2;color:#9f1239}
 main.content .empty-state{padding:42px 20px;text-align:center;color:var(--db-muted)}
+
+/* Shared master-data modal and compact status patterns */
+main.content .badge{display:inline-flex;align-items:center;padding:5px 9px;border-radius:20px;font-size:10px;font-weight:800;white-space:nowrap}
+main.content .badge.active{background:#e8f7ef;color:#16734d}
+main.content .badge.inactive{background:#fff0f0;color:#b42318}
+main.content .empty{padding:38px 18px;text-align:center;color:var(--db-muted);font-size:13px}
+main.content .empty-state{padding:38px 18px;text-align:center;color:var(--db-muted);font-size:13px}
+main.content .actions{display:flex;align-items:center;justify-content:flex-end;gap:8px}
+main.content .actions form{display:inline-flex;margin:0}
+main.content .actions .btn{white-space:nowrap}
+
+/* Modal content is rendered after main.content in legacy module templates. */
+.modal{display:none;position:fixed;inset:0;z-index:2000;align-items:center;justify-content:center;padding:20px;background:rgba(16,38,59,.56)}
+.modal.show{display:flex}
+.modal .modal-box{position:relative;width:min(700px,100%);max-height:92vh;overflow:auto;padding:24px;border:1px solid var(--db-border);border-radius:14px;background:#fff;box-shadow:0 24px 70px rgba(16,38,59,.22)}
+.modal .modal-box.wide{width:min(850px,100%)}
+.modal .modal-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:18px}
+.modal .modal-head h2{margin:0;color:var(--db-navy);font-size:19px}
+.modal .modal-head a,.modal .close{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border:0;border-radius:8px;background:#f1f5f9;color:#526277;font-size:22px;text-decoration:none;cursor:pointer}
+.modal .close{position:absolute;top:14px;right:14px}
+.modal .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 16px}
+.modal .form-grid .full{grid-column:1/-1}
+.modal .modal-box label{display:block;margin:9px 0 6px;color:#526277;font-size:11px;font-weight:750}
+.modal .modal-box input,.modal .modal-box select,.modal .modal-box textarea{display:block;width:100%;min-height:39px;box-sizing:border-box;margin-top:6px;padding:9px 11px;border:1px solid #d9e1e9;border-radius:8px;background:#fff;color:var(--db-ink);font:inherit;font-size:12px}
+.modal .modal-box textarea{min-height:88px;resize:vertical}
+.modal .modal-actions,.modal .actions{display:flex;justify-content:flex-end;align-items:center;gap:9px;margin-top:20px}
+@media(max-width:700px){
+  .modal{align-items:flex-start;overflow-y:auto}
+  .modal .modal-box{margin:auto 0;padding:19px}
+  .modal .form-grid{grid-template-columns:1fr}
+  .modal .form-grid .full{grid-column:auto}
+  main.content .actions{justify-content:flex-start;flex-wrap:wrap}
+}
