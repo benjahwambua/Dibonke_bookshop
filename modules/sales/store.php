@@ -13,7 +13,13 @@ if($mainStoreId<=0)throw new RuntimeException('Main Store is not configured. Run
 if($storeId<=0)$storeId=$mainStoreId;
 $storeCheck=$conn->prepare("SELECT id FROM stores WHERE id=? AND status='Active' LIMIT 1");
 $storeCheck->execute([$storeId]);
-if(!$storeCheck->fetchColumn())throw new RuntimeException('Select a valid active store for this sale.');
+$selectedStore=$storeCheck->fetchColumn();
+if(!$selectedStore)throw new RuntimeException('Select a valid active store for this sale.');
+if($storeId!==$mainStoreId){
+    $openStoreDay=$conn->prepare("SELECT id FROM store_daily_sessions WHERE store_id=? AND business_date=? AND status='Open' LIMIT 1 FOR UPDATE");
+    $openStoreDay->execute([$storeId,date('Y-m-d')]);
+    if(!$openStoreDay->fetchColumn())throw new RuntimeException('This selling store has no open daily stock issue for today. Complete the morning stock issue before recording sales.');
+}
 $cart=json_decode((string)($_POST['cart_json']??''),true); if(!is_array($cart)||!$cart)throw new RuntimeException('Add at least one product.');
 $customerId=null;
 $method=(string)($_POST['payment_method']??'Cash');$priceListId=(int)($_POST['price_list_id']??0);if($priceListId<=0)$priceListId=(int)($conn->query("SELECT id FROM price_lists WHERE is_default=1 AND status='Active' LIMIT 1")->fetchColumn()?:0);$pl=$conn->prepare("SELECT code FROM price_lists WHERE id=? AND status='Active'");$pl->execute([$priceListId]);$priceListCode=$pl->fetchColumn();if(!$priceListCode)throw new RuntimeException('Selected price list is not active.');
