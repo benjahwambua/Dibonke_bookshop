@@ -45,7 +45,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 </style>
 <div class="store-view-head">
     <div><h1>Daily Store Record</h1><p><?=e($session['store_name'])?> · <?=e(date('d M Y',strtotime($session['business_date'])))?> · In charge: <?=e($session['responsible_person'])?></p></div>
-    <a class="btn btn-light" href="index.php"><i class="fas fa-arrow-left"></i> Back to Store Operations</a>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn btn-primary" href="print_issue.php?id=<?= (int)$session['id'] ?>" target="_blank"><i class="fas fa-print"></i> Print Issue Checklist</a><a class="btn btn-light" href="index.php"><i class="fas fa-arrow-left"></i> Back to Store Operations</a></div>
 </div>
 <div class="store-view-panel">
     <div class="store-view-grid">
