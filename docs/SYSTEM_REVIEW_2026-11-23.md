@@ -54,11 +54,11 @@ Do not attempt to create a production database by importing extension migrations
 
 ### 2. High — Store Operations stock movement attribution
 
-The POS writes stock movement records for sales made at selling stores, but the existing stock movement structure does not establish a dedicated store/location field in the store operations extension. Store identity is currently carried in free-text notes for those movements.
+**Code change made during this review:** the Store Operations migration now adds a nullable `stock_movements.store_id` column and an index idempotently. New POS sale movements write the selected store ID when the migration is present, and the Stock Movements register can display, search and filter by store. The POS retains a legacy insert fallback until the additive migration is applied.
 
-This makes a unified stock ledger by store harder to query and audit reliably.
+Historical movements have not been backfilled because their store cannot always be proven from old free-text notes. Issue/return transfers remain traceable in the dedicated Store Transfers register.
 
-**Recommended follow-up:** introduce an additive, nullable store reference on stock movement records, backfill only where the source transaction reliably identifies the store, and update movement reports to display/filter by location. This needs a schema-aware migration and compatibility test against the live database before implementation.
+**Remaining action:** re-import the updated `database/dibonke_store_operations.sql` after backing up the local database, then test Main Store and selling-store sales and verify the movement register.
 
 ### 3. High — payment confirmation timing during store reconciliation
 
@@ -95,9 +95,10 @@ The system includes manual journals and source-module posting integration points
 
 ## Changes made during this review
 
-- Corrected a stylesheet formatting issue in the new Store Operations product-search field. The intended CSS rules are now separated by a real newline rather than a literal escaped newline.
-- No database schema or live business data was changed.
-- No unverified changes were made to payment callbacks, accounting postings or stock ledger structure because those require the live database schema and end-to-end testing to avoid corrupting existing records.
+- Corrected a stylesheet formatting issue in the Store Operations product-search field.
+- Added idempotent store-location attribution to the stock movement migration; updated POS sale movements and the Stock Movements register to use/display/filter by store when the migration is present.
+- No live database or business data was changed. The new migration still needs to be imported locally after a backup.
+- No unverified changes were made to payment callbacks or accounting postings because those require end-to-end testing against the live database.
 
 ## Required acceptance tests before release
 
