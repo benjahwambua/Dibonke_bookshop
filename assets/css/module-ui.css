@@ -153,7 +153,6 @@ main.content .table-card table thead th{padding:12px 13px;background:#eef2f6;col
 main.content .table-card table tbody td{padding:12px 13px;border-bottom:1px solid #edf1f5;color:#425268;font-size:12px;vertical-align:middle}
 main.content .table-card table tbody tr:last-child td{border-bottom:0}
 main.content .table-card table tbody tr:hover td{background:#fafbfd}
-main.content .empty{padding:38px 18px;text-align:center;color:var(--db-muted);font-size:13px}
 main.content .count-pill{display:inline-flex;align-items:center;justify-content:center;min-width:28px;padding:4px 9px;border:1px solid #e1e8ef;border-radius:20px;background:#f3f6f9;color:#42566b;font-size:11px;font-weight:800}
 main.content .icon-btn{display:inline-flex;align-items:center;justify-content:center;width:33px;height:33px;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;color:#52677d;cursor:pointer}
 main.content .icon-btn:hover{border-color:#c4d2df;background:#eef3f7;color:var(--db-navy)}
@@ -229,7 +228,6 @@ main.content .badge{display:inline-flex;align-items:center;padding:5px 9px;borde
 main.content .badge.active{background:#e8f7ef;color:#16734d}
 main.content .badge.inactive{background:#fff0f0;color:#b42318}
 main.content .empty{padding:38px 18px;text-align:center;color:var(--db-muted);font-size:13px}
-main.content .empty-state{padding:38px 18px;text-align:center;color:var(--db-muted);font-size:13px}
 main.content .actions{display:flex;align-items:center;justify-content:flex-end;gap:8px}
 main.content .actions form{display:inline-flex;margin:0}
 main.content .actions .btn{white-space:nowrap}
