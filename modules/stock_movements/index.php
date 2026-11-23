@@ -74,21 +74,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'adjus
         $update = $conn->prepare("UPDATE products SET stock_quantity = ? WHERE id = ?");
         $update->execute([$stockAfter, $productId]);
 
-        $movement = $conn->prepare(
-            "INSERT INTO stock_movements (
-                product_id, user_id, movement_type, quantity, stock_before,
-                stock_after, reference_type, reference_id, notes, movement_date
-             ) VALUES (?, ?, 'Adjustment', ?, ?, ?, 'manual_adjustment', NULL, ?, ?)"
-        );
-        $movement->execute([
-            $productId,
-            (int)$_SESSION['user_id'],
-            $movementQuantity,
-            $stockBefore,
-            $stockAfter,
-            $movementLabel . ': ' . $reason,
-            date('Y-m-d H:i:s')
-        ]);
+        $hasMovementStoreId = (bool)$conn->query("SHOW COLUMNS FROM stock_movements LIKE 'store_id'")->fetchColumn();
+        $mainStoreId = $hasMovementStoreId ? (int)$conn->query("SELECT id FROM stores WHERE store_code='MAIN' LIMIT 1")->fetchColumn() : 0;
+        if ($hasMovementStoreId && $mainStoreId <= 0) throw new RuntimeException('Main Store is missing. Complete the Store Operations migration before adjusting stock.');
+        $movement = $hasMovementStoreId
+            ? $conn->prepare("INSERT INTO stock_movements (product_id,store_id,user_id,movement_type,quantity,stock_before,stock_after,reference_type,reference_id,notes,movement_date) VALUES (?,?,?,'Adjustment',?,?,?,'manual_adjustment',NULL,?,?)")
+            : $conn->prepare("INSERT INTO stock_movements (product_id,user_id,movement_type,quantity,stock_before,stock_after,reference_type,reference_id,notes,movement_date) VALUES (?,?,'Adjustment',?,?,?,'manual_adjustment',NULL,?,?)");
+        if ($hasMovementStoreId) {
+            $movement->execute([$productId,$mainStoreId,(int)$_SESSION['user_id'],$movementQuantity,$stockBefore,$stockAfter,$movementLabel . ': ' . $reason,date('Y-m-d H:i:s')]);
+        } else {
+            $movement->execute([$productId,(int)$_SESSION['user_id'],$movementQuantity,$stockBefore,$stockAfter,$movementLabel . ': ' . $reason,date('Y-m-d H:i:s')]);
+        }
 
         $conn->commit();
         $_SESSION['stock_flash'] = 'Stock adjusted for ' . $product['product_name'] . '. New balance: ' . $stockAfter . '.';
