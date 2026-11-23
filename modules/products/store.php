@@ -23,7 +23,7 @@ try {
     }
 
     $productType = normalizeProductType($_POST['product_type'] ?? 'General');
-    $isbn = normalizeProductIsbn($_POST['isbn'] ?? '');
+    $isbn = normalizeProductIsbnForType($_POST['isbn'] ?? '', $productType);
 
     $categoryNameInput = trim((string)($_POST['category_name'] ?? ''));
     $brandNameInput = trim((string)($_POST['brand_name'] ?? ''));
