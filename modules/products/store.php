@@ -204,13 +204,15 @@ try {
 
     // Opening stock is posted to both the product balance and the stock ledger.
     if ($stock > 0) {
-        $movement = $conn->prepare(
-            "INSERT INTO stock_movements (
-                product_id, user_id, movement_type, quantity, stock_before,
-                stock_after, reference_type, reference_id, notes, movement_date
-            ) VALUES (?, ?, 'Opening Stock', ?, 0, ?, 'product', ?, ?, ?)"
-        );
-        $movement->execute([
+        $hasMovementStoreId = (bool)$conn->query("SHOW COLUMNS FROM stock_movements LIKE 'store_id'")->fetchColumn();
+        $mainStoreId = $hasMovementStoreId ? (int)$conn->query("SELECT id FROM stores WHERE store_code='MAIN' LIMIT 1")->fetchColumn() : 0;
+        if ($hasMovementStoreId && $mainStoreId <= 0) {
+            throw new RuntimeException('Main Store is missing. Complete the Store Operations migration before recording opening stock.');
+        }
+        $movement = $hasMovementStoreId
+            ? $conn->prepare("INSERT INTO stock_movements (product_id,store_id,user_id,movement_type,quantity,stock_before,stock_after,reference_type,reference_id,notes,movement_date) VALUES (?, ?, ?, 'Opening Stock', ?, 0, ?, 'product', ?, ?, ?)")
+            : $conn->prepare("INSERT INTO stock_movements (product_id,user_id,movement_type,quantity,stock_before,stock_after,reference_type,reference_id,notes,movement_date) VALUES (?, ?, 'Opening Stock', ?, 0, ?, 'product', ?, ?, ?)");
+        $movementValues = [
             $productId,
             (int)$_SESSION['user_id'],
             $stock,
@@ -218,7 +220,12 @@ try {
             $productId,
             'Opening stock recorded when product was created',
             date('Y-m-d H:i:s')
-        ]);
+        ];
+        if ($hasMovementStoreId) {
+            $movement->execute([$productId, $mainStoreId, (int)$_SESSION['user_id'], $stock, $stock, $productId, 'Opening stock recorded when product was created', date('Y-m-d H:i:s')]);
+        } else {
+            $movement->execute($movementValues);
+        }
     }
 
     recordAuditEvent($conn,'Create','products','Created product '.$name,'product',$productId,null,['product_type'=>$productType,'sku'=>$sku,'barcode'=>$barcode,'opening_stock'=>$stock]);
