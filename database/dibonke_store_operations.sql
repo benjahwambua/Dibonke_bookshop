@@ -115,6 +115,33 @@ PREPARE stmt_store_daily_variance FROM @sql_store_daily_variance;
 EXECUTE stmt_store_daily_variance;
 DEALLOCATE PREPARE stmt_store_daily_variance;
 
+-- Keep expected POS collections split by payment channel for daily cash/M-Pesa checks.
+SET @has_store_expected_cash := (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='store_daily_sessions' AND COLUMN_NAME='expected_cash'
+);
+SET @sql_store_expected_cash := IF(
+    @has_store_expected_cash=0,
+    'ALTER TABLE store_daily_sessions ADD COLUMN expected_cash DECIMAL(14,2) NOT NULL DEFAULT 0 AFTER expected_sales',
+    'SELECT 1'
+);
+PREPARE stmt_store_expected_cash FROM @sql_store_expected_cash;
+EXECUTE stmt_store_expected_cash;
+DEALLOCATE PREPARE stmt_store_expected_cash;
+
+SET @has_store_expected_mpesa := (
+    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='store_daily_sessions' AND COLUMN_NAME='expected_mpesa'
+);
+SET @sql_store_expected_mpesa := IF(
+    @has_store_expected_mpesa=0,
+    'ALTER TABLE store_daily_sessions ADD COLUMN expected_mpesa DECIMAL(14,2) NOT NULL DEFAULT 0 AFTER expected_cash',
+    'SELECT 1'
+);
+PREPARE stmt_store_expected_mpesa FROM @sql_store_expected_mpesa;
+EXECUTE stmt_store_expected_mpesa;
+DEALLOCATE PREPARE stmt_store_expected_mpesa;
+
 -- Store attribution on each sale. Existing historical sales remain assigned to Main Store.
 SET @has_sales_store_id := (
     SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
