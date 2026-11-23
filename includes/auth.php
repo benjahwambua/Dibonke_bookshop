@@ -123,6 +123,17 @@ function requireModuleAccess(string $module): void
         return;
     }
 
+    // Launch Operations is a container for separately permissioned workflows.
+    // A user assigned to one of its tabs must be able to open that tab without
+    // also receiving the broad overview permission.
+    if ($module === 'launch_controls') {
+        foreach (['launch_controls', 'sales_returns', 'cash_management', 'stocktaking', 'audit_logs', 'etims'] as $launchModule) {
+            if (hasModulePermission($launchModule, 'view')) {
+                return;
+            }
+        }
+    }
+
     if (in_array($module, ['users', 'roles', 'settings'], true)) {
         if (isAdministrator()) {
             return;
