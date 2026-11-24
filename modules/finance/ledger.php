@@ -16,6 +16,12 @@ $sql="SELECT transaction_date,transaction_type,reference,party,payment_method,di
  SELECT COALESCE(mt.transaction_date,mt.created_at),CONVERT('Unallocated M-Pesa Receipt' USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(mt.transaction_reference USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(COALESCE(mt.phone_number,'Unmatched customer') USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT('M-Pesa' USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT('IN' USING utf8mb4) COLLATE utf8mb4_unicode_ci,mt.amount
  FROM mpesa_transactions mt WHERE mt.transaction_type='C2B' AND mt.direction='Incoming' AND mt.result_status='Success' AND mt.reference_type IS NULL AND DATE(COALESCE(mt.transaction_date,mt.created_at)) BETWEEN ? AND ?
  UNION ALL
+ SELECT MAX(COALESCE(mt.transaction_date,mt.created_at)),CONVERT('Unallocated STK Overpayment' USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(s.invoice_number USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT('Walk-in Customer' USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT('M-Pesa' USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT('IN' USING utf8mb4) COLLATE utf8mb4_unicode_ci,GREATEST(0,SUM(mt.amount)-s.paid_amount)
+ FROM mpesa_transactions mt JOIN sales s ON mt.reference_type='sale' AND mt.reference_id=s.id
+ WHERE mt.transaction_type='STK Push' AND mt.direction='Incoming' AND mt.result_status='Success' AND s.sale_status='Completed' AND s.customer_id IS NULL
+ GROUP BY s.id,s.invoice_number,s.paid_amount
+ HAVING SUM(mt.amount)>s.paid_amount+0.009 AND DATE(MAX(COALESCE(mt.transaction_date,mt.created_at))) BETWEEN ? AND ?
+ UNION ALL
  SELECT sp.payment_date,CONVERT('Supplier Payment' USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(sp.receipt_number USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(s.supplier_name USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(sp.payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT('OUT' USING utf8mb4) COLLATE utf8mb4_unicode_ci,sp.amount
  FROM supplier_payments sp JOIN suppliers s ON s.id=sp.supplier_id WHERE DATE(sp.payment_date) BETWEEN ? AND ?
  UNION ALL
@@ -25,7 +31,7 @@ if($hasReturnPayments){$sql.=" UNION ALL
  SELECT rp.paid_at,CONVERT('Sales Return Refund' USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(sr.return_number USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT('Customer Refund' USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(rp.payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT('OUT' USING utf8mb4) COLLATE utf8mb4_unicode_ci,rp.amount
  FROM sales_return_payments rp JOIN sales_returns sr ON sr.id=rp.return_id WHERE DATE(rp.paid_at) BETWEEN ? AND ?";}
 $sql.=") ledger_rows ORDER BY transaction_date ASC,reference ASC";
-$params=[$from,$to,$from,$to,$from,$to,$from,$to,$from,$to];if($hasReturnPayments){$params[]=$from;$params[]=$to;}
+$params=[$from,$to,$from,$to,$from,$to,$from,$to,$from,$to,$from,$to];if($hasReturnPayments){$params[]=$from;$params[]=$to;}
 $q=$conn->prepare($sql);$q->execute($params);$rows=$q->fetchAll();
 $currency=(string)($conn->query("SELECT setting_value FROM settings WHERE setting_key='currency' LIMIT 1")->fetchColumn()?:'KES');
 $in=0.0;$out=0.0;$balance=0.0;foreach($rows as &$row){$amount=(float)$row['amount'];if($row['direction']==='IN'){$in+=$amount;$balance+=$amount;}else{$out+=$amount;$balance-=$amount;}$row['running']=$balance;}unset($row);
