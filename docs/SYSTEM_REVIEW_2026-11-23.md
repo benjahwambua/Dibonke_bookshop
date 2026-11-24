@@ -278,3 +278,10 @@ Direct C2B payments that name a registered customer's invoice now apply the open
 Store-day reconciliation now checks for pending STK transactions linked to sales from that store and business date. It refuses to close while any such confirmation is pending, and locks those pending transaction rows during the check so a callback cannot race the close calculation. This guard is conditional on the M-PESA transaction table existing, so stores can still operate on installations without the optional M-PESA migration.
 
 These are source-level controls only. Validate successful, failed, duplicate, incomplete-metadata and orphaned STK callbacks; C2B invoice exact payments, part-payments and overpayments; and store close while an STK request is pending using a backed-up local test database and Daraja sandbox. No live callback or XAMPP test was performed in this pass.
+
+
+### User-history preservation correction — 24 November 2026
+
+The administrator's user-deletion guard was checking the wrong ownership columns for purchases and expenses (`created_by`), while the current write paths store their owner in `user_id`. A user with purchase or expense history could therefore pass those particular history checks on installations without enforcing foreign keys. The guard now checks the correct columns and also checks additional existing user-linked records (including activity logs, stock movements, purchase orders, goods receipts and journal creators) when those tables/columns are present. Column discovery uses `information_schema.columns` rather than a parameterized `SHOW COLUMNS` statement. Accounts with linked history must be deactivated rather than deleted.
+
+This is a source correction. Test deletion against a newly created user with no history, then against users linked to sales, purchases, expenses, receipts, stock movements and journals. The linked-history cases must be refused while deactivation remains available.
