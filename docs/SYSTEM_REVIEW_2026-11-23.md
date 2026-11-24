@@ -202,3 +202,18 @@ The Inventory Overview previously read only `products.stock_quantity`. In the mu
 **Code change made:** the Inventory Overview now adds each product's Main Store quantity to its summed `store_stock` quantities for summary counts, cost valuation, product rows, stock filters and status ordering. The query checks whether the Store Operations stock table exists and falls back to the legacy Main Store-only calculation on installations where the migration has not yet been applied.
 
 This is a source-level correction. Verify locally after applying the Store Operations migration by comparing the Inventory Overview against Main Store stock plus each store's stock card for several products, including products stocked only at a selling store.
+
+
+### Customer returns and multi-store inventory valuation follow-up — 24 November 2026
+
+**Customer return accounting setup gap found and corrected:** the return approval and refund settlement workflows call the `sales_returns` and `refund_payable` accounting mappings, but the mapping screen and automatic-posting migration did not expose or seed those keys. With automatic posting enabled, an approved return or refund settlement could fail while looking up the missing mapping.
+
+**Code changes made:**
+- Added Sales Returns (Income / contra-revenue) and Refunds Payable (Liability) to the accounting mapping screen, so the existing return journal logic can resolve both accounts and the automatic-posting enable check validates them.
+- Added the idempotent migration `database/dibonke_sales_return_accounting.sql`, which ensures account codes 4010 (Sales Returns) and 2030 (Refunds Payable) exist and seeds the two mapping keys. Apply it after `dibonke_automatic_accounting_posting.sql`.
+
+The existing return posting flow debits Sales Returns and credits the customer receivable reduction and/or Refunds Payable. When a refund is later paid, the settlement journal debits Refunds Payable and credits the selected cash, M-Pesa, bank or other clearing account. Returned stock is restored to Main Store only when the return line is marked for restocking. This is consistent with the current operational policy that customer returns are received into Main Store.
+
+**Multi-store inventory cost correction:** direct purchases and goods receipts previously recalculated a product's weighted-average buying cost using only `products.stock_quantity`, even though stock in selling stores is held separately in `store_stock`. Both receiving paths now include all selling-store quantities in the existing inventory quantity when calculating the new weighted-average cost. Legacy installations without `store_stock` retain the previous Main Store-only calculation. The Inventory Overview already uses Main Store plus selling-store quantities for its stock cost value.
+
+**Remaining verification:** apply the new return-accounting migration on a backed-up test database; test a return with restocking and one without restocking, a customer-credit application, a partial refund followed by final settlement, and Cash/M-Pesa/Bank refund channels. Then compare the Inventory Overview valuation and product buying cost before and after a purchase/GRN while stock exists in both Main Store and selling stores. No live database or browser test was performed during this source review.
