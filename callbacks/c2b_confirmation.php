@@ -58,8 +58,9 @@ try{
   }
   $description=$matchReason.' for invoice '.$sale['invoice_number'];
  }
- $ins=$conn->prepare("INSERT INTO mpesa_transactions(transaction_type,direction,phone_number,amount,account_reference,transaction_reference,result_code,result_description,result_status,reference_type,reference_id,raw_response,transaction_date) VALUES('C2B','Incoming',?,?,?,?,? ,?,'Success',?,?,?,?)");
- $ins->execute([$phone,$amount,$billRef,$transId,'0',$description,$referenceType,$referenceId,$raw,$transactionDate]);
+ $unallocatedAmount=round(max(0,$amount-$allocated),2);
+ $ins=$conn->prepare("INSERT INTO mpesa_transactions(transaction_type,direction,phone_number,amount,amount_applied,amount_unallocated,account_reference,transaction_reference,result_code,result_description,result_status,reference_type,reference_id,raw_response,transaction_date) VALUES('C2B','Incoming',?,?,?,?,?,?,?,?,'Success',?,?,?,?)");
+ $ins->execute([$phone,$amount,$allocated,$unallocatedAmount,$billRef,$transId,'0',$description,$referenceType,$referenceId,$raw,$transactionDate]);
  $transactionId=(int)$conn->lastInsertId();
  if(dibonkeAccountingAutoPostingEnabled($conn)){
   $journalLines=[dibonkeAccountingLine(dibonkeAccountingAccount($conn,'mpesa_clearing','Asset'),$allocated>0?'C2B payment received':'Unallocated C2B payment received',$amount,0)];
