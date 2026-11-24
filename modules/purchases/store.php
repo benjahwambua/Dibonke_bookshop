@@ -84,7 +84,11 @@ try {
     $purchaseId = (int)$conn->lastInsertId();$purchaseNumber='PUR-'.date('ymd').'-'.str_pad((string)$purchaseId,5,'0',STR_PAD_LEFT);$conn->prepare("UPDATE purchases SET purchase_number=? WHERE id=?")->execute([$purchaseNumber,$purchaseId]);
 
     $itemStmt = $conn->prepare("INSERT INTO purchase_items (purchase_id,product_id,quantity,buying_price,subtotal,entered_quantity,purchase_unit,conversion_factor,entered_unit_price) VALUES (?,?,?,?,?,?,?,?,?)");
-    $stockStmt = $conn->prepare("UPDATE products SET buying_price=CASE WHEN stock_quantity+? > 0 THEN ((stock_quantity*buying_price)+(?*?))/(stock_quantity+?) ELSE ? END, stock_quantity=stock_quantity+? WHERE id=?");
+    $hasStoreStockTable = (bool)$conn->query("SHOW TABLES LIKE 'store_stock'")->fetchColumn();
+    $weightedStock = $hasStoreStockTable
+        ? "(stock_quantity + COALESCE((SELECT SUM(ss.quantity) FROM store_stock ss WHERE ss.product_id=products.id),0))"
+        : "stock_quantity";
+    $stockStmt = $conn->prepare("UPDATE products SET buying_price=CASE WHEN {$weightedStock}+? > 0 THEN (({$weightedStock}*buying_price)+(?*?))/({$weightedStock}+?) ELSE ? END, stock_quantity=stock_quantity+? WHERE id=?");
     $hasMovementStoreId = (bool)$conn->query("SHOW COLUMNS FROM stock_movements LIKE 'store_id'")->fetchColumn();
     $mainStoreId = $hasMovementStoreId ? (int)$conn->query("SELECT id FROM stores WHERE store_code='MAIN' LIMIT 1")->fetchColumn() : 0;
     if ($hasMovementStoreId && $mainStoreId <= 0) throw new RuntimeException('Main Store is missing. Complete the Store Operations migration before receiving purchases.');
