@@ -60,15 +60,14 @@ try{
  }
  $ins=$conn->prepare("INSERT INTO mpesa_transactions(transaction_type,direction,phone_number,amount,account_reference,transaction_reference,result_code,result_description,result_status,reference_type,reference_id,raw_response,transaction_date) VALUES('C2B','Incoming',?,?,?,?,? ,?,'Success',?,?,?,?)");
  $ins->execute([$phone,$amount,$billRef,$transId,'0',$description,$referenceType,$referenceId,$raw,$transactionDate]);
+ $transactionId=(int)$conn->lastInsertId();
  if(dibonkeAccountingAutoPostingEnabled($conn)){
-  $transactionId=(int)$conn->lastInsertId();
   $journalLines=[dibonkeAccountingLine(dibonkeAccountingAccount($conn,'mpesa_clearing','Asset'),$allocated>0?'C2B payment received':'Unallocated C2B payment received',$amount,0)];
   if($allocated>0)$journalLines[]=dibonkeAccountingLine(dibonkeAccountingAccount($conn,'accounts_receivable','Asset'),'Invoice receivable settled',0,$allocated);
   if($customerCredit>0)$journalLines[]=dibonkeAccountingLine(dibonkeAccountingAccount($conn,'customer_credit','Liability'),'C2B invoice overpayment retained as customer credit',0,$customerCredit);
   if($allocated<=0 && $customerCredit<=0)$journalLines[]=dibonkeAccountingLine(dibonkeAccountingAccount($conn,'unallocated_receipts','Liability'),'Customer receipt awaiting allocation',0,$amount);
   dibonkeAccountingPostJournal($conn,'mpesa_c2b_receipt',$transactionId,date('Y-m-d',strtotime($transactionDate)),'M-Pesa C2B receipt '.$transId,$journalLines,null);
  }
- $transactionId=(int)$conn->lastInsertId();
  recordAuditEvent($conn,'Receive','mpesa_transactions','Received C2B M-PESA transaction '.$transId,'mpesa_transaction',$transactionId,null,['amount'=>$amount,'reference_type'=>$referenceType,'reference_id'=>$referenceId,'allocated_amount'=>$allocated,'customer_credit'=>$customerCredit,'bill_reference'=>$billRef]);
  $conn->commit();
  echo json_encode(['ResultCode'=>0,'ResultDesc'=>'Accepted']);
