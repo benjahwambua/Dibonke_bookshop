@@ -3,6 +3,7 @@ declare(strict_types=1);
 require_once __DIR__.'/../config/app.php';
 require_once __DIR__.'/../config/db.php';
 require_once __DIR__.'/../includes/accounting_posting.php';
+require_once __DIR__.'/../includes/audit.php';
 header('Content-Type: application/json');
 $raw=file_get_contents('php://input')?:'';
 $data=json_decode($raw,true);
@@ -67,6 +68,8 @@ try{
   if($allocated<=0 && $customerCredit<=0)$journalLines[]=dibonkeAccountingLine(dibonkeAccountingAccount($conn,'unallocated_receipts','Liability'),'Customer receipt awaiting allocation',0,$amount);
   dibonkeAccountingPostJournal($conn,'mpesa_c2b_receipt',$transactionId,date('Y-m-d',strtotime($transactionDate)),'M-Pesa C2B receipt '.$transId,$journalLines,null);
  }
+ $transactionId=(int)$conn->lastInsertId();
+ recordAuditEvent($conn,'Receive','mpesa_transactions','Received C2B M-PESA transaction '.$transId,'mpesa_transaction',$transactionId,null,['amount'=>$amount,'reference_type'=>$referenceType,'reference_id'=>$referenceId,'allocated_amount'=>$allocated,'customer_credit'=>$customerCredit,'bill_reference'=>$billRef]);
  $conn->commit();
  echo json_encode(['ResultCode'=>0,'ResultDesc'=>'Accepted']);
 }catch(Throwable $e){if($conn->inTransaction())$conn->rollBack();error_log('Dibonke C2B confirmation: '.$e->getMessage());http_response_code(500);echo json_encode(['ResultCode'=>1,'ResultDesc'=>'Processing failed; confirmation was not acknowledged.']);}
