@@ -54,26 +54,36 @@ try{
       $saleQ=$conn->prepare("SELECT * FROM sales WHERE id=? FOR UPDATE");$saleQ->execute([$saleId]);$sale=$saleQ->fetch();
       $already=$conn->prepare("SELECT COUNT(*) FROM customer_payments WHERE sale_id=? AND transaction_reference=?");
       $already->execute([$saleId,$receipt]);
-      if($sale && (int)$already->fetchColumn()===0 && (float)$sale['paid_amount'] < (float)$sale['total_amount']){
-         $payAmount=min($amount,(float)$sale['total_amount']-(float)$sale['paid_amount']);
+      if($sale && (int)$already->fetchColumn()===0 && $amount>0){
+         $openBalance=max(0,round((float)$sale['total_amount']-(float)$sale['paid_amount'],2));
+         $payAmount=round(min($amount,$openBalance),2);
          $excessAmount=round(max(0,$amount-$payAmount),2);
-         $upd=$conn->prepare("UPDATE sales SET paid_amount=paid_amount+?, balance=GREATEST(0,total_amount-paid_amount-?) WHERE id=?");
-         $upd->execute([$payAmount,$payAmount,$saleId]);
-         if($payAmount>0 && dibonkeAccountingAutoPostingEnabled($conn)){$journalLines=[dibonkeAccountingLine(dibonkeAccountingAccount($conn,'mpesa_clearing','Asset'),'Confirmed M-Pesa sale collection',$amount,0),dibonkeAccountingLine(dibonkeAccountingAccount($conn,'accounts_receivable','Asset'),'Sale receivable settled',0,$payAmount)];if($excessAmount>0 && !empty($sale['customer_id']))$journalLines[]=dibonkeAccountingLine(dibonkeAccountingAccount($conn,'customer_credit','Liability'),'M-Pesa overpayment retained as customer credit',0,$excessAmount);elseif($excessAmount>0)$journalLines[]=dibonkeAccountingLine(dibonkeAccountingAccount($conn,'unallocated_receipts','Liability'),'Unmatched M-Pesa overpayment awaiting allocation',0,$excessAmount);dibonkeAccountingPostJournal($conn,'mpesa_sale_collection',(int)$tx['id'],date('Y-m-d'),'M-Pesa sale collection '.$receipt,$journalLines,(int)$sale['user_id']);}
-         if($sale['customer_id'] && $payAmount>0){
-            $cp=$conn->prepare("UPDATE customers SET balance=GREATEST(0,balance-?) WHERE id=?");$cp->execute([$payAmount,(int)$sale['customer_id']]);
-            $exists=$conn->prepare("SELECT COUNT(*) FROM customer_payments WHERE sale_id=? AND transaction_reference=?");$exists->execute([$saleId,$receipt]); 
-            if((int)$exists->fetchColumn()===0){
-               $rc='TMP-'.strtoupper(bin2hex(random_bytes(8)));
-               $ins=$conn->prepare("INSERT INTO customer_payments(receipt_number,customer_id,sale_id,user_id,amount,payment_method,transaction_reference,payment_date,notes) VALUES(?,?,?,?,?,?,?,?,?)");
-               $ins->execute([$rc,(int)$sale['customer_id'],$saleId,(int)$sale['user_id'],$amount,'M-Pesa',$receipt,date('Y-m-d H:i:s'),'Automatic M-PESA payment for '.$sale['invoice_number']]);$paymentId=(int)$conn->lastInsertId();$rc='CR-'.date('ymd').'-'.str_pad((string)$paymentId,5,'0',STR_PAD_LEFT);$conn->prepare("UPDATE customer_payments SET receipt_number=? WHERE id=?")->execute([$rc,$paymentId]);$conn->prepare("INSERT INTO customer_payment_allocations(payment_id,sale_id,amount) VALUES(?,?,?)")->execute([$paymentId,$saleId,$payAmount]);
-               if($excessAmount>0)$conn->prepare("INSERT INTO customer_credit_ledger(customer_id,payment_id,entry_type,amount,notes,created_by) VALUES(?,?,'Credit',?,'M-Pesa STK overpayment retained as customer credit',?)")->execute([(int)$sale['customer_id'],$paymentId,$excessAmount,(int)$sale['user_id']]);
-
-            }
+         if($payAmount>0){
+            $upd=$conn->prepare("UPDATE sales SET paid_amount=LEAST(total_amount,paid_amount+?), balance=GREATEST(0,total_amount-paid_amount-?) WHERE id=?");
+            $upd->execute([$payAmount,$payAmount,$saleId]);
          }
-         recordAuditEvent($conn,'Receive','sales','Confirmed M-PESA payment for invoice '.$sale['invoice_number'],'sale',$saleId,['paid_amount'=>(float)$sale['paid_amount'],'balance'=>(float)$sale['balance']],['paid_amount'=>(float)$sale['paid_amount']+$payAmount,'balance'=>max(0,(float)$sale['total_amount']-(float)$sale['paid_amount']-$payAmount),'payment_method'=>'M-Pesa','reference'=>$receipt]);
+         if(!empty($sale['customer_id'])){
+            $customerId=(int)$sale['customer_id'];
+            if($payAmount>0)$conn->prepare("UPDATE customers SET balance=GREATEST(0,balance-?) WHERE id=?")->execute([$payAmount,$customerId]);
+            $rc='TMP-'.strtoupper(bin2hex(random_bytes(8)));
+            $ins=$conn->prepare("INSERT INTO customer_payments(receipt_number,customer_id,sale_id,user_id,amount,payment_method,transaction_reference,payment_date,notes) VALUES(?,?,?,?,?,?,?,?,?)");
+            $ins->execute([$rc,$customerId,$saleId,(int)$sale['user_id'],$amount,'M-Pesa',$receipt,date('Y-m-d H:i:s'),'Automatic M-PESA payment for '.$sale['invoice_number']]);
+            $paymentId=(int)$conn->lastInsertId();
+            $rc='CR-'.date('ymd').'-'.str_pad((string)$paymentId,5,'0',STR_PAD_LEFT);
+            $conn->prepare("UPDATE customer_payments SET receipt_number=? WHERE id=?")->execute([$rc,$paymentId]);
+            if($payAmount>0)$conn->prepare("INSERT INTO customer_payment_allocations(payment_id,sale_id,amount) VALUES(?,?,?)")->execute([$paymentId,$saleId,$payAmount]);
+            if($excessAmount>0)$conn->prepare("INSERT INTO customer_credit_ledger(customer_id,payment_id,entry_type,amount,notes,created_by) VALUES(?,?,'Credit',?,'M-Pesa STK overpayment retained as customer credit',?)")->execute([$customerId,$paymentId,$excessAmount,(int)$sale['user_id']]);
+         }
+         if(dibonkeAccountingAutoPostingEnabled($conn)){
+            $journalLines=[dibonkeAccountingLine(dibonkeAccountingAccount($conn,'mpesa_clearing','Asset'),'Confirmed M-Pesa sale collection',$amount,0)];
+            if($payAmount>0)$journalLines[]=dibonkeAccountingLine(dibonkeAccountingAccount($conn,'accounts_receivable','Asset'),'Sale receivable settled',0,$payAmount);
+            if($excessAmount>0 && !empty($sale['customer_id']))$journalLines[]=dibonkeAccountingLine(dibonkeAccountingAccount($conn,'customer_credit','Liability'),'M-Pesa overpayment retained as customer credit',0,$excessAmount);
+            elseif($excessAmount>0)$journalLines[]=dibonkeAccountingLine(dibonkeAccountingAccount($conn,'unallocated_receipts','Liability'),'M-Pesa overpayment awaiting allocation',0,$excessAmount);
+            dibonkeAccountingPostJournal($conn,'mpesa_sale_collection',(int)$tx['id'],date('Y-m-d'),'M-Pesa sale collection '.$receipt,$journalLines,(int)$sale['user_id']);
+         }
+         recordAuditEvent($conn,'Receive','sales','Confirmed M-PESA payment for invoice '.$sale['invoice_number'],'sale',$saleId,['paid_amount'=>(float)$sale['paid_amount'],'balance'=>(float)$sale['balance']],['paid_amount'=>(float)$sale['paid_amount']+$payAmount,'balance'=>max(0,(float)$sale['total_amount']-(float)$sale['paid_amount']-$payAmount),'payment_amount'=>$amount,'customer_credit'=>$excessAmount,'payment_method'=>'M-Pesa','reference'=>$receipt]);
       }
-   }
+
  }
  $conn->commit();
  echo json_encode(['ResultCode'=>0,'ResultDesc'=>'Accepted']);
