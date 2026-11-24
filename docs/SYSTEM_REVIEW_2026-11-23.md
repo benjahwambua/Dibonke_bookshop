@@ -285,3 +285,10 @@ These are source-level controls only. Validate successful, failed, duplicate, in
 The administrator's user-deletion guard was checking the wrong ownership columns for purchases and expenses (`created_by`), while the current write paths store their owner in `user_id`. A user with purchase or expense history could therefore pass those particular history checks on installations without enforcing foreign keys. The guard now checks the correct columns and also checks additional existing user-linked records (including activity logs, stock movements, purchase orders, goods receipts and journal creators) when those tables/columns are present. Column discovery uses `information_schema.columns` rather than a parameterized `SHOW COLUMNS` statement. Accounts with linked history must be deactivated rather than deleted.
 
 This is a source correction. Test deletion against a newly created user with no history, then against users linked to sales, purchases, expenses, receipts, stock movements and journals. The linked-history cases must be refused while deactivation remains available.
+
+
+### Customer statement and credit separation — 24 November 2026
+
+Customer statements now calculate the receivable balance from invoice totals less the amounts actually applied to invoices in `customer_payment_allocations`. When an older receipt has no allocation row and no customer-credit ledger entry, the statement retains the legacy assumption that the full receipt was applied. When a receipt has a customer-credit ledger entry, only its recorded invoice allocations reduce receivables; the remainder is identified as customer credit. The customer account page also displays the current credit balance separately from outstanding invoices.
+
+This prevents an overpayment from appearing as a negative receivable or being mistaken for a reduction in another invoice. The statement and credit ledger should be checked together for a partial payment, a payment spanning several invoices, an exact payment and an overpayment. Credit application to future invoices and credit refunds remain outside the current scope.
