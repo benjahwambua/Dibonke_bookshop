@@ -46,6 +46,10 @@ A source-level follow-up traced the purchase, POS, customer receipt, supplier pa
 
 These are code-level corrections based on the current source paths. They have not yet been exercised against the user's local database. Automatic accounting remains opt-in; do not enable it until the account mappings and opening balances have been reviewed. A full transaction-by-transaction reconciliation still requires a restored test database and local acceptance testing.
 
+## Financial Control follow-up — 24 November 2026
+
+The Financial Control report had the same collection double-counting/date-attribution defect previously found in the Finance overview. It counted paid amounts from sales (which are increased when later receipts are allocated) and separately added only unallocated customer-payment rows. It now counts customer payment records by actual payment date, plus paid walk-in sales with no customer payment row. Its payment-channel breakdown uses the same source split, while supplier payments, expenses and recorded refunds remain separate outflows.
+
 ## Findings requiring attention
 
 ### 1. Critical — database installability and migration control
