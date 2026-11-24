@@ -40,9 +40,8 @@ try {
     }
 
     $amount = round((float)$tx['amount'], 2);
-    $outstanding = round((float)$customer['balance'], 2);
-    if ($amount <= 0 || $outstanding + 0.009 < $amount) {
-        throw new RuntimeException('This customer has less outstanding credit than the receipt amount. Choose a customer with enough outstanding invoices; excess receipts must remain unallocated.');
+    if ($amount <= 0) {
+        throw new RuntimeException('The M-PESA receipt amount must be greater than zero.');
     }
 
     $userId = (int)$_SESSION['user_id'];
@@ -63,7 +62,7 @@ try {
     $conn->prepare("UPDATE customer_payments SET receipt_number=? WHERE id=?")->execute([$receiptNumber, $paymentId]);
 
     // FIFO allocation updates invoice balances and the customer summary in this transaction.
-    dibonkeAllocateCustomerPayment($conn, $customerId, $paymentId, $amount);
+    $allocation = dibonkeAllocateCustomerPayment($conn, $customerId, $paymentId, $amount, $userId);
 
     // Only reclassify the unallocated-receipt liability if the original C2B
     // callback actually posted that liability journal. This avoids creating
@@ -73,9 +72,14 @@ try {
     $originalJournal = $sourceJournal->fetch(PDO::FETCH_ASSOC);
     if ($originalJournal && $originalJournal['status'] === 'Posted') {
         $journalLines = [
-            dibonkeAccountingLine(dibonkeAccountingAccount($conn, 'unallocated_receipts', 'Liability'), 'Direct C2B receipt allocated to customer', $amount, 0),
-            dibonkeAccountingLine(dibonkeAccountingAccount($conn, 'accounts_receivable', 'Asset'), 'Customer invoices settled by C2B receipt', 0, $amount),
+            dibonkeAccountingLine(dibonkeAccountingAccount($conn, 'unallocated_receipts', 'Liability'), 'Direct C2B receipt assigned to customer', $amount, 0),
         ];
+        if ($allocation['allocated'] > 0) {
+            $journalLines[] = dibonkeAccountingLine(dibonkeAccountingAccount($conn, 'accounts_receivable', 'Asset'), 'Customer invoices settled by C2B receipt', 0, $allocation['allocated']);
+        }
+        if ($allocation['credit'] > 0) {
+            $journalLines[] = dibonkeAccountingLine(dibonkeAccountingAccount($conn, 'customer_credit', 'Liability'), 'Excess retained as customer credit', 0, $allocation['credit']);
+        }
         dibonkeAccountingPostJournal(
             $conn,
             'mpesa_c2b_allocation',
@@ -98,11 +102,11 @@ try {
         'mpesa_transaction',
         $transactionId,
         ['reference_type' => null, 'reference_id' => null],
-        ['reference_type' => 'customer_payment', 'reference_id' => $paymentId, 'customer_id' => $customerId, 'amount' => $amount]
+        ['reference_type' => 'customer_payment', 'reference_id' => $paymentId, 'customer_id' => $customerId, 'amount' => $amount, 'allocated' => $allocation['allocated'], 'customer_credit' => $allocation['credit']]
     );
 
     $conn->commit();
-    $_SESSION['mpesa_flash'] = 'C2B receipt allocated successfully. Customer receipt ' . $receiptNumber . ' has been created.';
+    $_SESSION['mpesa_flash'] = 'C2B receipt assigned successfully. KES ' . number_format($allocation['allocated'], 2) . ' settled invoices and KES ' . number_format($allocation['credit'], 2) . ' is retained as customer credit. Receipt ' . $receiptNumber . '.';
 } catch (Throwable $e) {
     if ($conn->inTransaction()) {
         $conn->rollBack();
