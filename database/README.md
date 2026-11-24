@@ -335,3 +335,10 @@ The matching application changes:
 - eTIMS remains onboarding/queue preparation only; no KRA transmission or production certification is claimed.
 
 A manual database and uploads backup/restore procedure is documented in `docs/DIBONKE_BACKUP_RECOVERY.md`. It is not an automated scheduler. Run the acceptance tests against the actual XAMPP/MariaDB database before treating this coordinated update as production-ready.
+
+
+### Customer return accounting mappings
+
+The existing `dibonke_payment_allocations.sql` migration seeds the customer return mappings against account codes 4050 (Sales Returns and Allowances) and 2060 (Customer Refunds Payable). The follow-up `dibonke_sales_return_accounting.sql` migration is an idempotent compatibility check for installations where those mappings need to be ensured separately; apply it after `dibonke_automatic_accounting_posting.sql` and `dibonke_payment_allocations.sql`. It uses the same account codes and mapping keys, so it does not create duplicate return accounts.
+
+The Posting Mappings screen now exposes both mappings. Confirm that Sales Returns maps to an active Income account and Refund Payable maps to an active Liability account before enabling automatic posting.
