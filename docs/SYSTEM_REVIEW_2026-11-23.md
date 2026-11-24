@@ -193,3 +193,12 @@ This aligns the cashbook and cashier shift approach with the Finance Overview an
 Static inspection confirmed that a posted goods receipt increases product stock and supplier payable, records a Main Store stock movement when the store-location migration is installed, and posts inventory debit / accounts payable credit when automatic accounting is enabled. Subsequent supplier payments reduce the supplier payable, are allocated against outstanding supplier documents, and post accounts payable debit / payment account credit. Direct purchases create a supplier payment allocation for the amount paid at purchase time.
 
 No change was made to these source paths in this pass because their transaction and accounting directions are internally consistent on inspection. They still require database-backed tests for partial receipts, multiple GRNs against one PO, partial supplier payments, and payments spanning multiple supplier documents.
+
+
+### Multi-store inventory overview correction — 24 November 2026
+
+The Inventory Overview previously read only `products.stock_quantity`. In the multi-store workflow, that column represents Main Store stock while selling-store balances are held separately in `store_stock`. The overview therefore understated available network stock, stock cost value, and healthy/low/out-of-stock classifications whenever selling stores held inventory.
+
+**Code change made:** the Inventory Overview now adds each product's Main Store quantity to its summed `store_stock` quantities for summary counts, cost valuation, product rows, stock filters and status ordering. The query checks whether the Store Operations stock table exists and falls back to the legacy Main Store-only calculation on installations where the migration has not yet been applied.
+
+This is a source-level correction. Verify locally after applying the Store Operations migration by comparing the Inventory Overview against Main Store stock plus each store's stock card for several products, including products stocked only at a selling store.
