@@ -91,8 +91,8 @@ try {
         );
     }
 
-    $conn->prepare("UPDATE mpesa_transactions SET reference_type='customer_payment', reference_id=?, result_description=CONCAT(COALESCE(result_description,''),' | Allocated to ',?) WHERE id=? AND reference_type IS NULL")
-        ->execute([$paymentId, $customer['customer_name'], $transactionId]);
+    $conn->prepare("UPDATE mpesa_transactions SET reference_type='customer_payment', reference_id=?, amount_applied=?, amount_unallocated=?, result_description=CONCAT(COALESCE(result_description,''),' | Allocated to ',?) WHERE id=? AND reference_type IS NULL")
+        ->execute([$paymentId, $allocation['allocated'], $allocation['credit'], $customer['customer_name'], $transactionId]);
 
     recordAuditEvent(
         $conn,
