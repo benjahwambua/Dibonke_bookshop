@@ -226,3 +226,12 @@ A follow-up comparison of the cashier's My Shift page and the Launch Operations 
 **Code change made:** Launch Operations now calculates cash sales from walk-in completed sales only and includes all customer cash-payment records for the cashier during the shift window. Supplier payments, expenses, cash refunds and manual cash movements remain separately included. This makes the shift-close summary consistent with the My Shift page.
 
 Verify locally by comparing both screens for a cashier who makes a registered-customer cash sale, receives a later part-payment allocated to that invoice, and also completes a walk-in cash sale. Both screens should report the same expected cash before shift close.
+
+
+### C2B invoice receipt allocation consistency — 24 November 2026
+
+The C2B confirmation callback updated a matched customer's invoice `paid_amount`/`balance` and inserted a `customer_payments` receipt, but did not create the corresponding `customer_payment_allocations` row. The STK callback and normal customer receipt workflow already record that allocation. This left C2B receipts absent from the allocation ledger even though the invoice and customer balances had been updated.
+
+**Code change made:** When a C2B payment is matched to a registered-customer invoice, the callback now inserts a `customer_payment_allocations` row referencing the new receipt, matched sale and allocated amount, within the same database transaction. Unallocated C2B receipts continue to be recorded against the unallocated-receipts liability mapping and are not falsely allocated to an invoice.
+
+Verify locally with a C2B payment matched by invoice reference and confirm the receipt, invoice balance, customer balance, allocation row and journal all agree. Also test an unmatched C2B receipt to confirm it remains unallocated.
