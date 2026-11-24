@@ -28,7 +28,7 @@ function dibonkeAllocateCustomerPayment(PDO $db, int $customerId, int $paymentId
     }
     if ($remaining > 0.009) {
         $credit = $db->prepare("INSERT INTO customer_credit_ledger(customer_id,payment_id,entry_type,amount,notes,created_by) VALUES(?,?,'Credit',?,?,?)");
-        $credit->execute([$customerId, $paymentId, $remaining, 'M-Pesa receipt excess retained as customer credit', $userId]);
+        $credit->execute([$customerId, $paymentId, $remaining, 'Receipt excess retained as customer credit', $userId]);
     }
     if ($allocatedTotal > 0) {
         $db->prepare("UPDATE customers SET balance=GREATEST(0,balance-?) WHERE id=?")->execute([$allocatedTotal, $customerId]);
