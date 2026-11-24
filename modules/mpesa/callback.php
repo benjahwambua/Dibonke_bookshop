@@ -22,6 +22,7 @@ try{
  $alreadyProcessed=$priorCallback['result_status']==='Success';
  foreach(($cb['CallbackMetadata']['Item']??[]) as $item){$name=$item['Name']??'';$value=$item['Value']??null;if($name==='Amount')$amount=(float)$value;elseif($name==='MpesaReceiptNumber')$receipt=(string)$value;elseif($name==='PhoneNumber')$phone=(string)$value;elseif($name==='TransactionDate'&&$value)$date=DateTime::createFromFormat('YmdHis',(string)$value)?->format('Y-m-d H:i:s');}
   if($alreadyProcessed){$conn->commit();echo json_encode(['ResultCode'=>0,'ResultDesc'=>'Duplicate confirmation already processed']);exit;}
+ $appliedAmount=0.0;$unallocatedAmount=0.0;
   if($code===0 && ($amount<=0 || $receipt===''))throw new RuntimeException('Successful STK callback is missing a valid amount or M-PESA receipt number.');
  $st=$conn->prepare("INSERT INTO mpesa_transactions(transaction_type,direction,phone_number,amount,transaction_reference,merchant_request_id,checkout_request_id,result_code,result_description,result_status,raw_response,transaction_date) VALUES('STK Push','Incoming',?,?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE result_code=VALUES(result_code),result_description=VALUES(result_description),result_status=VALUES(result_status),transaction_reference=VALUES(transaction_reference),phone_number=VALUES(phone_number),amount=VALUES(amount),raw_response=VALUES(raw_response),transaction_date=VALUES(transaction_date)");
  $st->execute([$phone,$amount,$receipt,$merchant,$checkout,(string)$code,$desc,$status,$raw,$date]);
@@ -42,6 +43,7 @@ try{
                $ins=$conn->prepare("INSERT INTO customer_payments(receipt_number,customer_id,sale_id,user_id,amount,payment_method,transaction_reference,payment_date,notes) VALUES(?,?,?,?,?,?,?,?,?)");
                $ins->execute([$rc,$customerId,null,(int)($conn->query("SELECT id FROM users ORDER BY id LIMIT 1")->fetchColumn() ?: 1),$payAmount,'M-Pesa',$receipt,date('Y-m-d H:i:s'),'Automatic M-PESA credit payment']);$paymentId=(int)$conn->lastInsertId();$rc='CR-'.date('ymd').'-'.str_pad((string)$paymentId,5,'0',STR_PAD_LEFT);$conn->prepare("UPDATE customer_payments SET receipt_number=? WHERE id=?")->execute([$rc,$paymentId]);
                $allocation=dibonkeAllocateCustomerPayment($conn,$customerId,$paymentId,$payAmount,(int)($conn->query("SELECT id FROM users ORDER BY id LIMIT 1")->fetchColumn() ?: 1));
+               $appliedAmount=(float)$allocation['allocated'];$unallocatedAmount=(float)$allocation['credit'];
                if(dibonkeAccountingAutoPostingEnabled($conn)){
                   $journalLines=[dibonkeAccountingLine(dibonkeAccountingAccount($conn,'mpesa_clearing','Asset'),'Confirmed M-Pesa customer collection',$payAmount,0)];
                   if($allocation['allocated']>0)$journalLines[]=dibonkeAccountingLine(dibonkeAccountingAccount($conn,'accounts_receivable','Asset'),'Customer invoices settled',0,$allocation['allocated']);
@@ -63,6 +65,7 @@ try{
          $openBalance=max(0,round((float)$sale['total_amount']-(float)$sale['paid_amount'],2));
          $payAmount=round(min($amount,$openBalance),2);
          $excessAmount=round(max(0,$amount-$payAmount),2);
+         $appliedAmount=$payAmount;$unallocatedAmount=$excessAmount;
          if($payAmount>0){
             $upd=$conn->prepare("UPDATE sales SET paid_amount=LEAST(total_amount,paid_amount+?), balance=GREATEST(0,total_amount-LEAST(total_amount,paid_amount+?)) WHERE id=?");
             $upd->execute([$payAmount,$payAmount,$saleId]);
@@ -92,6 +95,7 @@ try{
       throw new RuntimeException('The STK transaction is not linked to a supported sale or customer payment.');
    }
  }
+ if($code===0){$saveAmounts=$conn->prepare("UPDATE mpesa_transactions SET amount_applied=?,amount_unallocated=? WHERE checkout_request_id=?");$saveAmounts->execute([$appliedAmount,$unallocatedAmount,$checkout]);}
  $conn->commit();
  echo json_encode(['ResultCode'=>0,'ResultDesc'=>'Accepted']);
 }catch(Throwable $e){if($conn->inTransaction())$conn->rollBack();error_log('M-PESA callback: '.$e->getMessage());http_response_code(500);echo json_encode(['ResultCode'=>1,'ResultDesc'=>'Processing failed; confirmation was not acknowledged.']);}
