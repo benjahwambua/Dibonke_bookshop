@@ -28,5 +28,15 @@ PREPARE stmt_mpesa_amount_unallocated FROM @ddl_mpesa_amount_unallocated;
 EXECUTE stmt_mpesa_amount_unallocated;
 DEALLOCATE PREPARE stmt_mpesa_amount_unallocated;
 
-ALTER TABLE mpesa_transactions
-  ADD INDEX idx_mpesa_unallocated_date (result_status, direction, transaction_date);
+SET @has_mpesa_unallocated_index := (
+  SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mpesa_transactions' AND INDEX_NAME='idx_mpesa_unallocated_date'
+);
+SET @ddl_mpesa_unallocated_index := IF(
+  @has_mpesa_unallocated_index=0,
+  'ALTER TABLE mpesa_transactions ADD INDEX idx_mpesa_unallocated_date (result_status, direction, transaction_date)',
+  'SELECT 1'
+);
+PREPARE stmt_mpesa_unallocated_index FROM @ddl_mpesa_unallocated_index;
+EXECUTE stmt_mpesa_unallocated_index;
+DEALLOCATE PREPARE stmt_mpesa_unallocated_index;
