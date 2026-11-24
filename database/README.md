@@ -359,3 +359,6 @@ Customer credit receipt behavior: the Customer Payments screen lists all active 
 - C2B payments matched by invoice reference to a registered customer apply only the invoice's remaining balance. Any excess is stored in `customer_credit_ledger` and posted to the `customer_credit` liability mapping when automatic accounting is enabled. The full received amount remains in the customer receipt record.
 - Store Operations refuses to reconcile a business day while a linked STK request is still pending. This check requires `mpesa_transactions`; without that optional table, the rest of Store Operations remains available.
 - These controls do not replace sandbox callback testing. Confirm the customer-credit migration is applied before processing customer-linked STK/C2B overpayments.
+
+
+Customer account statements use payment-allocation totals as the receivable credit and show any amount held in `customer_credit_ledger` separately. Historical receipts with no allocation or credit-ledger row retain the legacy full-receipt treatment. This keeps overpayments from appearing as negative customer receivables. Credit use against future invoices and credit refunds still require a separate controlled workflow.
