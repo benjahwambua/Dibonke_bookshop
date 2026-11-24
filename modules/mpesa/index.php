@@ -138,7 +138,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
             <?php else: ?>
                 <div class="table-wrap">
                     <table>
-                        <thead><tr><th>Date</th><th>M-PESA receipt</th><th>Phone</th><th>Amount</th><th>Bill reference</th><th>Customer</th><th>Action</th></tr></thead>
+                        <thead><tr><th>Date</th><th>M-PESA receipt</th><th>Phone</th><th>Amount</th><th>Bill reference</th><th>Allocate to customer</th></tr></thead>
                         <tbody>
                         <?php foreach ($unallocatedRows as $pending): ?>
                             <tr>
@@ -158,8 +158,9 @@ require_once __DIR__ . '/../../includes/sidebar.php';
                                                 <option value="<?= (int)$candidate['id'] ?>"><?= e($candidate['customer_name']) ?> — balance KES <?= number_format((float)$candidate['balance'], 2) ?></option>
                                             <?php endforeach; ?>
                                         </select>
+                                        <button class="btn primary" type="submit">Allocate receipt</button>
+                                    </form>
                                 </td>
-                                <td><button class="btn primary" type="submit">Allocate receipt</button></form></td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>
