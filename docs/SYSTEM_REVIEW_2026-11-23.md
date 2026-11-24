@@ -169,3 +169,27 @@ The POS had a customer list available in its server-side data but did not expose
 - The assistant cannot see the local database, browser, receipt printer or hosting account in this review.
 - No claim is made that the full business workflows above have passed.
 - The application should not be declared production-ready until the database restore and acceptance tests have been completed.
+
+
+### Cashbook and cashier shift reconciliation follow-up — 24 November 2026
+
+A further review found that the Cashbook Ledger and cashier shift summary were mixing two representations of customer cash receipts:
+
+- completed sales store the amount already paid on the sale;
+- customer-linked receipts are also recorded in `customer_payments`, including the initial POS payment and later invoice collections.
+
+The earlier filters excluded sale-linked customer-payment rows, but later collections can be recorded with no direct `sale_id` while still being allocated to an invoice. The invoice's `sales.paid_amount` is updated as part of that allocation, so counting the invoice's paid amount and the later receipt separately can overstate cash received.
+
+**Code changes made:**
+
+- Cashbook Ledger now uses completed POS receipts only for walk-in sales (`customer_id IS NULL`) and counts all customer-payment records by their actual payment date.
+- Cashier shift cash sales now use walk-in sales only; all customer-linked cash receipts are counted from `customer_payments` for the cashier and shift time window.
+- Supplier payments and cash expenses remain linked to the cashier shift through their `cash_shift_id`; cash refunds remain attributed to the cashier who paid them.
+
+This aligns the cashbook and cashier shift approach with the Finance Overview and Financial Control corrections documented above. It is a source-code correction; it still needs local acceptance testing with a customer POS payment, a later part-payment allocated to an invoice, and a shift close.
+
+### Supplier receiving and accounting review — 24 November 2026
+
+Static inspection confirmed that a posted goods receipt increases product stock and supplier payable, records a Main Store stock movement when the store-location migration is installed, and posts inventory debit / accounts payable credit when automatic accounting is enabled. Subsequent supplier payments reduce the supplier payable, are allocated against outstanding supplier documents, and post accounts payable debit / payment account credit. Direct purchases create a supplier payment allocation for the amount paid at purchase time.
+
+No change was made to these source paths in this pass because their transaction and accounting directions are internally consistent on inspection. They still require database-backed tests for partial receipts, multiple GRNs against one PO, partial supplier payments, and payments spanning multiple supplier documents.
