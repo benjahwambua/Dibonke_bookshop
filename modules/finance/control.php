@@ -19,16 +19,17 @@ if ($from > $to) {
 }
 $run=function($sql,$params=[])use($conn){$q=$conn->prepare($sql);$q->execute($params);return $q;};
 $sales=$run("SELECT COUNT(*) invoices,COALESCE(SUM(total_amount),0) revenue,COALESCE(SUM(paid_amount),0) collected,COALESCE(SUM(balance),0) due FROM sales WHERE sale_status='Completed' AND DATE(sale_date) BETWEEN ? AND ?",[$from,$to])->fetch();
-$later=$run("SELECT COALESCE(SUM(amount),0) FROM customer_payments WHERE sale_id IS NULL AND DATE(payment_date) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
-$receipts=(float)$sales['collected']+(float)$later;
+$customerReceipts=(float)$run("SELECT COALESCE(SUM(amount),0) FROM customer_payments WHERE DATE(payment_date) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
+$walkInCollections=(float)$run("SELECT COALESCE(SUM(paid_amount),0) FROM sales WHERE customer_id IS NULL AND sale_status='Completed' AND DATE(sale_date) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
+$receipts=$customerReceipts+$walkInCollections;
 $supplierOut=(float)$run("SELECT COALESCE(SUM(amount),0) FROM supplier_payments WHERE DATE(payment_date) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
 $expenseOut=(float)$run("SELECT COALESCE(SUM(amount),0) FROM expenses WHERE expense_date BETWEEN ? AND ?",[$from,$to])->fetchColumn();
 $hasReturnPayments=(bool)$conn->query("SHOW TABLES LIKE 'sales_return_payments'")->fetchColumn();
 $returnOut=$hasReturnPayments?(float)$run("SELECT COALESCE(SUM(amount),0) FROM sales_return_payments WHERE DATE(paid_at) BETWEEN ? AND ?",[$from,$to])->fetchColumn():0.0;
 $customerDue=(float)$conn->query("SELECT COALESCE(SUM(balance),0) FROM customers")->fetchColumn();$supplierDue=(float)$conn->query("SELECT COALESCE(SUM(balance),0) FROM suppliers")->fetchColumn();
 $methodSql="SELECT method,SUM(received) received,SUM(spent) spent FROM (
- SELECT CONVERT(payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci method,SUM(paid_amount) received,0 spent FROM sales WHERE sale_status='Completed' AND DATE(sale_date) BETWEEN ? AND ? GROUP BY payment_method
- UNION ALL SELECT CONVERT(payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,SUM(amount),0 FROM customer_payments WHERE sale_id IS NULL AND DATE(payment_date) BETWEEN ? AND ? GROUP BY payment_method
+ SELECT CONVERT(payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci method,SUM(amount) received,0 spent FROM customer_payments WHERE DATE(payment_date) BETWEEN ? AND ? GROUP BY payment_method
+ UNION ALL SELECT CONVERT(payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,SUM(paid_amount),0 FROM sales WHERE customer_id IS NULL AND sale_status='Completed' AND DATE(sale_date) BETWEEN ? AND ? GROUP BY payment_method
  UNION ALL SELECT CONVERT(payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,0,SUM(amount) FROM supplier_payments WHERE DATE(payment_date) BETWEEN ? AND ? GROUP BY payment_method
  UNION ALL SELECT CONVERT(payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,0,SUM(amount) FROM expenses WHERE expense_date BETWEEN ? AND ? GROUP BY payment_method";
 $methodParams=[$from,$to,$from,$to,$from,$to,$from,$to];
