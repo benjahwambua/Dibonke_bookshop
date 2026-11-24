@@ -68,6 +68,10 @@ $transactions = $conn->query("SELECT mt.*, cp.receipt_number AS customer_receipt
 $unallocatedRows = $conn->query("SELECT id, phone_number, amount, account_reference, transaction_reference, transaction_date, created_at FROM mpesa_transactions WHERE transaction_type='C2B' AND direction='Incoming' AND result_status='Success' AND reference_type IS NULL AND reference_id IS NULL ORDER BY transaction_date ASC, id ASC")->fetchAll(PDO::FETCH_ASSOC);
 $unallocatedC2B = count($unallocatedRows);
 $allocationCustomers = $conn->query("SELECT id, customer_name, phone, balance FROM customers WHERE status='Active' ORDER BY customer_name")->fetchAll(PDO::FETCH_ASSOC);
+$customerCreditRows = [];
+if ($conn->query("SHOW TABLES LIKE 'customer_credit_ledger'")->fetchColumn()) {
+    $customerCreditRows = $conn->query("SELECT c.id, c.customer_name, ROUND(SUM(CASE WHEN l.entry_type='Credit' THEN l.amount ELSE -l.amount END),2) AS credit_balance FROM customer_credit_ledger l JOIN customers c ON c.id=l.customer_id GROUP BY c.id,c.customer_name HAVING credit_balance>0.009 ORDER BY c.customer_name")->fetchAll(PDO::FETCH_ASSOC);
+}
 
 require_once __DIR__ . '/../../includes/header.php';
 require_once __DIR__ . '/../../includes/sidebar.php';
@@ -166,6 +170,21 @@ require_once __DIR__ . '/../../includes/sidebar.php';
                     </table>
                 </div>
                 <p class="muted">You can assign a receipt even when the customer has no outstanding invoices. Any amount left after settling open invoices is recorded in the Customer Credit Ledger, not discarded.</p>
+            <?php endif; ?>
+        </section>
+
+
+        <section class="card">
+            <h2>Customer Credit Balances</h2>
+            <p class="muted">Money received above a customer's outstanding invoices is held here as a credit balance. It is not counted as sales or used to reduce another customer's balance.</p>
+            <?php if (!$customerCreditRows): ?>
+                <p class="empty">There are no customer credit balances recorded.</p>
+            <?php else: ?>
+                <div class="table-wrap"><table><thead><tr><th>Customer</th><th>Available credit</th></tr></thead><tbody>
+                <?php foreach ($customerCreditRows as $creditRow): ?>
+                    <tr><td><?= e($creditRow['customer_name']) ?></td><td>KES <?= number_format((float)$creditRow['credit_balance'], 2) ?></td></tr>
+                <?php endforeach; ?>
+                </tbody></table></div>
             <?php endif; ?>
         </section>
 
