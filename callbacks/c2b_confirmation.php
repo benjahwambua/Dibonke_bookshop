@@ -64,7 +64,7 @@ try{
  if(dibonkeAccountingAutoPostingEnabled($conn)){
   $journalLines=[dibonkeAccountingLine(dibonkeAccountingAccount($conn,'mpesa_clearing','Asset'),$allocated>0?'C2B payment received':'Unallocated C2B payment received',$amount,0)];
   if($allocated>0)$journalLines[]=dibonkeAccountingLine(dibonkeAccountingAccount($conn,'accounts_receivable','Asset'),'Invoice receivable settled',0,$allocated);
-  if($customerCredit>0)$journalLines[]=dibonkeAccountingLine(dibonkeAccountingAccount($conn,'customer_credit','Liability'),'C2B invoice overpayment retained as customer credit',0,$customerCredit);
+  if($customerCredit>0)$journalLines[]=dibonkeAccountingLine(dibonkeAccountingAccount($conn,!empty($sale['customer_id'])?'customer_credit':'unallocated_receipts','Liability'),!empty($sale['customer_id'])?'C2B invoice overpayment retained as customer credit':'C2B invoice overpayment awaiting customer identification',0,$customerCredit);
   if($allocated<=0 && $customerCredit<=0)$journalLines[]=dibonkeAccountingLine(dibonkeAccountingAccount($conn,'unallocated_receipts','Liability'),'Customer receipt awaiting allocation',0,$amount);
   dibonkeAccountingPostJournal($conn,'mpesa_c2b_receipt',$transactionId,date('Y-m-d',strtotime($transactionDate)),'M-Pesa C2B receipt '.$transId,$journalLines,null);
  }
