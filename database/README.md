@@ -351,3 +351,11 @@ Apply `dibonke_customer_credit_ledger.sql` after `dibonke_payment_allocations.sq
 The ledger records excess receipts separately from invoice allocations. It currently reports available customer credit; applying that credit to future invoices or paying it back requires a separate controlled workflow.
 
 Customer credit receipt behavior: the Customer Payments screen lists all active customers, including customers with zero outstanding invoices, and accepts the full amount received. The shared allocator applies funds to open completed invoices FIFO and records any remainder in `customer_credit_ledger`. Confirmed STK payments against invoices also preserve excess amounts, including when the invoice is already settled by the time the callback arrives.
+
+
+### Payment callback and store close safeguards
+
+- STK success callbacks require a positive confirmed amount and an M-PESA receipt number, and must resolve to the original stored sale or customer-payment request. Missing/orphaned links and receipt-number reuse are rolled back instead of being marked as completed.
+- C2B payments matched by invoice reference to a registered customer apply only the invoice's remaining balance. Any excess is stored in `customer_credit_ledger` and posted to the `customer_credit` liability mapping when automatic accounting is enabled. The full received amount remains in the customer receipt record.
+- Store Operations refuses to reconcile a business day while a linked STK request is still pending. This check requires `mpesa_transactions`; without that optional table, the rest of Store Operations remains available.
+- These controls do not replace sandbox callback testing. Confirm the customer-credit migration is applied before processing customer-linked STK/C2B overpayments.
