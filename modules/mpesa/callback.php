@@ -22,6 +22,7 @@ try{
  $alreadyProcessed=$priorCallback['result_status']==='Success';
  foreach(($cb['CallbackMetadata']['Item']??[]) as $item){$name=$item['Name']??'';$value=$item['Value']??null;if($name==='Amount')$amount=(float)$value;elseif($name==='MpesaReceiptNumber')$receipt=(string)$value;elseif($name==='PhoneNumber')$phone=(string)$value;elseif($name==='TransactionDate'&&$value)$date=DateTime::createFromFormat('YmdHis',(string)$value)?->format('Y-m-d H:i:s');}
   if($alreadyProcessed){$conn->commit();echo json_encode(['ResultCode'=>0,'ResultDesc'=>'Duplicate confirmation already processed']);exit;}
+  if($code===0 && ($amount<=0 || $receipt===''))throw new RuntimeException('Successful STK callback is missing a valid amount or M-PESA receipt number.');
  $st=$conn->prepare("INSERT INTO mpesa_transactions(transaction_type,direction,phone_number,amount,transaction_reference,merchant_request_id,checkout_request_id,result_code,result_description,result_status,raw_response,transaction_date) VALUES('STK Push','Incoming',?,?,?,?,?,?,?,?,?,?) ON DUPLICATE KEY UPDATE result_code=VALUES(result_code),result_description=VALUES(result_description),result_status=VALUES(result_status),transaction_reference=VALUES(transaction_reference),phone_number=VALUES(phone_number),amount=VALUES(amount),raw_response=VALUES(raw_response),transaction_date=VALUES(transaction_date)");
  $st->execute([$phone,$amount,$receipt,$merchant,$checkout,(string)$code,$desc,$status,$raw,$date]);
  if($code===0 && !$alreadyProcessed){
@@ -30,7 +31,8 @@ try{
    if($tx && $tx['reference_type']==='customer_payment' && (int)$tx['reference_id']>0){
       $customerId=(int)$tx['reference_id'];
       $custQ=$conn->prepare("SELECT * FROM customers WHERE id=? FOR UPDATE");$custQ->execute([$customerId]);$customer=$custQ->fetch();
-      if($customer && $amount>0){
+      if(!$customer)throw new RuntimeException('The customer linked to this STK payment no longer exists. The confirmation was not acknowledged.');
+      if($amount>0){
          $payAmount=round($amount,2);
          if($payAmount>0){
             $rc='TMP-'.strtoupper(bin2hex(random_bytes(8)));
@@ -52,6 +54,7 @@ try{
    } elseif($tx && $tx['reference_type']==='sale' && (int)$tx['reference_id']>0){
       $saleId=(int)$tx['reference_id'];
       $saleQ=$conn->prepare("SELECT * FROM sales WHERE id=? FOR UPDATE");$saleQ->execute([$saleId]);$sale=$saleQ->fetch();
+      if(!$sale)throw new RuntimeException('The sale linked to this STK payment could not be found. The confirmation was not acknowledged.');
       $already=$conn->prepare("SELECT COUNT(*) FROM customer_payments WHERE sale_id=? AND transaction_reference=?");
       $already->execute([$saleId,$receipt]);
       if($sale && (int)$already->fetchColumn()===0 && $amount>0){
@@ -83,6 +86,8 @@ try{
          }
          recordAuditEvent($conn,'Receive','sales','Confirmed M-PESA payment for invoice '.$sale['invoice_number'],'sale',$saleId,['paid_amount'=>(float)$sale['paid_amount'],'balance'=>(float)$sale['balance']],['paid_amount'=>(float)$sale['paid_amount']+$payAmount,'balance'=>max(0,(float)$sale['total_amount']-(float)$sale['paid_amount']-$payAmount),'payment_amount'=>$amount,'customer_credit'=>$excessAmount,'payment_method'=>'M-Pesa','reference'=>$receipt]);
       }
+   } else {
+      throw new RuntimeException('The STK transaction is not linked to a supported sale or customer payment.');
    }
  }
  $conn->commit();
