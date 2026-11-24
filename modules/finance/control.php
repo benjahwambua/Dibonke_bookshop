@@ -22,12 +22,13 @@ $sales=$run("SELECT COUNT(*) invoices,COALESCE(SUM(total_amount),0) revenue,COAL
 $customerReceipts=(float)$run("SELECT COALESCE(SUM(amount),0) FROM customer_payments WHERE DATE(payment_date) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
 $walkInCollections=(float)$run("SELECT COALESCE(SUM(paid_amount),0) FROM sales WHERE customer_id IS NULL AND sale_status='Completed' AND DATE(sale_date) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
 $hasMpesaTransactions=(bool)$conn->query("SHOW TABLES LIKE 'mpesa_transactions'")->fetchColumn();
-$unallocatedC2BReceipts=0.0;$unallocatedStkOverpayments=0.0;
+$unallocatedC2BReceipts=0.0;$unallocatedStkOverpayments=0.0;$unallocatedWalkInC2BOverpayments=0.0;
 if($hasMpesaTransactions){
-    $unallocatedC2BReceipts=(float)$run("SELECT COALESCE(SUM(amount),0) FROM mpesa_transactions WHERE transaction_type='C2B' AND direction='Incoming' AND result_status='Success' AND reference_type IS NULL AND DATE(COALESCE(transaction_date,created_at)) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
-    $unallocatedStkOverpayments=(float)$run("SELECT COALESCE(SUM(overpayment),0) FROM (SELECT GREATEST(0,SUM(mt.amount)-s.paid_amount) overpayment,MAX(COALESCE(mt.transaction_date,mt.created_at)) last_received FROM mpesa_transactions mt JOIN sales s ON mt.reference_type='sale' AND mt.reference_id=s.id WHERE mt.transaction_type='STK Push' AND mt.direction='Incoming' AND mt.result_status='Success' AND s.sale_status='Completed' AND s.customer_id IS NULL GROUP BY s.id,s.paid_amount HAVING SUM(mt.amount)>s.paid_amount+0.009) stk WHERE DATE(last_received) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
+    $unallocatedC2BReceipts=(float)$run("SELECT COALESCE(SUM(amount_unallocated),0) FROM mpesa_transactions WHERE transaction_type='C2B' AND direction='Incoming' AND result_status='Success' AND reference_type IS NULL AND DATE(COALESCE(transaction_date,created_at)) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
+    $unallocatedStkOverpayments=(float)$run("SELECT COALESCE(SUM(mt.amount_unallocated),0) FROM mpesa_transactions mt JOIN sales s ON mt.reference_type='sale' AND mt.reference_id=s.id WHERE mt.transaction_type='STK Push' AND mt.direction='Incoming' AND mt.result_status='Success' AND s.sale_status='Completed' AND s.customer_id IS NULL AND mt.amount_unallocated>0.009 AND DATE(COALESCE(mt.transaction_date,mt.created_at)) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
+    $unallocatedWalkInC2BOverpayments=(float)$run("SELECT COALESCE(SUM(mt.amount_unallocated),0) FROM mpesa_transactions mt JOIN sales s ON mt.reference_type='sale' AND mt.reference_id=s.id WHERE mt.transaction_type='C2B' AND mt.direction='Incoming' AND mt.result_status='Success' AND s.sale_status='Completed' AND s.customer_id IS NULL AND mt.amount_unallocated>0.009 AND DATE(COALESCE(mt.transaction_date,mt.created_at)) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
 }
-$receipts=$customerReceipts+$walkInCollections+$unallocatedC2BReceipts+$unallocatedStkOverpayments;
+$receipts=$customerReceipts+$walkInCollections+$unallocatedC2BReceipts+$unallocatedStkOverpayments+$unallocatedWalkInC2BOverpayments;
 $supplierOut=(float)$run("SELECT COALESCE(SUM(amount),0) FROM supplier_payments WHERE DATE(payment_date) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
 $expenseOut=(float)$run("SELECT COALESCE(SUM(amount),0) FROM expenses WHERE expense_date BETWEEN ? AND ?",[$from,$to])->fetchColumn();
 $hasReturnPayments=(bool)$conn->query("SHOW TABLES LIKE 'sales_return_payments'")->fetchColumn();
