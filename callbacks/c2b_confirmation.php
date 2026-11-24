@@ -10,7 +10,7 @@ try{
  if(!is_array($data))throw new RuntimeException('Invalid callback payload.');
  $shortcode=trim((string)($data['BusinessShortCode']??''));
  $configured=$conn->prepare("SELECT setting_value FROM settings WHERE setting_key='mpesa_shortcode' LIMIT 1");$configured->execute();$expected=(string)($configured->fetchColumn()?:'');
- if($expected===''||$shortcode!==''&&$shortcode!==$expected)throw new RuntimeException('M-PESA shortcode does not match the configured business shortcode.');
+ if($expected===''||$shortcode===''||$shortcode!==$expected)throw new RuntimeException('M-PESA shortcode is missing or does not match the configured business shortcode.');
  $transId=trim((string)($data['TransID']??''));$amount=(float)($data['TransAmount']??0);$billRef=trim((string)($data['BillRefNumber']??''));$phone=preg_replace('/\D+/','',(string)($data['MSISDN']??''))??'';
  if($transId===''||$amount<=0)throw new RuntimeException('Missing transaction ID or amount.');
  $when=DateTime::createFromFormat('YmdHis',(string)($data['TransTime']??''));$transactionDate=$when?$when->format('Y-m-d H:i:s'):date('Y-m-d H:i:s');
