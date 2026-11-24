@@ -36,8 +36,9 @@ try{
          $payAmount=round($amount,2);
          if($payAmount>0){
             $rc='TMP-'.strtoupper(bin2hex(random_bytes(8)));
-            $exists=$conn->prepare("SELECT COUNT(*) FROM customer_payments WHERE customer_id=? AND transaction_reference=?");$exists->execute([$customerId,$receipt]);
-            if((int)$exists->fetchColumn()===0){
+            $exists=$conn->prepare("SELECT COUNT(*) FROM customer_payments WHERE transaction_reference=?");$exists->execute([$receipt]);
+            if((int)$exists->fetchColumn()>0)throw new RuntimeException('This M-PESA receipt number has already been recorded against another payment. Manual review is required.');
+            {
                $ins=$conn->prepare("INSERT INTO customer_payments(receipt_number,customer_id,sale_id,user_id,amount,payment_method,transaction_reference,payment_date,notes) VALUES(?,?,?,?,?,?,?,?,?)");
                $ins->execute([$rc,$customerId,null,(int)($conn->query("SELECT id FROM users ORDER BY id LIMIT 1")->fetchColumn() ?: 1),$payAmount,'M-Pesa',$receipt,date('Y-m-d H:i:s'),'Automatic M-PESA credit payment']);$paymentId=(int)$conn->lastInsertId();$rc='CR-'.date('ymd').'-'.str_pad((string)$paymentId,5,'0',STR_PAD_LEFT);$conn->prepare("UPDATE customer_payments SET receipt_number=? WHERE id=?")->execute([$rc,$paymentId]);
                $allocation=dibonkeAllocateCustomerPayment($conn,$customerId,$paymentId,$payAmount,(int)($conn->query("SELECT id FROM users ORDER BY id LIMIT 1")->fetchColumn() ?: 1));
@@ -55,9 +56,10 @@ try{
       $saleId=(int)$tx['reference_id'];
       $saleQ=$conn->prepare("SELECT * FROM sales WHERE id=? FOR UPDATE");$saleQ->execute([$saleId]);$sale=$saleQ->fetch();
       if(!$sale)throw new RuntimeException('The sale linked to this STK payment could not be found. The confirmation was not acknowledged.');
-      $already=$conn->prepare("SELECT COUNT(*) FROM customer_payments WHERE sale_id=? AND transaction_reference=?");
-      $already->execute([$saleId,$receipt]);
-      if($sale && (int)$already->fetchColumn()===0 && $amount>0){
+      $already=$conn->prepare("SELECT COUNT(*) FROM customer_payments WHERE transaction_reference=?");
+      $already->execute([$receipt]);
+      if((int)$already->fetchColumn()>0)throw new RuntimeException('This M-PESA receipt number has already been recorded against another payment. Manual review is required.');
+      if($sale && $amount>0){
          $openBalance=max(0,round((float)$sale['total_amount']-(float)$sale['paid_amount'],2));
          $payAmount=round(min($amount,$openBalance),2);
          $excessAmount=round(max(0,$amount-$payAmount),2);
