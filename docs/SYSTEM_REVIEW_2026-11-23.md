@@ -235,3 +235,10 @@ The C2B confirmation callback updated a matched customer's invoice `paid_amount`
 **Code change made:** When a C2B payment is matched to a registered-customer invoice, the callback now inserts a `customer_payment_allocations` row referencing the new receipt, matched sale and allocated amount, within the same database transaction. Unallocated C2B receipts continue to be recorded against the unallocated-receipts liability mapping and are not falsely allocated to an invoice.
 
 Verify locally with a C2B payment matched by invoice reference and confirm the receipt, invoice balance, customer balance, allocation row and journal all agree. Also test an unmatched C2B receipt to confirm it remains unallocated.
+
+
+### C2B callback business-shortcode validation — 24 November 2026
+
+The C2B confirmation endpoint previously rejected a mismatched shortcode but allowed a callback with the `BusinessShortCode` field omitted whenever a shortcode was configured. The callback now requires the field to be present and to match the configured business shortcode exactly. This prevents incomplete callback payloads from being accepted as payments for the configured business.
+
+Verify with a valid C2B callback, a callback with a different shortcode, and a callback with the shortcode omitted. Only the exact configured shortcode should be accepted.
