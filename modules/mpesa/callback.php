@@ -68,7 +68,7 @@ try{
                $ins=$conn->prepare("INSERT INTO customer_payments(receipt_number,customer_id,sale_id,user_id,amount,payment_method,transaction_reference,payment_date,notes) VALUES(?,?,?,?,?,?,?,?,?)");
                $ins->execute([$rc,(int)$sale['customer_id'],$saleId,(int)$sale['user_id'],$amount,'M-Pesa',$receipt,date('Y-m-d H:i:s'),'Automatic M-PESA payment for '.$sale['invoice_number']]);$paymentId=(int)$conn->lastInsertId();$rc='CR-'.date('ymd').'-'.str_pad((string)$paymentId,5,'0',STR_PAD_LEFT);$conn->prepare("UPDATE customer_payments SET receipt_number=? WHERE id=?")->execute([$rc,$paymentId]);$conn->prepare("INSERT INTO customer_payment_allocations(payment_id,sale_id,amount) VALUES(?,?,?)")->execute([$paymentId,$saleId,$payAmount]);
                if($excessAmount>0)$conn->prepare("INSERT INTO customer_credit_ledger(customer_id,payment_id,entry_type,amount,notes,created_by) VALUES(?,?,'Credit',?,'M-Pesa STK overpayment retained as customer credit',?)")->execute([(int)$sale['customer_id'],$paymentId,$excessAmount,(int)$sale['user_id']]);
-               $conn->prepare("UPDATE customers SET balance=GREATEST(0,balance-?) WHERE id=?")->execute([$payAmount,(int)$sale['customer_id']]);
+
             }
          }
          recordAuditEvent($conn,'Receive','sales','Confirmed M-PESA payment for invoice '.$sale['invoice_number'],'sale',$saleId,['paid_amount'=>(float)$sale['paid_amount'],'balance'=>(float)$sale['balance']],['paid_amount'=>(float)$sale['paid_amount']+$payAmount,'balance'=>max(0,(float)$sale['total_amount']-(float)$sale['paid_amount']-$payAmount),'payment_method'=>'M-Pesa','reference'=>$receipt]);
