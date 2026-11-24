@@ -36,18 +36,19 @@ if($hasCustomerCreditLedger){
     $creditQ=$conn->prepare("SELECT COALESCE(SUM(CASE WHEN entry_type='Credit' THEN amount ELSE -amount END),0) FROM customer_credit_ledger WHERE customer_id=?");
     $creditQ->execute([$id]);$customerCreditBalance=(float)$creditQ->fetchColumn();
 }
-foreach($rows as &$row){
-    if($row['transaction_type']==='Payment'){
-        $row['description'].=' — received '.$currencyPlaceholder;
-    }
-}
-unset($row);
 $running=$opening;$debitTotal=0.0;$creditTotal=0.0;foreach($rows as &$row){$debitTotal+=(float)$row['debit'];$creditTotal+=(float)$row['credit'];$running+=(float)$row['debit']-(float)$row['credit'];$row['running']=$running;}unset($row);
 $invoiceQ=$conn->prepare("SELECT id,invoice_number,sale_date,total_amount,paid_amount,balance,payment_method FROM sales WHERE customer_id=? AND sale_status='Completed' ORDER BY sale_date DESC,id DESC");
 $invoiceQ->execute([$id]);$invoices=$invoiceQ->fetchAll(PDO::FETCH_ASSOC);
+$currency=(string)($conn->query("SELECT setting_value FROM settings WHERE setting_key='currency' LIMIT 1")->fetchColumn()?:'KES');
+foreach($rows as &$row){
+    if($row['transaction_type']==='Payment'){
+        $row['description'].=' — received '.$currency.' '.number_format((float)$row['receipt_amount'],2).'; applied to invoices '.$currency.' '.number_format((float)$row['credit'],2);
+        if((float)$row['customer_credit_amount']>0.009)$row['description'].='; retained as customer credit '.$currency.' '.number_format((float)$row['customer_credit_amount'],2);
+    }
+}
+unset($row);
 $exportRows=[];foreach($rows as $r){$exportRows[]=[$r['transaction_date'],$r['transaction_type'],$r['reference'],$r['description'],$r['debit'],$r['credit'],$r['running']];}
 dibonkeReportExport('customer_statement_'.$id.'_'.$from.'_to_'.$to,['Date','Type','Reference','Description','Debit','Credit','Running Balance'],$exportRows);
-$currency=(string)($conn->query("SELECT setting_value FROM settings WHERE setting_key='currency' LIMIT 1")->fetchColumn()?:'KES');
 require_once __DIR__.'/../../includes/header.php';require_once __DIR__.'/../../includes/sidebar.php';
 ?>
 <main class="content"><?php dibonkeReportPrintStyles(); ?>
