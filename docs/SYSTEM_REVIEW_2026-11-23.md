@@ -37,6 +37,15 @@ The main risk before deployment is not a missing screen. It is ensuring that the
 | Store Operations | Main Store and selling stores, daily stock issue, printed issue checklist, POS store attribution, returned-stock transfer and EOD reconciliation | Test full daily cycle at each selling store. See the specific risks below. |
 | Deployment and backups | Environment-based DB settings, Docker development notes and deployment checklist | Production secrets, HTTPS, database restore, uploaded-file backup and target-host testing remain deployment tasks. |
 
+## Follow-up integration pass — 24 November 2026
+
+A source-level follow-up traced the purchase, POS, customer receipt, supplier payment, expense and finance-summary paths. Two confirmed accounting/reporting defects were corrected on the feature branch:
+
+1. **Purchase journal payment direction:** when a purchase had an amount paid immediately, the automatic journal incorrectly debited the cash/bank payment account. It now credits the payment account, balancing the entry against inventory/input VAT debits and the remaining supplier payable credit.
+2. **Finance collection reporting:** the Finance overview previously added the paid amounts on sales to separate customer receipts. Later customer receipts are allocated by increasing invoice `sales.paid_amount`, while the receipt itself remains in `customer_payments`; this could double-count collections and attribute later collections to the original sale date. The overview now totals customer receipts by their actual payment date and adds only paid walk-in sales that do not have customer receipt rows. The payment-method summary uses the same source split and combines matching methods.
+
+These are code-level corrections based on the current source paths. They have not yet been exercised against the user's local database. Automatic accounting remains opt-in; do not enable it until the account mappings and opening balances have been reviewed. A full transaction-by-transaction reconciliation still requires a restored test database and local acceptance testing.
+
 ## Findings requiring attention
 
 ### 1. Critical — database installability and migration control
