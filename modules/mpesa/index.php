@@ -64,8 +64,10 @@ $businessName = mpesaSetting('mpesa_business_name', 'Dibonke Bookshop');
 $flash = $_SESSION['mpesa_flash'] ?? null;
 unset($_SESSION['mpesa_flash']);
 
-$transactions = $conn->query('SELECT * FROM mpesa_transactions ORDER BY id DESC LIMIT 30')->fetchAll();
-$unallocatedC2B = (int)$conn->query("SELECT COUNT(*) FROM mpesa_transactions WHERE transaction_type='C2B' AND result_status='Success' AND reference_type IS NULL")->fetchColumn();
+$transactions = $conn->query("SELECT mt.*, cp.receipt_number AS customer_receipt, c.customer_name AS allocated_customer FROM mpesa_transactions mt LEFT JOIN customer_payments cp ON mt.reference_type='customer_payment' AND cp.id=mt.reference_id LEFT JOIN customers c ON c.id=cp.customer_id ORDER BY mt.id DESC LIMIT 30")->fetchAll(PDO::FETCH_ASSOC);
+$unallocatedRows = $conn->query("SELECT id, phone_number, amount, account_reference, transaction_reference, transaction_date, created_at FROM mpesa_transactions WHERE transaction_type='C2B' AND direction='Incoming' AND result_status='Success' AND reference_type IS NULL AND reference_id IS NULL ORDER BY transaction_date ASC, id ASC")->fetchAll(PDO::FETCH_ASSOC);
+$unallocatedC2B = count($unallocatedRows);
+$allocationCustomers = $conn->query("SELECT id, customer_name, phone, balance FROM customers WHERE status='Active' AND balance>0 ORDER BY customer_name")->fetchAll(PDO::FETCH_ASSOC);
 
 require_once __DIR__ . '/../../includes/header.php';
 require_once __DIR__ . '/../../includes/sidebar.php';
@@ -129,6 +131,45 @@ require_once __DIR__ . '/../../includes/sidebar.php';
         </section>
 
         <section class="card">
+            <h2>Allocate Unmatched PayBill Receipts</h2>
+            <p class="muted">Match a confirmed direct PayBill payment to the customer's outstanding invoices. The system allocates the full receipt to that customer's oldest outstanding invoices first.</p>
+            <?php if (!$unallocatedRows): ?>
+                <p class="empty">There are no confirmed C2B receipts awaiting allocation.</p>
+            <?php else: ?>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Date</th><th>M-PESA receipt</th><th>Phone</th><th>Amount</th><th>Bill reference</th><th>Customer</th><th>Action</th></tr></thead>
+                        <tbody>
+                        <?php foreach ($unallocatedRows as $pending): ?>
+                            <tr>
+                                <td><?= e($pending['transaction_date'] ?: $pending['created_at']) ?></td>
+                                <td><?= e($pending['transaction_reference']) ?></td>
+                                <td><?= e($pending['phone_number'] ?: '—') ?></td>
+                                <td>KES <?= number_format((float)$pending['amount'], 2) ?></td>
+                                <td><?= e($pending['account_reference'] ?: '—') ?></td>
+                                <td>
+                                    <form method="post" action="allocate.php" class="c2b-allocation-form">
+                                        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                                        <input type="hidden" name="transaction_id" value="<?= (int)$pending['id'] ?>">
+                                        <select name="customer_id" required>
+                                            <option value="">Select customer</option>
+                                            <?php foreach ($allocationCustomers as $candidate): ?>
+                                                <?php if ((float)$candidate['balance'] + 0.009 < (float)$pending['amount']) continue; ?>
+                                                <option value="<?= (int)$candidate['id'] ?>"><?= e($candidate['customer_name']) ?> — balance KES <?= number_format((float)$candidate['balance'], 2) ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                </td>
+                                <td><button class="btn primary" type="submit">Allocate receipt</button></form></td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="muted">Only customers with enough outstanding credit to absorb the full receipt are listed. Receipts larger than the customer's total outstanding balance remain unallocated for review; they are not silently reduced or discarded.</p>
+            <?php endif; ?>
+        </section>
+
+        <section class="card">
             <h2>Recent M-PESA Transactions</h2>
             <div class="table-wrap">
                 <table>
@@ -146,7 +187,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
                             <td>KES <?= number_format((float)$transaction['amount'], 2) ?></td>
                             <td><?= e($transaction['transaction_reference'] ?: $transaction['checkout_request_id'] ?: '—') ?></td>
                             <td><?= e($transaction['account_reference'] ?: '—') ?></td>
-                            <td><?= !empty($transaction['reference_id']) ? 'Allocated to sale #' . (int)$transaction['reference_id'] : ($transaction['transaction_type'] === 'C2B' ? 'Unallocated' : '—') ?></td>
+                            <td><?= $transaction['reference_type'] === 'customer_payment' ? 'Allocated: ' . e($transaction['allocated_customer'] ?: 'Customer') . ' (' . e($transaction['customer_receipt'] ?: 'receipt') . ')' : (!empty($transaction['reference_id']) ? 'Allocated to sale #' . (int)$transaction['reference_id'] : ($transaction['transaction_type'] === 'C2B' ? 'Unallocated' : '—')) ?></td>
                             <td><?= e($transaction['result_status']) ?></td>
                         </tr>
                     <?php endforeach; ?>
@@ -176,7 +217,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 </script>
 
 <style>
-.mpesa-business-wrap{max-width:1200px;margin:0 auto}.page-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}.page-heading h1{margin:0 0 6px}.page-heading p,.muted{color:#64748b}.card{background:#fff;border:1px solid #e8edf3;border-radius:14px;padding:22px;box-shadow:0 1px 5px #0001;margin-bottom:18px}.card h2{margin:0 0 7px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:20px 0}.form-grid label{display:block;font-size:12px;font-weight:700;color:#334155}.form-grid input,.form-grid select{display:block;box-sizing:border-box;width:100%;margin-top:6px;padding:12px;border:1px solid #dbe3ec;border-radius:8px;background:#fff}.form-grid small{display:block;color:#64748b;font-weight:400;margin-top:5px;line-height:1.4}.btn{display:inline-block;padding:11px 16px;border:0;border-radius:8px;text-decoration:none;font-weight:700;cursor:pointer}.primary{background:#004a99;color:#fff}.secondary{background:#eef2f7;color:#1e293b}.flash{padding:12px;background:#ecfdf5;color:#166534;border-radius:8px;margin-bottom:18px}.c2b-summary{display:flex;align-items:center;justify-content:space-between;gap:16px}.c2b-summary h2{margin:0 0 5px}.c2b-summary p{margin:0}.c2b-count{display:flex;align-items:center;gap:9px;padding:9px 13px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;white-space:nowrap}.c2b-count strong{font-size:23px;color:#0f172a}.c2b-count span{font-size:11px;color:#64748b}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse}th,td{padding:11px;border-bottom:1px solid #e5e7eb;text-align:left;font-size:12px;white-space:nowrap}th{background:#f8fafc;color:#334155}.empty{text-align:center;color:#64748b;padding:24px}@media(max-width:800px){.form-grid{grid-template-columns:1fr}.page-heading{align-items:flex-start;flex-direction:column}.c2b-summary{align-items:flex-start;flex-direction:column}}
+.mpesa-business-wrap{max-width:1200px;margin:0 auto}.page-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}.page-heading h1{margin:0 0 6px}.page-heading p,.muted{color:#64748b}.card{background:#fff;border:1px solid #e8edf3;border-radius:14px;padding:22px;box-shadow:0 1px 5px #0001;margin-bottom:18px}.card h2{margin:0 0 7px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:20px 0}.form-grid label{display:block;font-size:12px;font-weight:700;color:#334155}.form-grid input,.form-grid select{display:block;box-sizing:border-box;width:100%;margin-top:6px;padding:12px;border:1px solid #dbe3ec;border-radius:8px;background:#fff}.form-grid small{display:block;color:#64748b;font-weight:400;margin-top:5px;line-height:1.4}.btn{display:inline-block;padding:11px 16px;border:0;border-radius:8px;text-decoration:none;font-weight:700;cursor:pointer}.primary{background:#004a99;color:#fff}.secondary{background:#eef2f7;color:#1e293b}.flash{padding:12px;background:#ecfdf5;color:#166534;border-radius:8px;margin-bottom:18px}.c2b-summary{display:flex;align-items:center;justify-content:space-between;gap:16px}.c2b-summary h2{margin:0 0 5px}.c2b-summary p{margin:0}.c2b-count{display:flex;align-items:center;gap:9px;padding:9px 13px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;white-space:nowrap}.c2b-count strong{font-size:23px;color:#0f172a}.c2b-count span{font-size:11px;color:#64748b}.table-wrap{overflow:auto}.c2b-allocation-form{display:flex;gap:6px;align-items:center}.c2b-allocation-form select{min-width:220px;padding:9px;border:1px solid #dbe3ec;border-radius:7px}.c2b-allocation-form button{white-space:nowrap}table{width:100%;border-collapse:collapse}th,td{padding:11px;border-bottom:1px solid #e5e7eb;text-align:left;font-size:12px;white-space:nowrap}th{background:#f8fafc;color:#334155}.empty{text-align:center;color:#64748b;padding:24px}@media(max-width:800px){.form-grid{grid-template-columns:1fr}.page-heading{align-items:flex-start;flex-direction:column}.c2b-summary{align-items:flex-start;flex-direction:column}}
 
 /* Compact typography for M-PESA business settings */
 .mpesa-business-wrap h1{font-size:1.25rem!important;line-height:1.3;margin:0 0 5px}
