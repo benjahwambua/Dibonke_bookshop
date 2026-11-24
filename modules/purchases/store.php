@@ -135,7 +135,7 @@ try {
         if($inventoryCost<0)throw new RuntimeException('Purchase discount cannot exceed the item subtotal when automatic accounting is enabled.');
         if($inventoryCost>0)$journalLines[]=dibonkeAccountingLine(dibonkeAccountingAccount($conn,'inventory','Asset'),'Goods purchased into inventory',$inventoryCost,0);
         if($tax>0)$journalLines[]=dibonkeAccountingLine(dibonkeAccountingAccount($conn,'input_vat','Asset'),'Recoverable input VAT',$tax,0);
-        if($paidAmount>0)$journalLines[]=dibonkeAccountingLine(dibonkeAccountingPaymentAccount($conn,$paymentMethod),'Purchase payment made',$paidAmount,0);
+        if($paidAmount>0)$journalLines[]=dibonkeAccountingLine(dibonkeAccountingPaymentAccount($conn,$paymentMethod),'Purchase payment made',0,$paidAmount);
         if($balance>0)$journalLines[]=dibonkeAccountingLine(dibonkeAccountingAccount($conn,'accounts_payable','Liability'),'Supplier balance due',0,$balance);
         dibonkeAccountingPostJournal($conn,'purchase',$purchaseId,date('Y-m-d',strtotime($purchaseDate)),'Purchase '.$purchaseNumber,$journalLines,(int)$_SESSION['user_id']);
     }
