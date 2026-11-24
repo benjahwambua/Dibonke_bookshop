@@ -17,7 +17,7 @@ try{
  $conn->beginTransaction();
  $exists=$conn->prepare("SELECT id FROM mpesa_transactions WHERE transaction_type='C2B' AND transaction_reference=? LIMIT 1 FOR UPDATE");$exists->execute([$transId]);
  if($exists->fetchColumn()){$conn->commit();echo json_encode(['ResultCode'=>0,'ResultDesc'=>'Already received']);exit;}
- $sale=null;$allocated=0.0;$matchReason='';
+ $sale=null;$allocated=0.0;$customerCredit=0.0;$matchReason='';
  if($billRef!==''){
   $q=$conn->prepare("SELECT * FROM sales WHERE invoice_number=? AND sale_status='Completed' LIMIT 1 FOR UPDATE");$q->execute([$billRef]);$candidate=$q->fetch();
   if($candidate&&(float)$candidate['balance']>0&&(!empty($candidate['customer_id'])||(float)$candidate['balance']+0.001>=$amount)){$sale=$candidate;$matchReason='Matched by invoice reference';}
