@@ -349,3 +349,5 @@ The Posting Mappings screen now exposes both mappings. Confirm that Sales Return
 Apply `dibonke_customer_credit_ledger.sql` after `dibonke_payment_allocations.sql` and the automatic double-entry accounting migrations, before deploying the PHP changes that record M-PESA overpayments. It creates the customer credit ledger and seeds liability account 2070 plus the `customer_credit` posting mapping. Review that mapping in Finance → Posting Mappings before enabling automatic posting.
 
 The ledger records excess receipts separately from invoice allocations. It currently reports available customer credit; applying that credit to future invoices or paying it back requires a separate controlled workflow.
+
+Customer credit receipt behavior: the Customer Payments screen lists all active customers, including customers with zero outstanding invoices, and accepts the full amount received. The shared allocator applies funds to open completed invoices FIFO and records any remainder in `customer_credit_ledger`. Confirmed STK payments against invoices also preserve excess amounts, including when the invoice is already settled by the time the callback arrives.
