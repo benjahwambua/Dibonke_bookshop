@@ -9,16 +9,39 @@ $st=$conn->prepare("SELECT * FROM customers WHERE id=?");$st->execute([$id]);$cu
 if(!$customer){http_response_code(404);exit('Customer not found.');}
 $from=(string)($_GET['from']??date('Y-01-01'));$to=(string)($_GET['to']??date('Y-m-d'));$valid='/^\\d{4}-\\d{2}-\\d{2}$/';
 if(!preg_match($valid,$from))$from=date('Y-01-01');if(!preg_match($valid,$to))$to=date('Y-m-d');if($from>$to){[$from,$to]=[$to,$from];}
-$openingQ=$conn->prepare("SELECT COALESCE((SELECT SUM(total_amount) FROM sales WHERE customer_id=? AND sale_status='Completed' AND DATE(sale_date)<?),0)-COALESCE((SELECT SUM(amount) FROM customer_payments WHERE customer_id=? AND DATE(payment_date)<?),0)");
+$hasPaymentAllocations=(bool)$conn->query("SHOW TABLES LIKE 'customer_payment_allocations'")->fetchColumn();
+$hasCustomerCreditLedger=(bool)$conn->query("SHOW TABLES LIKE 'customer_credit_ledger'")->fetchColumn();
+$paymentJoins='';
+if($hasPaymentAllocations)$paymentJoins.=" LEFT JOIN (SELECT payment_id,SUM(amount) applied_amount FROM customer_payment_allocations GROUP BY payment_id) pa ON pa.payment_id=cp.id";
+if($hasCustomerCreditLedger)$paymentJoins.=" LEFT JOIN (SELECT DISTINCT payment_id FROM customer_credit_ledger) pcl ON pcl.payment_id=cp.id";
+if($hasPaymentAllocations){
+    $paymentApplied="CASE WHEN pa.payment_id IS NOT NULL THEN pa.applied_amount ".($hasCustomerCreditLedger?"WHEN pcl.payment_id IS NOT NULL THEN 0 ":"")."ELSE cp.amount END";
+}elseif($hasCustomerCreditLedger){
+    $paymentApplied="CASE WHEN pcl.payment_id IS NOT NULL THEN 0 ELSE cp.amount END";
+}else{
+    $paymentApplied="cp.amount";
+}
+$openingQ=$conn->prepare("SELECT COALESCE((SELECT SUM(total_amount) FROM sales WHERE customer_id=? AND sale_status='Completed' AND DATE(sale_date)<?),0)-COALESCE((SELECT SUM({$paymentApplied}) FROM customer_payments cp {$paymentJoins} WHERE cp.customer_id=? AND DATE(cp.payment_date)<?),0)");
 $openingQ->execute([$id,$from,$id,$from]);$opening=(float)$openingQ->fetchColumn();
 $statementSql="SELECT * FROM (
- SELECT s.sale_date transaction_date,'Invoice' transaction_type,s.invoice_number reference,CONCAT('Sale invoice ',s.invoice_number) description,s.total_amount debit,0 credit,s.id sale_id
+ SELECT s.sale_date transaction_date,'Invoice' transaction_type,s.invoice_number reference,CONCAT('Sale invoice ',s.invoice_number) description,s.total_amount debit,0 credit,s.id sale_id,0 receipt_amount,0 customer_credit_amount
  FROM sales s WHERE s.customer_id=? AND s.sale_status='Completed' AND DATE(s.sale_date) BETWEEN ? AND ?
  UNION ALL
- SELECT cp.payment_date,'Payment',cp.receipt_number,CONCAT('Customer payment ',COALESCE(cp.transaction_reference,''),' ',COALESCE(cp.notes,'')),0,cp.amount,cp.sale_id
- FROM customer_payments cp WHERE cp.customer_id=? AND DATE(cp.payment_date) BETWEEN ? AND ?
+ SELECT cp.payment_date,'Payment',cp.receipt_number,CONCAT('Customer payment ',COALESCE(cp.transaction_reference,''),' ',COALESCE(cp.notes,'')),0,{$paymentApplied},cp.sale_id,cp.amount,GREATEST(0,cp.amount-({$paymentApplied}))
+ FROM customer_payments cp {$paymentJoins} WHERE cp.customer_id=? AND DATE(cp.payment_date) BETWEEN ? AND ?
 ) statement_rows ORDER BY transaction_date ASC,transaction_type ASC,reference ASC";
 $q=$conn->prepare($statementSql);$q->execute([$id,$from,$to,$id,$from,$to]);$rows=$q->fetchAll(PDO::FETCH_ASSOC);
+$customerCreditBalance=0.0;
+if($hasCustomerCreditLedger){
+    $creditQ=$conn->prepare("SELECT COALESCE(SUM(CASE WHEN entry_type='Credit' THEN amount ELSE -amount END),0) FROM customer_credit_ledger WHERE customer_id=?");
+    $creditQ->execute([$id]);$customerCreditBalance=(float)$creditQ->fetchColumn();
+}
+foreach($rows as &$row){
+    if($row['transaction_type']==='Payment'){
+        $row['description'].=' — received '.$currencyPlaceholder;
+    }
+}
+unset($row);
 $running=$opening;$debitTotal=0.0;$creditTotal=0.0;foreach($rows as &$row){$debitTotal+=(float)$row['debit'];$creditTotal+=(float)$row['credit'];$running+=(float)$row['debit']-(float)$row['credit'];$row['running']=$running;}unset($row);
 $invoiceQ=$conn->prepare("SELECT id,invoice_number,sale_date,total_amount,paid_amount,balance,payment_method FROM sales WHERE customer_id=? AND sale_status='Completed' ORDER BY sale_date DESC,id DESC");
 $invoiceQ->execute([$id]);$invoices=$invoiceQ->fetchAll(PDO::FETCH_ASSOC);
