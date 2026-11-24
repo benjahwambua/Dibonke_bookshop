@@ -217,3 +217,12 @@ The existing return posting flow debits Sales Returns and credits the customer r
 **Multi-store inventory cost correction:** direct purchases and goods receipts previously recalculated a product's weighted-average buying cost using only `products.stock_quantity`, even though stock in selling stores is held separately in `store_stock`. Both receiving paths now include all selling-store quantities in the existing inventory quantity when calculating the new weighted-average cost. Legacy installations without `store_stock` retain the previous Main Store-only calculation. The Inventory Overview already uses Main Store plus selling-store quantities for its stock cost value.
 
 **Remaining verification:** apply the new return-accounting migration on a backed-up test database; test a return with restocking and one without restocking, a customer-credit application, a partial refund followed by final settlement, and Cash/M-Pesa/Bank refund channels. Then compare the Inventory Overview valuation and product buying cost before and after a purchase/GRN while stock exists in both Main Store and selling stores. No live database or browser test was performed during this source review.
+
+
+### Launch Operations cashier close-out reconciliation — 24 November 2026
+
+A follow-up comparison of the cashier's My Shift page and the Launch Operations shift-close summary found that only the former had received the earlier customer-receipt double-counting correction. The Launch Operations helper still summed all completed cash sales (including registered-customer invoices) and then added only unallocated customer payments. This could understate or overstate cash attribution depending on when customer receipts were collected and allocated.
+
+**Code change made:** Launch Operations now calculates cash sales from walk-in completed sales only and includes all customer cash-payment records for the cashier during the shift window. Supplier payments, expenses, cash refunds and manual cash movements remain separately included. This makes the shift-close summary consistent with the My Shift page.
+
+Verify locally by comparing both screens for a cashier who makes a registered-customer cash sale, receives a later part-payment allocated to that invoice, and also completes a walk-in cash sale. Both screens should report the same expected cash before shift close.
