@@ -95,6 +95,36 @@ The current store workflow requires an earlier open day to be reconciled before 
 
 The system includes manual journals and source-module posting integration points. A Trial Balance is only reliable when opening balances, mappings and all in-scope source postings have been reconciled. A successful journal screen or balanced journal alone does not prove the books are complete.
 
+## Integration audit follow-up — 24 November 2026
+
+A focused source-to-source integration pass was performed after the initial whole-system review.
+
+### Confirmed operational connections
+
+- POS sales update the selected store's stock, create sale items and stock movements, and update the customer account when a customer is attached.
+- Customer receipts allocate against outstanding completed invoices; supplier payments allocate against outstanding received purchases and goods receipts.
+- Direct purchases and goods receipts update inventory and supplier balances through separate documented workflows.
+- Expenses, sales, purchases, goods receipts, customer receipts, supplier payments and approved returns contain automatic journal-posting paths. These paths only run when automatic posting is enabled and the required account mappings exist.
+- Cashier shift summaries draw cash sales and standalone customer collections by cashier/time window, and supplier payments and expenses by their shift references.
+
+### Integration gap fixed
+
+The POS had a customer list available in its server-side data but did not expose a customer selector, and the sale handler explicitly set the customer ID to null. This prevented a normal POS sale from being linked to a customer, so POS credit sales and customer-level statements/collections could not use that path.
+
+**Code change made:** added an optional customer selector to POS checkout, persisted the selected customer on the sale, and automatically selected that customer's assigned active price list when available. Existing server-side credit-limit, customer-balance, payment-allocation and sale validation logic is reused. Walk-in sales remain the default when no customer is selected.
+
+### Important limits — not represented as complete integration
+
+- Automatic accounting posting is disabled by default in the migration. An administrator must review the chart of accounts and mappings, enable posting deliberately, and reconcile opening balances. Enabling it does not backfill historical transactions.
+- Operational reports and analytics query their operational source tables; they are not a substitute for a reconciled General Ledger or Trial Balance.
+- Returns/refunds, store close, cashier shifts and late payment events still require the end-to-end acceptance tests listed below. Static code inspection cannot prove that balances reconcile on the live database.
+- No live database, browser, printer or hosting tests were performed during this follow-up.
+
+### Verification
+
+- GitHub Actions workflow runs 45409746614 and 45409759347 passed PHP syntax checks on PHP 8.0 and PHP 8.2 and the product helper tests after the POS integration change.
+- One intermediate run failed while the POS markup correction was in progress; the corrected branch head passed both matrix jobs.
+
 ## Changes made during this review
 
 - Corrected a stylesheet formatting issue in the Store Operations product-search field.
