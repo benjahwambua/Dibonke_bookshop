@@ -21,8 +21,8 @@ function myShiftAudit(PDO $db,string $action,string $description,?int $id=null):
 function myShiftSummary(PDO $db,array $shift):array{
  $uid=(int)$shift['user_id'];$id=(int)$shift['id'];$start=(string)$shift['opened_at'];$end=date('Y-m-d H:i:s');
  $sum=static function(string $sql,array $params)use($db):float{$q=$db->prepare($sql);$q->execute($params);return (float)$q->fetchColumn();};
- $sales=$sum("SELECT COALESCE(SUM(paid_amount),0) FROM sales WHERE user_id=? AND payment_method='Cash' AND sale_status='Completed' AND sale_date BETWEEN ? AND ?",[$uid,$start,$end]);
- $collections=$sum("SELECT COALESCE(SUM(amount),0) FROM customer_payments WHERE user_id=? AND sale_id IS NULL AND payment_method='Cash' AND payment_date BETWEEN ? AND ?",[$uid,$start,$end]);
+ $sales=$sum("SELECT COALESCE(SUM(paid_amount),0) FROM sales WHERE user_id=? AND customer_id IS NULL AND payment_method='Cash' AND sale_status='Completed' AND sale_date BETWEEN ? AND ?",[$uid,$start,$end]);
+ $collections=$sum("SELECT COALESCE(SUM(amount),0) FROM customer_payments WHERE user_id=? AND payment_method='Cash' AND payment_date BETWEEN ? AND ?",[$uid,$start,$end]);
  $supplier=$sum("SELECT COALESCE(SUM(amount),0) FROM supplier_payments WHERE cash_shift_id=? AND payment_method='Cash'",[$id]);
  $expenses=$sum("SELECT COALESCE(SUM(amount),0) FROM expenses WHERE cash_shift_id=? AND payment_method='Cash'",[$id]);
  $refunds=$sum("SELECT COALESCE(SUM(amount),0) FROM sales_return_payments WHERE paid_by=? AND payment_method='Cash' AND paid_at BETWEEN ? AND ?",[$uid,$start,$end]);
