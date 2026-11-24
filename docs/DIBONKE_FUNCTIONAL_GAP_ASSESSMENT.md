@@ -145,6 +145,6 @@ This reassessment supersedes the original status statements above where later co
 
 ### Automated source checks
 
-GitHub Actions run 45499377330 completed successfully for commit 2bcc7faaa86d4f7bfbcdb10e7cfce957b53f563f: all PHP files passed syntax lint on PHP 8.0 and PHP 8.2, and the existing product helper tests passed. This does not exercise database transactions, page rendering, printer hardware, M-PESA callbacks or eTIMS.
+GitHub Actions run 45499542517 completed successfully for the latest reassessment commit 6feb208060f64fc8880bc530db09d93ec266a61a: all PHP files passed syntax lint on PHP 8.0 and PHP 8.2, and the existing product helper tests passed. This does not exercise database transactions, page rendering, printer hardware, M-PESA callbacks or eTIMS.
 
 **Release position:** source-level integration is materially improved, but Dibonke should not be labelled gap-free or production-certified until the remaining functional items are either implemented or explicitly accepted as out of scope, all required migrations are applied, and the end-to-end acceptance suite is passed against a backed-up copy of the actual database.
