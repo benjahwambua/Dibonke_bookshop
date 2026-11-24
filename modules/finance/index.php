@@ -14,14 +14,28 @@ $run=function(string $sql,array $params=[])use($conn){$q=$conn->prepare($sql);$q
 $sales=$run("SELECT COUNT(*) invoices,COALESCE(SUM(total_amount),0) revenue,COALESCE(SUM(paid_amount),0) paid_at_sale,COALESCE(SUM(balance),0) receivables FROM sales WHERE sale_status='Completed' AND DATE(sale_date) BETWEEN ? AND ?",[$from,$to])->fetch();
 $customerReceipts=(float)$run("SELECT COALESCE(SUM(amount),0) FROM customer_payments WHERE DATE(payment_date) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
 $walkInCollections=(float)$run("SELECT COALESCE(SUM(paid_amount),0) FROM sales WHERE customer_id IS NULL AND sale_status='Completed' AND DATE(sale_date) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
-$collections=$customerReceipts+$walkInCollections;
+$hasMpesaTransactions=(bool)$conn->query("SHOW TABLES LIKE 'mpesa_transactions'")->fetchColumn();
+$unallocatedC2BReceipts=0.0;$unallocatedStkOverpayments=0.0;
+if($hasMpesaTransactions){
+    $unallocatedC2BReceipts=(float)$run("SELECT COALESCE(SUM(amount),0) FROM mpesa_transactions WHERE transaction_type='C2B' AND direction='Incoming' AND result_status='Success' AND reference_type IS NULL AND DATE(COALESCE(transaction_date,created_at)) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
+    $unallocatedStkOverpayments=(float)$run("SELECT COALESCE(SUM(overpayment),0) FROM (SELECT GREATEST(0,SUM(mt.amount)-s.paid_amount) overpayment,MAX(COALESCE(mt.transaction_date,mt.created_at)) last_received FROM mpesa_transactions mt JOIN sales s ON mt.reference_type='sale' AND mt.reference_id=s.id WHERE mt.transaction_type='STK Push' AND mt.direction='Incoming' AND mt.result_status='Success' AND s.sale_status='Completed' AND s.customer_id IS NULL GROUP BY s.id,s.paid_amount HAVING SUM(mt.amount)>s.paid_amount+0.009) stk WHERE DATE(last_received) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
+}
+$collections=$customerReceipts+$walkInCollections+$unallocatedC2BReceipts+$unallocatedStkOverpayments;
 $supplierPayments=(float)$run("SELECT COALESCE(SUM(amount),0) FROM supplier_payments WHERE DATE(payment_date) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
 $expenses=(float)$run("SELECT COALESCE(SUM(amount),0) FROM expenses WHERE expense_date BETWEEN ? AND ?",[$from,$to])->fetchColumn();
 $net=$collections-$supplierPayments-$expenses;
 $customerOutstanding=(float)$conn->query("SELECT COALESCE(SUM(balance),0) FROM customers")->fetchColumn();
 $supplierOutstanding=(float)$conn->query("SELECT COALESCE(SUM(balance),0) FROM suppliers")->fetchColumn();
 $expenseRows=$run("SELECT e.expense_number,e.expense_date,e.expense_title,e.amount,e.payment_method,ec.category_name FROM expenses e LEFT JOIN expense_categories ec ON ec.id=e.category_id WHERE e.expense_date BETWEEN ? AND ? ORDER BY e.expense_date DESC,e.id DESC LIMIT 12",[$from,$to])->fetchAll();
-$methodRows=$run("SELECT payment_method,SUM(transactions) transactions,SUM(amount) amount FROM (SELECT payment_method,COUNT(*) transactions,COALESCE(SUM(amount),0) amount FROM customer_payments WHERE DATE(payment_date) BETWEEN ? AND ? GROUP BY payment_method UNION ALL SELECT payment_method,COUNT(*) transactions,COALESCE(SUM(paid_amount),0) amount FROM sales WHERE customer_id IS NULL AND sale_status='Completed' AND DATE(sale_date) BETWEEN ? AND ? GROUP BY payment_method) payment_sources GROUP BY payment_method ORDER BY amount DESC",[$from,$to,$from,$to])->fetchAll();
+$methodSources="SELECT payment_method,COUNT(*) transactions,COALESCE(SUM(amount),0) amount FROM customer_payments WHERE DATE(payment_date) BETWEEN ? AND ? GROUP BY payment_method UNION ALL SELECT payment_method,COUNT(*) transactions,COALESCE(SUM(paid_amount),0) amount FROM sales WHERE customer_id IS NULL AND sale_status='Completed' AND DATE(sale_date) BETWEEN ? AND ? GROUP BY payment_method";
+$methodParams=[$from,$to,$from,$to];
+if($hasMpesaTransactions){
+    $methodSources.=" UNION ALL SELECT CONVERT('M-Pesa' USING utf8mb4) COLLATE utf8mb4_unicode_ci,COUNT(*),COALESCE(SUM(amount),0) FROM mpesa_transactions WHERE transaction_type='C2B' AND direction='Incoming' AND result_status='Success' AND reference_type IS NULL AND DATE(COALESCE(transaction_date,created_at)) BETWEEN ? AND ?";
+    $methodParams[]=$from;$methodParams[]=$to;
+    $methodSources.=" UNION ALL SELECT CONVERT('M-Pesa' USING utf8mb4) COLLATE utf8mb4_unicode_ci,COUNT(*),COALESCE(SUM(overpayment),0) FROM (SELECT GREATEST(0,SUM(mt.amount)-s.paid_amount) overpayment,MAX(COALESCE(mt.transaction_date,mt.created_at)) last_received FROM mpesa_transactions mt JOIN sales s ON mt.reference_type='sale' AND mt.reference_id=s.id WHERE mt.transaction_type='STK Push' AND mt.direction='Incoming' AND mt.result_status='Success' AND s.sale_status='Completed' AND s.customer_id IS NULL GROUP BY s.id,s.paid_amount HAVING SUM(mt.amount)>s.paid_amount+0.009) stk WHERE DATE(last_received) BETWEEN ? AND ?";
+    $methodParams[]=$from;$methodParams[]=$to;
+}
+$methodRows=$run("SELECT payment_method,SUM(transactions) transactions,SUM(amount) amount FROM ({$methodSources}) payment_sources GROUP BY payment_method ORDER BY amount DESC",$methodParams)->fetchAll();
 $currency=(string)($conn->query("SELECT setting_value FROM settings WHERE setting_key='currency' LIMIT 1")->fetchColumn()?:'KES');
 require_once __DIR__.'/../../includes/header.php';
 require_once __DIR__.'/../../includes/sidebar.php';
@@ -51,7 +65,7 @@ require_once __DIR__.'/../../includes/sidebar.php';
 <form class="filter"><div><label>From</label><input type="date" name="from" value="<?=e($from)?>"></div><div><label>To</label><input type="date" name="to" value="<?=e($to)?>"></div><button class="btn">Apply Period</button></form>
 <section class="metrics">
 <div class="metric"><span>Sales Revenue</span><strong><?=e($currency)?> <?=number_format((float)$sales['revenue'],2)?></strong><small><?=number_format((int)$sales['invoices'])?> completed invoices</small></div>
-<div class="metric"><span>Customer Collections</span><strong><?=e($currency)?> <?=number_format($collections,2)?></strong><small>POS payments plus later credit collections</small></div>
+<div class="metric"><span>Customer Collections</span><strong><?=e($currency)?> <?=number_format($collections,2)?></strong><small>POS payments, later collections and unmatched M-Pesa receipts</small></div>
 <div class="metric"><span>Supplier Payments</span><strong><?=e($currency)?> <?=number_format($supplierPayments,2)?></strong><small>Payments recorded in the selected period</small></div>
 <div class="metric"><span>Operating Expenses</span><strong><?=e($currency)?> <?=number_format($expenses,2)?></strong><small>Expenses recorded in the selected period</small></div>
 <div class="metric"><span>Net Cash Movement</span><strong class="<?=$net>=0?'positive':'negative'?>"><?=e($currency)?> <?=number_format($net,2)?></strong><small>Collections less supplier payments and expenses</small></div>
