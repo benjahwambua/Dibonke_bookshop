@@ -21,7 +21,13 @@ $run=function($sql,$params=[])use($conn){$q=$conn->prepare($sql);$q->execute($pa
 $sales=$run("SELECT COUNT(*) invoices,COALESCE(SUM(total_amount),0) revenue,COALESCE(SUM(paid_amount),0) collected,COALESCE(SUM(balance),0) due FROM sales WHERE sale_status='Completed' AND DATE(sale_date) BETWEEN ? AND ?",[$from,$to])->fetch();
 $customerReceipts=(float)$run("SELECT COALESCE(SUM(amount),0) FROM customer_payments WHERE DATE(payment_date) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
 $walkInCollections=(float)$run("SELECT COALESCE(SUM(paid_amount),0) FROM sales WHERE customer_id IS NULL AND sale_status='Completed' AND DATE(sale_date) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
-$receipts=$customerReceipts+$walkInCollections;
+$hasMpesaTransactions=(bool)$conn->query("SHOW TABLES LIKE 'mpesa_transactions'")->fetchColumn();
+$unallocatedC2BReceipts=0.0;$unallocatedStkOverpayments=0.0;
+if($hasMpesaTransactions){
+    $unallocatedC2BReceipts=(float)$run("SELECT COALESCE(SUM(amount),0) FROM mpesa_transactions WHERE transaction_type='C2B' AND direction='Incoming' AND result_status='Success' AND reference_type IS NULL AND DATE(COALESCE(transaction_date,created_at)) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
+    $unallocatedStkOverpayments=(float)$run("SELECT COALESCE(SUM(overpayment),0) FROM (SELECT GREATEST(0,SUM(mt.amount)-s.paid_amount) overpayment,MAX(COALESCE(mt.transaction_date,mt.created_at)) last_received FROM mpesa_transactions mt JOIN sales s ON mt.reference_type='sale' AND mt.reference_id=s.id WHERE mt.transaction_type='STK Push' AND mt.direction='Incoming' AND mt.result_status='Success' AND s.sale_status='Completed' AND s.customer_id IS NULL GROUP BY s.id,s.paid_amount HAVING SUM(mt.amount)>s.paid_amount+0.009) stk WHERE DATE(last_received) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
+}
+$receipts=$customerReceipts+$walkInCollections+$unallocatedC2BReceipts+$unallocatedStkOverpayments;
 $supplierOut=(float)$run("SELECT COALESCE(SUM(amount),0) FROM supplier_payments WHERE DATE(payment_date) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
 $expenseOut=(float)$run("SELECT COALESCE(SUM(amount),0) FROM expenses WHERE expense_date BETWEEN ? AND ?",[$from,$to])->fetchColumn();
 $hasReturnPayments=(bool)$conn->query("SHOW TABLES LIKE 'sales_return_payments'")->fetchColumn();
@@ -33,6 +39,12 @@ $methodSql="SELECT method,SUM(received) received,SUM(spent) spent FROM (
  UNION ALL SELECT CONVERT(payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,0,SUM(amount) FROM supplier_payments WHERE DATE(payment_date) BETWEEN ? AND ? GROUP BY payment_method
  UNION ALL SELECT CONVERT(payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,0,SUM(amount) FROM expenses WHERE expense_date BETWEEN ? AND ? GROUP BY payment_method";
 $methodParams=[$from,$to,$from,$to,$from,$to,$from,$to];
+if($hasMpesaTransactions){
+ $methodSql.=" UNION ALL SELECT CONVERT('M-Pesa' USING utf8mb4) COLLATE utf8mb4_unicode_ci,COALESCE(SUM(amount),0),0 FROM mpesa_transactions WHERE transaction_type='C2B' AND direction='Incoming' AND result_status='Success' AND reference_type IS NULL AND DATE(COALESCE(transaction_date,created_at)) BETWEEN ? AND ?";
+ $methodParams[]=$from;$methodParams[]=$to;
+ $methodSql.=" UNION ALL SELECT CONVERT('M-Pesa' USING utf8mb4) COLLATE utf8mb4_unicode_ci,COALESCE(SUM(overpayment),0),0 FROM (SELECT GREATEST(0,SUM(mt.amount)-s.paid_amount) overpayment,MAX(COALESCE(mt.transaction_date,mt.created_at)) last_received FROM mpesa_transactions mt JOIN sales s ON mt.reference_type='sale' AND mt.reference_id=s.id WHERE mt.transaction_type='STK Push' AND mt.direction='Incoming' AND mt.result_status='Success' AND s.sale_status='Completed' AND s.customer_id IS NULL GROUP BY s.id,s.paid_amount HAVING SUM(mt.amount)>s.paid_amount+0.009) stk WHERE DATE(last_received) BETWEEN ? AND ?";
+ $methodParams[]=$from;$methodParams[]=$to;
+}
 if($hasReturnPayments){$methodSql.=" UNION ALL SELECT CONVERT(payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,0,SUM(amount) FROM sales_return_payments WHERE DATE(paid_at) BETWEEN ? AND ? GROUP BY payment_method";$methodParams[]=$from;$methodParams[]=$to;}
 $methodSql.=") x GROUP BY method ORDER BY method";
 $methods=$run($methodSql,$methodParams)->fetchAll();
