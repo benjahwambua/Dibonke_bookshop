@@ -67,7 +67,7 @@ unset($_SESSION['mpesa_flash']);
 $transactions = $conn->query("SELECT mt.*, cp.receipt_number AS customer_receipt, c.customer_name AS allocated_customer FROM mpesa_transactions mt LEFT JOIN customer_payments cp ON mt.reference_type='customer_payment' AND cp.id=mt.reference_id LEFT JOIN customers c ON c.id=cp.customer_id ORDER BY mt.id DESC LIMIT 30")->fetchAll(PDO::FETCH_ASSOC);
 $unallocatedRows = $conn->query("SELECT id, phone_number, amount, account_reference, transaction_reference, transaction_date, created_at FROM mpesa_transactions WHERE transaction_type='C2B' AND direction='Incoming' AND result_status='Success' AND reference_type IS NULL AND reference_id IS NULL ORDER BY transaction_date ASC, id ASC")->fetchAll(PDO::FETCH_ASSOC);
 $unallocatedC2B = count($unallocatedRows);
-$allocationCustomers = $conn->query("SELECT id, customer_name, phone, balance FROM customers WHERE status='Active' AND balance>0 ORDER BY customer_name")->fetchAll(PDO::FETCH_ASSOC);
+$allocationCustomers = $conn->query("SELECT id, customer_name, phone, balance FROM customers WHERE status='Active' ORDER BY customer_name")->fetchAll(PDO::FETCH_ASSOC);
 
 require_once __DIR__ . '/../../includes/header.php';
 require_once __DIR__ . '/../../includes/sidebar.php';
@@ -154,7 +154,6 @@ require_once __DIR__ . '/../../includes/sidebar.php';
                                         <select name="customer_id" required>
                                             <option value="">Select customer</option>
                                             <?php foreach ($allocationCustomers as $candidate): ?>
-                                                <?php if ((float)$candidate['balance'] + 0.009 < (float)$pending['amount']) continue; ?>
                                                 <option value="<?= (int)$candidate['id'] ?>"><?= e($candidate['customer_name']) ?> — balance KES <?= number_format((float)$candidate['balance'], 2) ?></option>
                                             <?php endforeach; ?>
                                         </select>
@@ -166,7 +165,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
                         </tbody>
                     </table>
                 </div>
-                <p class="muted">Only customers with enough outstanding credit to absorb the full receipt are listed. Receipts larger than the customer's total outstanding balance remain unallocated for review; they are not silently reduced or discarded.</p>
+                <p class="muted">You can assign a receipt even when the customer has no outstanding invoices. Any amount left after settling open invoices is recorded in the Customer Credit Ledger, not discarded.</p>
             <?php endif; ?>
         </section>
 
