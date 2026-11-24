@@ -1,0 +1,35 @@
+<?php
+declare(strict_types=1);
+require_once __DIR__.'/../../includes/auth.php';
+require_once __DIR__.'/../../config/db.php';
+require_once __DIR__.'/../../includes/audit.php';
+requireModuleAccess('hr');
+$flash=$_SESSION['leave_type_flash']??'';unset($_SESSION['leave_type_flash']);
+$edit=null;$editId=(int)($_GET['edit']??0);
+if($_SERVER['REQUEST_METHOD']==='POST'){
+ verify_csrf();$action=(string)($_POST['action']??'');$permission=$action==='create'?'create':($action==='delete'?'delete':'edit');requireModulePermission('hr',$permission);
+ try{
+  if($action==='create'||$action==='update'){
+   $id=(int)($_POST['id']??0);$name=trim((string)($_POST['leave_name']??''));$days=(float)($_POST['annual_days']??0);$paid=isset($_POST['is_paid'])?1:0;$status=($_POST['status']??'Active')==='Inactive'?'Inactive':'Active';
+   if($name===''||mb_strlen($name)>80||$days<0||$days>366)throw new RuntimeException('Enter a leave name and annual allowance between 0 and 366 days.');
+   $q=$conn->prepare("SELECT id FROM hr_leave_types WHERE LOWER(leave_name)=LOWER(?) AND id<>?");$q->execute([$name,$action==='update'?$id:0]);if($q->fetchColumn())throw new RuntimeException('That leave type already exists.');
+   if($action==='create'){$q=$conn->prepare("INSERT INTO hr_leave_types(leave_name,annual_days,is_paid,status) VALUES(?,?,?,?)");$q->execute([$name,$days,$paid,$status]);$id=(int)$conn->lastInsertId();recordAuditEvent($conn,'Create','hr','Created leave type '.$name,'hr_leave_type',$id,null,['name'=>$name]);$flash='Leave type created.';}
+   else{$q=$conn->prepare("UPDATE hr_leave_types SET leave_name=?,annual_days=?,is_paid=?,status=? WHERE id=?");$q->execute([$name,$days,$paid,$status,$id]);$check=$conn->prepare("SELECT id FROM hr_leave_types WHERE id=?");$check->execute([$id]);if(!$check->fetchColumn())throw new RuntimeException('Leave type not found.');recordAuditEvent($conn,'Update','hr','Updated leave type '.$name,'hr_leave_type',$id,null,['name'=>$name,'annual_days'=>$days,'is_paid'=>$paid,'status'=>$status]);$flash='Leave type updated.';}
+  }elseif($action==='delete'){
+   $id=(int)($_POST['id']??0);$q=$conn->prepare("SELECT leave_name FROM hr_leave_types WHERE id=?");$q->execute([$id]);$row=$q->fetch(PDO::FETCH_ASSOC);if(!$row)throw new RuntimeException('Leave type not found.');
+   $q=$conn->prepare("SELECT COUNT(*) FROM hr_leave_requests WHERE leave_type_id=?");$q->execute([$id]);if((int)$q->fetchColumn()>0)throw new RuntimeException('This leave type has requests linked to it. Deactivate it instead to preserve HR history.');
+   $conn->prepare("DELETE FROM hr_leave_types WHERE id=?")->execute([$id]);recordAuditEvent($conn,'Delete','hr','Deleted leave type '.$row['leave_name'],'hr_leave_type',$id,['name'=>$row['leave_name']],null);$flash='Leave type deleted.';
+  }else throw new RuntimeException('Invalid action.');
+ }catch(Throwable $e){$flash='Leave type action failed: '.$e->getMessage();}
+ $_SESSION['leave_type_flash']=$flash;header('Location: leave_types.php');exit;
+}
+if($editId){$q=$conn->prepare("SELECT * FROM hr_leave_types WHERE id=?");$q->execute([$editId]);$edit=$q->fetch(PDO::FETCH_ASSOC)?:null;}
+$rows=$conn->query("SELECT t.*,COUNT(r.id) request_count FROM hr_leave_types t LEFT JOIN hr_leave_requests r ON r.leave_type_id=t.id GROUP BY t.id ORDER BY t.status,t.leave_name")->fetchAll(PDO::FETCH_ASSOC);
+require_once __DIR__.'/../../includes/header.php';require_once __DIR__.'/../../includes/sidebar.php';
+?>
+<main class="content"><style>
+.lt-panel{background:#fff;border:1px solid #e5eaf0;border-radius:12px;padding:18px;margin:16px 0}.lt-form{display:flex;gap:12px;flex-wrap:wrap;align-items:end}.lt-form label{display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:700}.lt-form input,.lt-form select{padding:10px;border:1px solid #cbd5e1;border-radius:7px}.lt-btn{background:#174a7e;color:#fff;border:0;border-radius:7px;padding:10px 14px;font-weight:800}.lt-table{width:100%;border-collapse:collapse}.lt-table th,.lt-table td{padding:10px;border-bottom:1px solid #edf1f5;text-align:left;font-size:13px}.lt-table th{background:#f3f6fa}.muted{color:#64748b}
+</style><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap"><div><h1>Leave Types</h1><p class="muted">Manage the leave options employees can select when requesting time off.</p></div><a class="lt-btn" href="<?=BASE_URL?>/modules/hr/index.php">Back to HR</a></div>
+<?php if($flash):?><p class="lt-panel"><?=e($flash)?></p><?php endif;?>
+<section class="lt-panel"><h2><?=$edit?'Edit Leave Type':'Add Leave Type'?></h2><?php if(hasModulePermission('hr',$edit?'edit':'create')):?><form method="post" class="lt-form"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>"><input type="hidden" name="action" value="<?=$edit?'update':'create'?>"><?php if($edit):?><input type="hidden" name="id" value="<?=(int)$edit['id']?>"><?php endif;?><label>Leave name<input name="leave_name" maxlength="80" required value="<?=e($edit['leave_name']??'')?>"></label><label>Annual days<input type="number" name="annual_days" min="0" max="366" step=".5" value="<?=e((string)($edit['annual_days']??0))?>"></label><label>Status<select name="status"><option value="Active" <?=($edit['status']??'Active')==='Active'?'selected':''?>>Active</option><option value="Inactive" <?=($edit['status']??'')==='Inactive'?'selected':''?>>Inactive</option></select></label><label><span>Paid leave</span><input type="checkbox" name="is_paid" value="1" <?=!isset($edit['is_paid'])||$edit['is_paid']?'checked':''?>></label><button class="lt-btn"><?=$edit?'Save Changes':'Add Leave Type'?></button><?php if($edit):?><a href="leave_types.php">Cancel</a><?php endif;?></form><?php else:?><p class="muted">You do not have permission to manage leave types.</p><?php endif;?></section>
+<section class="lt-panel"><h2>Configured Leave Types</h2><div style="overflow:auto"><table class="lt-table"><thead><tr><th>Leave Type</th><th>Annual Days</th><th>Paid</th><th>Requests</th><th>Status</th><th>Actions</th></tr></thead><tbody><?php foreach($rows as $row):?><tr><td><?=e($row['leave_name'])?></td><td><?=number_format((float)$row['annual_days'],1)?></td><td><?=$row['is_paid']?'Yes':'No'?></td><td><?=(int)$row['request_count']?></td><td><?=e($row['status'])?></td><td><?php if(hasModulePermission('hr','edit')):?><a href="?edit=<?=(int)$row['id']?>">Edit</a><?php endif;?> <?php if(hasModulePermission('hr','delete')&&(int)$row['request_count']===0):?><form method="post" style="display:inline" onsubmit="return confirm('Delete this unused leave type?')"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>"><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?=(int)$row['id']?>"><button class="lt-btn" type="submit">Delete</button></form><?php elseif(hasModulePermission('hr','delete')):?><span class="muted">In use — deactivate instead</span><?php endif;?></td></tr><?php endforeach;?></tbody></table></div></section></main><?php require_once __DIR__.'/../../includes/footer.php';?>

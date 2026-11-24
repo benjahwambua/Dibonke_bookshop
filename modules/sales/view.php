@@ -6,7 +6,7 @@ require_once __DIR__.'/../../config/db.php';
 $id=(int)($_GET['id']??0);
 $s=$conn->prepare("SELECT s.*,COALESCE(c.customer_name,'Walk-in Customer') customer_name,c.phone,c.address,u.full_name FROM sales s LEFT JOIN customers c ON c.id=s.customer_id LEFT JOIN users u ON u.id=s.user_id WHERE s.id=?");
 $s->execute([$id]); $sale=$s->fetch(); if(!$sale) die('Sale not found.');
-$s=$conn->prepare("SELECT si.*,p.product_name,p.sku FROM sale_items si JOIN products p ON p.id=si.product_id WHERE si.sale_id=?");
+$s=$conn->prepare("SELECT si.*,p.product_name,p.sku,p.unit FROM sale_items si JOIN products p ON p.id=si.product_id WHERE si.sale_id=?");
 $s->execute([$id]); $items=$s->fetchAll();
 
 require_once __DIR__.'/../../includes/header.php';
@@ -21,7 +21,7 @@ require_once __DIR__.'/../../includes/sidebar.php';
 <div class="top"><div><h1>Stalk & Stable</h1><p>Alcohol Distribution Management System</p><p><?=e($sale['customer_name'])?><br><?=e($sale['phone']??'')?><br><?=e($sale['address']??'')?></p></div>
 <div class="right"><h2><?=e($sale['invoice_number'])?></h2><p><?=e($sale['sale_date'])?></p><p>Payment: <?=e($sale['payment_method'])?></p><p>Served by: <?=e($sale['full_name']??'')?></p></div></div>
 <table class="table"><thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead><tbody>
-<?php foreach($items as $i):?><tr><td><?=e($i['product_name'])?></td><td><?=e($i['quantity'])?></td><td>KES <?=number_format((float)$i['price'],2)?></td><td>KES <?=number_format((float)$i['subtotal'],2)?></td></tr><?php endforeach;?>
+<?php foreach($items as $i):?><tr><td><?=e($i['product_name'])?></td><td><?=e($i['entered_quantity'] ?? $i['quantity'])?> <?=e($i['sale_unit'] ?? $i['unit'])?></td><td>KES <?=number_format((float)($i['entered_unit_price'] ?? $i['price']),2)?></td><td>KES <?=number_format((float)$i['subtotal'],2)?></td></tr><?php endforeach;?>
 </tbody></table>
 <div class="right"><p>Subtotal: KES <?=number_format((float)$sale['subtotal'],2)?></p><p>Discount: KES <?=number_format((float)$sale['discount'],2)?></p><p>Tax: KES <?=number_format((float)$sale['tax'],2)?></p><h2>Total: KES <?=number_format((float)$sale['total_amount'],2)?></h2><p>Paid: KES <?=number_format((float)$sale['paid_amount'],2)?></p><p>Balance: KES <?=number_format((float)$sale['balance'],2)?></p></div>
 </div></main>

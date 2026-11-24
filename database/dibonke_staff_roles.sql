@@ -1,0 +1,174 @@
+-- Dibonke staff profiles and unified role permissions (additive)
+CREATE TABLE IF NOT EXISTS roles (
+ id INT UNSIGNED NOT NULL AUTO_INCREMENT, role_code VARCHAR(50) NOT NULL,
+ role_name VARCHAR(100) NOT NULL, description VARCHAR(255) NULL,
+ is_system TINYINT(1) NOT NULL DEFAULT 0,
+ status ENUM('Active','Inactive') NOT NULL DEFAULT 'Active',
+ created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ PRIMARY KEY(id), UNIQUE KEY uq_roles_code(role_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS role_permissions (
+ id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT, role_id INT UNSIGNED NOT NULL,
+ module_key VARCHAR(80) NOT NULL, can_view TINYINT(1) NOT NULL DEFAULT 0,
+ can_create TINYINT(1) NOT NULL DEFAULT 0, can_edit TINYINT(1) NOT NULL DEFAULT 0,
+ can_delete TINYINT(1) NOT NULL DEFAULT 0, PRIMARY KEY(id),
+ UNIQUE KEY uq_role_module(role_id,module_key),
+ CONSTRAINT fk_role_permissions_role FOREIGN KEY(role_id) REFERENCES roles(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+CREATE TABLE IF NOT EXISTS staff (
+ id INT UNSIGNED NOT NULL AUTO_INCREMENT, employee_number VARCHAR(40) NOT NULL,
+ full_name VARCHAR(160) NOT NULL, email VARCHAR(160) NULL, phone VARCHAR(30) NULL,
+ department VARCHAR(100) NULL, job_title VARCHAR(100) NULL,
+ employment_type ENUM('Full-time','Part-time','Casual','Contract') NOT NULL DEFAULT 'Full-time',
+ hire_date DATE NULL, status ENUM('Active','Inactive','Terminated') NOT NULL DEFAULT 'Active',
+ user_id INT UNSIGNED NULL, notes TEXT NULL, created_by INT UNSIGNED NULL,
+ created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+ PRIMARY KEY(id), UNIQUE KEY uq_staff_employee_number(employee_number),
+ UNIQUE KEY uq_staff_user(user_id), KEY idx_staff_status(status),
+ CONSTRAINT fk_staff_user FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE SET NULL,
+ CONSTRAINT fk_staff_creator FOREIGN KEY(created_by) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+SET @has_role_id := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='users' AND COLUMN_NAME='role_id');
+SET @sql_role_id := IF(@has_role_id=0,'ALTER TABLE users ADD COLUMN role_id INT UNSIGNED NULL AFTER role','SELECT 1');
+PREPARE stmt_role_id FROM @sql_role_id; EXECUTE stmt_role_id; DEALLOCATE PREPARE stmt_role_id;
+SET @has_role_fk := (SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA=DATABASE() AND TABLE_NAME='users' AND CONSTRAINT_NAME='fk_users_role');
+SET @sql_role_fk := IF(@has_role_fk=0,'ALTER TABLE users ADD CONSTRAINT fk_users_role FOREIGN KEY(role_id) REFERENCES roles(id) ON DELETE SET NULL','SELECT 1');
+PREPARE stmt_role_fk FROM @sql_role_fk; EXECUTE stmt_role_fk; DEALLOCATE PREPARE stmt_role_fk;
+INSERT INTO roles(role_code,role_name,description,is_system) VALUES
+('ADMIN','Administrator','Full access to all operational modules.',1),
+('MANAGER','Manager','Oversees day-to-day bookshop operations.',1),
+('SALES','Sales','Customer service, sales and customer collections.',1),
+('CASHIER','Cashier','Point-of-sale and customer payment duties.',1),
+('STOREKEEPER','Storekeeper','Catalogue, stock and receiving operations.',1),
+('DRIVER','Driver','Delivery operations.',1),
+('STAFF','General Staff','Basic staff access; permissions can be assigned.',1)
+ON DUPLICATE KEY UPDATE role_name=VALUES(role_name),description=VALUES(description),is_system=1;
+UPDATE users u JOIN roles r ON r.role_code=CASE WHEN LOWER(u.role) IN ('admin','administrator') THEN 'ADMIN' WHEN LOWER(u.role)='manager' THEN 'MANAGER' WHEN LOWER(u.role)='sales' THEN 'SALES' WHEN LOWER(u.role)='cashier' THEN 'CASHIER' WHEN LOWER(u.role)='storekeeper' THEN 'STOREKEEPER' WHEN LOWER(u.role)='driver' THEN 'DRIVER' ELSE 'STAFF' END SET u.role_id=r.id WHERE u.role_id IS NULL;
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'products',1,1,1,1 FROM roles WHERE role_code='ADMIN';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'categories',1,1,1,1 FROM roles WHERE role_code='ADMIN';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'brands',1,1,1,1 FROM roles WHERE role_code='ADMIN';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'price_lists',1,1,1,1 FROM roles WHERE role_code='ADMIN';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'customers',1,1,1,1 FROM roles WHERE role_code='ADMIN';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'suppliers',1,1,1,1 FROM roles WHERE role_code='ADMIN';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'purchases',1,1,1,1 FROM roles WHERE role_code='ADMIN';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'sales',1,1,1,1 FROM roles WHERE role_code='ADMIN';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'customer_payments',1,1,1,1 FROM roles WHERE role_code='ADMIN';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'supplier_payments',1,1,1,1 FROM roles WHERE role_code='ADMIN';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'deliveries',1,1,1,1 FROM roles WHERE role_code='ADMIN';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'stock_movements',1,1,1,1 FROM roles WHERE role_code='ADMIN';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'expenses',1,1,1,1 FROM roles WHERE role_code='ADMIN';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'reports',1,1,1,1 FROM roles WHERE role_code='ADMIN';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'analytics',1,1,1,1 FROM roles WHERE role_code='ADMIN';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'supply_chain',1,1,1,1 FROM roles WHERE role_code='ADMIN';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'mpesa',1,1,1,1 FROM roles WHERE role_code='ADMIN';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'staff',1,1,1,1 FROM roles WHERE role_code='ADMIN';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'products',1,1,1,0 FROM roles WHERE role_code='MANAGER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'categories',1,0,0,0 FROM roles WHERE role_code='MANAGER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'brands',1,0,0,0 FROM roles WHERE role_code='MANAGER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'price_lists',0,0,0,0 FROM roles WHERE role_code='MANAGER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'customers',1,0,1,0 FROM roles WHERE role_code='MANAGER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'suppliers',1,0,1,0 FROM roles WHERE role_code='MANAGER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'purchases',1,1,1,0 FROM roles WHERE role_code='MANAGER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'sales',1,1,0,0 FROM roles WHERE role_code='MANAGER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'customer_payments',1,1,0,0 FROM roles WHERE role_code='MANAGER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'supplier_payments',1,1,0,0 FROM roles WHERE role_code='MANAGER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'deliveries',1,1,0,0 FROM roles WHERE role_code='MANAGER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'stock_movements',1,0,0,0 FROM roles WHERE role_code='MANAGER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'expenses',1,0,0,0 FROM roles WHERE role_code='MANAGER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'reports',1,0,0,0 FROM roles WHERE role_code='MANAGER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'analytics',1,0,0,0 FROM roles WHERE role_code='MANAGER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'supply_chain',1,0,0,0 FROM roles WHERE role_code='MANAGER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'mpesa',0,0,0,0 FROM roles WHERE role_code='MANAGER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'staff',1,0,0,0 FROM roles WHERE role_code='MANAGER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'products',0,0,0,0 FROM roles WHERE role_code='SALES';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'categories',0,0,0,0 FROM roles WHERE role_code='SALES';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'brands',0,0,0,0 FROM roles WHERE role_code='SALES';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'price_lists',0,0,0,0 FROM roles WHERE role_code='SALES';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'customers',1,0,0,0 FROM roles WHERE role_code='SALES';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'suppliers',0,0,0,0 FROM roles WHERE role_code='SALES';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'purchases',0,0,0,0 FROM roles WHERE role_code='SALES';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'sales',1,1,0,0 FROM roles WHERE role_code='SALES';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'customer_payments',1,1,0,0 FROM roles WHERE role_code='SALES';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'supplier_payments',0,0,0,0 FROM roles WHERE role_code='SALES';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'deliveries',1,1,0,0 FROM roles WHERE role_code='SALES';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'stock_movements',0,0,0,0 FROM roles WHERE role_code='SALES';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'expenses',0,0,0,0 FROM roles WHERE role_code='SALES';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'reports',1,0,0,0 FROM roles WHERE role_code='SALES';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'analytics',0,0,0,0 FROM roles WHERE role_code='SALES';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'supply_chain',0,0,0,0 FROM roles WHERE role_code='SALES';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'mpesa',0,0,0,0 FROM roles WHERE role_code='SALES';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'staff',0,0,0,0 FROM roles WHERE role_code='SALES';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'products',0,0,0,0 FROM roles WHERE role_code='CASHIER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'categories',0,0,0,0 FROM roles WHERE role_code='CASHIER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'brands',0,0,0,0 FROM roles WHERE role_code='CASHIER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'price_lists',0,0,0,0 FROM roles WHERE role_code='CASHIER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'customers',1,0,0,0 FROM roles WHERE role_code='CASHIER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'suppliers',0,0,0,0 FROM roles WHERE role_code='CASHIER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'purchases',0,0,0,0 FROM roles WHERE role_code='CASHIER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'sales',1,1,0,0 FROM roles WHERE role_code='CASHIER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'customer_payments',1,1,0,0 FROM roles WHERE role_code='CASHIER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'supplier_payments',0,0,0,0 FROM roles WHERE role_code='CASHIER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'deliveries',0,0,0,0 FROM roles WHERE role_code='CASHIER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'stock_movements',0,0,0,0 FROM roles WHERE role_code='CASHIER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'expenses',0,0,0,0 FROM roles WHERE role_code='CASHIER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'reports',0,0,0,0 FROM roles WHERE role_code='CASHIER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'analytics',0,0,0,0 FROM roles WHERE role_code='CASHIER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'supply_chain',0,0,0,0 FROM roles WHERE role_code='CASHIER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'mpesa',0,0,0,0 FROM roles WHERE role_code='CASHIER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'staff',0,0,0,0 FROM roles WHERE role_code='CASHIER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'products',1,1,1,0 FROM roles WHERE role_code='STOREKEEPER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'categories',1,0,0,0 FROM roles WHERE role_code='STOREKEEPER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'brands',1,0,0,0 FROM roles WHERE role_code='STOREKEEPER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'price_lists',0,0,0,0 FROM roles WHERE role_code='STOREKEEPER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'customers',0,0,0,0 FROM roles WHERE role_code='STOREKEEPER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'suppliers',1,0,1,0 FROM roles WHERE role_code='STOREKEEPER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'purchases',1,1,1,0 FROM roles WHERE role_code='STOREKEEPER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'sales',0,0,0,0 FROM roles WHERE role_code='STOREKEEPER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'customer_payments',0,0,0,0 FROM roles WHERE role_code='STOREKEEPER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'supplier_payments',0,0,0,0 FROM roles WHERE role_code='STOREKEEPER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'deliveries',1,1,0,0 FROM roles WHERE role_code='STOREKEEPER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'stock_movements',1,0,0,0 FROM roles WHERE role_code='STOREKEEPER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'expenses',0,0,0,0 FROM roles WHERE role_code='STOREKEEPER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'reports',0,0,0,0 FROM roles WHERE role_code='STOREKEEPER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'analytics',0,0,0,0 FROM roles WHERE role_code='STOREKEEPER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'supply_chain',1,0,0,0 FROM roles WHERE role_code='STOREKEEPER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'mpesa',0,0,0,0 FROM roles WHERE role_code='STOREKEEPER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'staff',0,0,0,0 FROM roles WHERE role_code='STOREKEEPER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'products',0,0,0,0 FROM roles WHERE role_code='DRIVER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'categories',0,0,0,0 FROM roles WHERE role_code='DRIVER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'brands',0,0,0,0 FROM roles WHERE role_code='DRIVER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'price_lists',0,0,0,0 FROM roles WHERE role_code='DRIVER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'customers',0,0,0,0 FROM roles WHERE role_code='DRIVER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'suppliers',0,0,0,0 FROM roles WHERE role_code='DRIVER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'purchases',0,0,0,0 FROM roles WHERE role_code='DRIVER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'sales',0,0,0,0 FROM roles WHERE role_code='DRIVER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'customer_payments',0,0,0,0 FROM roles WHERE role_code='DRIVER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'supplier_payments',0,0,0,0 FROM roles WHERE role_code='DRIVER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'deliveries',1,0,0,0 FROM roles WHERE role_code='DRIVER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'stock_movements',0,0,0,0 FROM roles WHERE role_code='DRIVER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'expenses',0,0,0,0 FROM roles WHERE role_code='DRIVER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'reports',0,0,0,0 FROM roles WHERE role_code='DRIVER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'analytics',0,0,0,0 FROM roles WHERE role_code='DRIVER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'supply_chain',0,0,0,0 FROM roles WHERE role_code='DRIVER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'mpesa',0,0,0,0 FROM roles WHERE role_code='DRIVER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'staff',0,0,0,0 FROM roles WHERE role_code='DRIVER';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'products',0,0,0,0 FROM roles WHERE role_code='STAFF';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'categories',0,0,0,0 FROM roles WHERE role_code='STAFF';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'brands',0,0,0,0 FROM roles WHERE role_code='STAFF';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'price_lists',0,0,0,0 FROM roles WHERE role_code='STAFF';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'customers',0,0,0,0 FROM roles WHERE role_code='STAFF';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'suppliers',0,0,0,0 FROM roles WHERE role_code='STAFF';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'purchases',0,0,0,0 FROM roles WHERE role_code='STAFF';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'sales',0,0,0,0 FROM roles WHERE role_code='STAFF';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'customer_payments',0,0,0,0 FROM roles WHERE role_code='STAFF';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'supplier_payments',0,0,0,0 FROM roles WHERE role_code='STAFF';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'deliveries',0,0,0,0 FROM roles WHERE role_code='STAFF';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'stock_movements',0,0,0,0 FROM roles WHERE role_code='STAFF';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'expenses',0,0,0,0 FROM roles WHERE role_code='STAFF';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'reports',0,0,0,0 FROM roles WHERE role_code='STAFF';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'analytics',0,0,0,0 FROM roles WHERE role_code='STAFF';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'supply_chain',0,0,0,0 FROM roles WHERE role_code='STAFF';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'mpesa',0,0,0,0 FROM roles WHERE role_code='STAFF';
+INSERT IGNORE INTO role_permissions(role_id,module_key,can_view,can_create,can_edit,can_delete) SELECT id,'staff',0,0,0,0 FROM roles WHERE role_code='STAFF';

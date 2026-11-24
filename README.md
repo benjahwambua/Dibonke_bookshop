@@ -33,3 +33,13 @@ The application is being adapted for a general bookshop and retail operation. It
 - Never commit live payment credentials, production passwords, or customer data.
 - Configure payment credentials locally and use sandbox mode during development.
 - Review database migrations before running them against any existing database.
+
+## Operations manual
+
+The current user and operations guide is available at [docs/DIBONKE_USER_MANUAL.md](docs/DIBONKE_USER_MANUAL.md). It covers administration, products, purchasing/receiving, POS, customer statements, receivables, supplier payments, expenses, shifts, HR self-service, finance and current integration limitations.
+
+## Docker development environment
+
+See [docs/DOCKER.md](docs/DOCKER.md) for the PHP/Apache + MariaDB Docker Compose setup, environment configuration, database import/backup and deployment hardening checklist.
+
+**Database setup warning:** the repository currently does not include a verified complete fresh-install base schema. Docker starts the application and database services, but you must import a compatible Dibonke development database or prepare and validate the canonical schema first. Do not use a production database for initial Docker testing.

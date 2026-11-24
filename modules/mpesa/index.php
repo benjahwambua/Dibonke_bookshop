@@ -1,25 +1,248 @@
 <?php
 declare(strict_types=1);
+
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../config/db.php';
-$pageTitle='M-PESA Integration';
-if($_SERVER['REQUEST_METHOD']==='POST'){verify_csrf();$keys=['mpesa_environment','mpesa_shortcode','mpesa_passkey','mpesa_consumer_key','mpesa_consumer_secret','mpesa_callback_url','mpesa_account_reference'];foreach($keys as $k){$v=trim((string)($_POST[$k]??''));$st=$conn->prepare("INSERT INTO settings(setting_key,setting_value) VALUES(?,?) ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value)");$st->execute([$k,$v]);}$_SESSION['mpesa_flash']='M-PESA settings saved.';header('Location:index.php');exit;}
-function s(string $k):string{global $conn;$q=$conn->prepare("SELECT setting_value FROM settings WHERE setting_key=?");$q->execute([$k]);return (string)($q->fetchColumn()??'');}
-$flash=$_SESSION['mpesa_flash']??null;unset($_SESSION['mpesa_flash']);
-$tx=$conn->query("SELECT * FROM mpesa_transactions ORDER BY id DESC LIMIT 30")->fetchAll();
-require_once __DIR__ . '/../../includes/header.php';require_once __DIR__ . '/../../includes/sidebar.php';
+require_once __DIR__ . '/../../config/mpesa.php';
+
+requireModuleAccess('mpesa');
+$pageTitle = 'M-PESA Business Settings';
+
+function mpesaBusinessSave(PDO $conn, string $key, string $value): void
+{
+    $stmt = $conn->prepare(
+        'INSERT INTO settings(setting_key, setting_value) VALUES(?, ?)
+         ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)'
+    );
+    $stmt->execute([$key, $value]);
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    verify_csrf();
+    requireModulePermission('mpesa', 'edit');
+
+    try {
+        $businessType = strtolower(trim((string)($_POST['mpesa_business_type'] ?? 'paybill')));
+        $shortcode = preg_replace('/\D+/', '', (string)($_POST['mpesa_shortcode'] ?? '')) ?? '';
+        $accountReference = trim((string)($_POST['mpesa_account_reference'] ?? ''));
+        $businessName = trim((string)($_POST['mpesa_business_name'] ?? ''));
+
+        if (!in_array($businessType, ['paybill', 'till'], true)) {
+            throw new RuntimeException('Choose either PayBill or Buy Goods Till.');
+        }
+        if (!preg_match('/^\d{5,10}$/', $shortcode)) {
+            throw new RuntimeException('Enter a valid business PayBill or Till number.');
+        }
+        if ($businessType === 'paybill' && $accountReference === '') {
+            throw new RuntimeException('Enter the PayBill account number/reference customers should use.');
+        }
+        if ($accountReference !== '' && !preg_match('/^[A-Za-z0-9._-]{1,20}$/', $accountReference)) {
+            throw new RuntimeException('The account number/reference can contain letters, numbers, dots, underscores and hyphens only (maximum 20 characters).');
+        }
+        if ($businessName === '' || strlen($businessName) > 100) {
+            throw new RuntimeException('Enter the business name (maximum 100 characters).');
+        }
+
+        mpesaBusinessSave($conn, 'mpesa_business_type', $businessType);
+        mpesaBusinessSave($conn, 'mpesa_shortcode', $shortcode);
+        mpesaBusinessSave($conn, 'mpesa_account_reference', $accountReference);
+        mpesaBusinessSave($conn, 'mpesa_business_name', $businessName);
+
+        $_SESSION['mpesa_flash'] = 'M-PESA business payment details saved successfully.';
+    } catch (Throwable $e) {
+        $_SESSION['mpesa_flash'] = 'Business settings were not saved: ' . $e->getMessage();
+    }
+
+    header('Location: index.php');
+    exit;
+}
+
+$businessType = mpesaSetting('mpesa_business_type', 'paybill');
+$shortcode = mpesaSetting('mpesa_shortcode');
+$accountReference = mpesaSetting('mpesa_account_reference');
+$businessName = mpesaSetting('mpesa_business_name', 'Dibonke Bookshop');
+$flash = $_SESSION['mpesa_flash'] ?? null;
+unset($_SESSION['mpesa_flash']);
+
+$transactions = $conn->query("SELECT mt.*, cp.receipt_number AS customer_receipt, c.customer_name AS allocated_customer FROM mpesa_transactions mt LEFT JOIN customer_payments cp ON mt.reference_type='customer_payment' AND cp.id=mt.reference_id LEFT JOIN customers c ON c.id=cp.customer_id ORDER BY mt.id DESC LIMIT 30")->fetchAll(PDO::FETCH_ASSOC);
+$unallocatedRows = $conn->query("SELECT id, phone_number, amount, account_reference, transaction_reference, transaction_date, created_at FROM mpesa_transactions WHERE transaction_type='C2B' AND direction='Incoming' AND result_status='Success' AND reference_type IS NULL AND reference_id IS NULL ORDER BY transaction_date ASC, id ASC")->fetchAll(PDO::FETCH_ASSOC);
+$unallocatedC2B = count($unallocatedRows);
+$allocationCustomers = $conn->query("SELECT id, customer_name, phone, balance FROM customers WHERE status='Active' ORDER BY customer_name")->fetchAll(PDO::FETCH_ASSOC);
+$customerCreditRows = [];
+if ($conn->query("SHOW TABLES LIKE 'customer_credit_ledger'")->fetchColumn()) {
+    $customerCreditRows = $conn->query("SELECT c.id, c.customer_name, ROUND(SUM(CASE WHEN l.entry_type='Credit' THEN l.amount ELSE -l.amount END),2) AS credit_balance FROM customer_credit_ledger l JOIN customers c ON c.id=l.customer_id GROUP BY c.id,c.customer_name HAVING credit_balance>0.009 ORDER BY c.customer_name")->fetchAll(PDO::FETCH_ASSOC);
+}
+
+require_once __DIR__ . '/../../includes/header.php';
+require_once __DIR__ . '/../../includes/sidebar.php';
 ?>
-<main class="content"><div style="max-width:1200px;margin:auto"><div class="head"><div><h1>M-PESA Integration</h1><p>Central M-PESA configuration and transaction monitoring for sales, customer payments and future supplier/expense payments.</p></div></div>
-<?php if($flash):?><div class="flash"><?=e($flash)?></div><?php endif;?>
-<div class="card"><h2>Daraja Configuration</h2><p class="muted">Use sandbox while testing. Keep production credentials private and use an HTTPS callback URL.</p><form method="post"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>"><div class="grid">
-<label>Environment<select name="mpesa_environment"><option value="sandbox" <?=s('mpesa_environment')==='sandbox'?'selected':''?>>Sandbox</option><option value="live" <?=s('mpesa_environment')==='live'?'selected':''?>>Live</option></select></label>
-<label>Shortcode<input name="mpesa_shortcode" value="<?=e(s('mpesa_shortcode'))?>"></label>
-<label>Passkey<input type="password" name="mpesa_passkey" value="<?=e(s('mpesa_passkey'))?>"></label>
-<label>Consumer Key<input name="mpesa_consumer_key" value="<?=e(s('mpesa_consumer_key'))?>"></label>
-<label>Consumer Secret<input type="password" name="mpesa_consumer_secret" value="<?=e(s('mpesa_consumer_secret'))?>"></label>
-<label>Account Reference<input name="mpesa_account_reference" value="<?=e(s('mpesa_account_reference')?:'STALKSTABLE')?>"></label>
-<label class="full">Callback URL<input name="mpesa_callback_url" value="<?=e(s('mpesa_callback_url'))?>" placeholder="https://your-domain.com/stalk_stable/modules/mpesa/callback.php"></label>
-</div><button class="btn primary">Save M-PESA Settings</button></form></div>
-<div class="card"><h2>Recent M-PESA Transactions</h2><div class="table-wrap"><table><thead><tr><th>Date</th><th>Type</th><th>Phone</th><th>Amount</th><th>Reference</th><th>Status</th></tr></thead><tbody><?php foreach($tx as $t):?><tr><td><?=e($t['created_at'])?></td><td><?=e($t['transaction_type'])?></td><td><?=e($t['phone_number']?:'—')?></td><td>KES <?=number_format((float)$t['amount'],2)?></td><td><?=e($t['transaction_reference']?:$t['checkout_request_id']?:'—')?></td><td><?=e($t['result_status'])?></td></tr><?php endforeach;?></tbody></table></div></div></div></main>
-<style>.head{margin-bottom:20px}.muted{color:#64748b}.card{background:#fff;padding:22px;border-radius:14px;box-shadow:0 1px 5px #0001;margin-bottom:18px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin:18px 0}.grid label{font-size:12px;font-weight:700}.grid input,.grid select{display:block;width:100%;box-sizing:border-box;margin-top:6px;padding:11px;border:1px solid #dbe3ec;border-radius:8px}.full{grid-column:1/-1}.btn{padding:11px 16px;border:0;border-radius:8px;font-weight:700;cursor:pointer}.primary{background:#004a99;color:#fff}.flash{padding:12px;background:#ecfdf5;color:#166534;border-radius:8px;margin-bottom:18px}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse}th,td{padding:11px;border-bottom:1px solid #e5e7eb;text-align:left;font-size:13px}th{background:#f8fafc}@media(max-width:850px){.grid{grid-template-columns:1fr}.full{grid-column:auto}}</style>
+<main class="content">
+    <div class="mpesa-business-wrap">
+        <div class="page-heading">
+            <div>
+                <h1>M-PESA Business Settings</h1>
+                <p>Enter the PayBill or Till details customers use to pay your business. No Daraja developer credentials or sandbox testing are needed here.</p>
+            </div>
+            <?php if (isSuperUser()): ?>
+                <a class="btn secondary" href="developer.php">Developer Settings</a>
+            <?php endif; ?>
+        </div>
+
+        <?php if ($flash): ?><div class="flash"><?= e($flash) ?></div><?php endif; ?>
+
+        <section class="card">
+            <h2>Business Payment Details</h2>
+            <p class="muted">These details identify where the bookshop receives M-PESA payments.</p>
+
+            <form method="post">
+                <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+
+                <div class="form-grid">
+                    <label>Payment method
+                        <select name="mpesa_business_type" id="mpesaBusinessType">
+                            <option value="paybill" <?= $businessType === 'paybill' ? 'selected' : '' ?>>PayBill</option>
+                            <option value="till" <?= $businessType === 'till' ? 'selected' : '' ?>>Buy Goods Till</option>
+                        </select>
+                    </label>
+
+                    <label id="shortcodeLabel">PayBill / Till number
+                        <input name="mpesa_shortcode" value="<?= e($shortcode) ?>" inputmode="numeric" required placeholder="Enter business shortcode">
+                    </label>
+
+                    <label id="accountReferenceLabel">PayBill account number
+                        <input name="mpesa_account_reference" value="<?= e($accountReference) ?>" maxlength="20" placeholder="e.g. 274784">
+                        <small>For manual PayBill payments. STK Push requests use the sale or receipt reference to help match payments.</small>
+                    </label>
+
+                    <label>Business name
+                        <input name="mpesa_business_name" value="<?= e($businessName) ?>" maxlength="100" required placeholder="e.g. Dibonke Bookshop">
+                    </label>
+                </div>
+
+                <button class="btn primary" type="submit">Save Business Payment Details</button>
+            </form>
+        </section>
+
+        <section class="card c2b-summary">
+            <div>
+                <h2>Direct PayBill Payments</h2>
+                <p class="muted">Successful direct PayBill payments received and awaiting allocation.</p>
+            </div>
+            <div class="c2b-count">
+                <strong><?= number_format($unallocatedC2B) ?></strong>
+                <span>Awaiting allocation</span>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2>Allocate Unmatched PayBill Receipts</h2>
+            <p class="muted">Match a confirmed direct PayBill payment to the customer's outstanding invoices. The system allocates the full receipt to that customer's oldest outstanding invoices first.</p>
+            <?php if (!$unallocatedRows): ?>
+                <p class="empty">There are no confirmed C2B receipts awaiting allocation.</p>
+            <?php else: ?>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>Date</th><th>M-PESA receipt</th><th>Phone</th><th>Amount</th><th>Bill reference</th><th>Allocate to customer</th></tr></thead>
+                        <tbody>
+                        <?php foreach ($unallocatedRows as $pending): ?>
+                            <tr>
+                                <td><?= e($pending['transaction_date'] ?: $pending['created_at']) ?></td>
+                                <td><?= e($pending['transaction_reference']) ?></td>
+                                <td><?= e($pending['phone_number'] ?: '—') ?></td>
+                                <td>KES <?= number_format((float)$pending['amount'], 2) ?></td>
+                                <td><?= e($pending['account_reference'] ?: '—') ?></td>
+                                <td>
+                                    <form method="post" action="allocate.php" class="c2b-allocation-form">
+                                        <input type="hidden" name="csrf_token" value="<?= e(csrf_token()) ?>">
+                                        <input type="hidden" name="transaction_id" value="<?= (int)$pending['id'] ?>">
+                                        <select name="customer_id" required>
+                                            <option value="">Select customer</option>
+                                            <?php foreach ($allocationCustomers as $candidate): ?>
+                                                <option value="<?= (int)$candidate['id'] ?>"><?= e($candidate['customer_name']) ?> — balance KES <?= number_format((float)$candidate['balance'], 2) ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
+                                        <button class="btn primary" type="submit">Allocate receipt</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="muted">You can assign a receipt even when the customer has no outstanding invoices. Any amount left after settling open invoices is recorded in the Customer Credit Ledger, not discarded.</p>
+            <?php endif; ?>
+        </section>
+
+
+        <section class="card">
+            <h2>Customer Credit Balances</h2>
+            <p class="muted">Money received above a customer's outstanding invoices is held here as a credit balance. It is not counted as sales or used to reduce another customer's balance.</p>
+            <?php if (!$customerCreditRows): ?>
+                <p class="empty">There are no customer credit balances recorded.</p>
+            <?php else: ?>
+                <div class="table-wrap"><table><thead><tr><th>Customer</th><th>Available credit</th></tr></thead><tbody>
+                <?php foreach ($customerCreditRows as $creditRow): ?>
+                    <tr><td><?= e($creditRow['customer_name']) ?></td><td>KES <?= number_format((float)$creditRow['credit_balance'], 2) ?></td></tr>
+                <?php endforeach; ?>
+                </tbody></table></div>
+            <?php endif; ?>
+        </section>
+
+        <section class="card">
+            <h2>Recent M-PESA Transactions</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th><th>Type</th><th>Phone</th><th>Amount</th><th>Receipt / Tx ID</th><th>Invoice reference</th><th>Allocation</th><th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <?php foreach ($transactions as $transaction): ?>
+                        <tr>
+                            <td><?= e($transaction['transaction_date'] ?: $transaction['created_at']) ?></td>
+                            <td><?= e($transaction['transaction_type']) ?></td>
+                            <td><?= e($transaction['phone_number'] ?: '—') ?></td>
+                            <td>KES <?= number_format((float)$transaction['amount'], 2) ?></td>
+                            <td><?= e($transaction['transaction_reference'] ?: $transaction['checkout_request_id'] ?: '—') ?></td>
+                            <td><?= e($transaction['account_reference'] ?: '—') ?></td>
+                            <td><?= $transaction['reference_type'] === 'customer_payment' ? 'Allocated: ' . e($transaction['allocated_customer'] ?: 'Customer') . ' (' . e($transaction['customer_receipt'] ?: 'receipt') . ')' : (!empty($transaction['reference_id']) ? 'Allocated to sale #' . (int)$transaction['reference_id'] : ($transaction['transaction_type'] === 'C2B' ? 'Unallocated' : '—')) ?></td>
+                            <td><?= e($transaction['result_status']) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <?php if (!$transactions): ?>
+                        <tr><td colspan="8" class="empty">No M-PESA transactions have been recorded yet.</td></tr>
+                    <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</main>
+
+<script>
+(function () {
+    const type = document.getElementById('mpesaBusinessType');
+    const label = document.getElementById('accountReferenceLabel');
+    const input = document.querySelector('[name="mpesa_account_reference"]');
+    function updateAccountReference() {
+        const isPaybill = type.value === 'paybill';
+        label.style.display = isPaybill ? '' : 'none';
+        input.required = isPaybill;
+    }
+    type.addEventListener('change', updateAccountReference);
+    updateAccountReference();
+})();
+</script>
+
+<style>
+.mpesa-business-wrap{max-width:1200px;margin:0 auto}.page-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}.page-heading h1{margin:0 0 6px}.page-heading p,.muted{color:#64748b}.card{background:#fff;border:1px solid #e8edf3;border-radius:14px;padding:22px;box-shadow:0 1px 5px #0001;margin-bottom:18px}.card h2{margin:0 0 7px}.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:20px 0}.form-grid label{display:block;font-size:12px;font-weight:700;color:#334155}.form-grid input,.form-grid select{display:block;box-sizing:border-box;width:100%;margin-top:6px;padding:12px;border:1px solid #dbe3ec;border-radius:8px;background:#fff}.form-grid small{display:block;color:#64748b;font-weight:400;margin-top:5px;line-height:1.4}.btn{display:inline-block;padding:11px 16px;border:0;border-radius:8px;text-decoration:none;font-weight:700;cursor:pointer}.primary{background:#004a99;color:#fff}.secondary{background:#eef2f7;color:#1e293b}.flash{padding:12px;background:#ecfdf5;color:#166534;border-radius:8px;margin-bottom:18px}.c2b-summary{display:flex;align-items:center;justify-content:space-between;gap:16px}.c2b-summary h2{margin:0 0 5px}.c2b-summary p{margin:0}.c2b-count{display:flex;align-items:center;gap:9px;padding:9px 13px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;white-space:nowrap}.c2b-count strong{font-size:23px;color:#0f172a}.c2b-count span{font-size:11px;color:#64748b}.table-wrap{overflow:auto}.c2b-allocation-form{display:flex;gap:6px;align-items:center}.c2b-allocation-form select{min-width:220px;padding:9px;border:1px solid #dbe3ec;border-radius:7px}.c2b-allocation-form button{white-space:nowrap}table{width:100%;border-collapse:collapse}th,td{padding:11px;border-bottom:1px solid #e5e7eb;text-align:left;font-size:12px;white-space:nowrap}th{background:#f8fafc;color:#334155}.empty{text-align:center;color:#64748b;padding:24px}@media(max-width:800px){.form-grid{grid-template-columns:1fr}.page-heading{align-items:flex-start;flex-direction:column}.c2b-summary{align-items:flex-start;flex-direction:column}}
+
+/* Compact typography for M-PESA business settings */
+.mpesa-business-wrap h1{font-size:1.25rem!important;line-height:1.3;margin:0 0 5px}
+.mpesa-business-wrap h2{font-size:1rem!important;line-height:1.35}
+.mpesa-business-wrap p{font-size:12px;line-height:1.5}
+.mpesa-business-wrap .form-grid label{font-size:12px}
+.mpesa-business-wrap th,.mpesa-business-wrap td{font-size:11px}
+</style>
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>

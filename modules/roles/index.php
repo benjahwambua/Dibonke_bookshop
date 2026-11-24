@@ -1,0 +1,39 @@
+<?php
+declare(strict_types=1);
+require_once __DIR__.'/../../includes/auth.php';require_once __DIR__.'/../../config/db.php';
+if(!isAdministrator()){http_response_code(403);exit('Access denied. Administrator access is required.');}
+$modules=['products'=>'Products & Books','categories'=>'Categories','brands'=>'Brands / Publishers','price_lists'=>'Price Lists','customers'=>'Customers','suppliers'=>'Suppliers','purchases'=>'Purchases','sales'=>'Sales & POS','customer_payments'=>'Customer Payments','supplier_payments'=>'Supplier Payments','deliveries'=>'Deliveries','fleet'=>'Fleet Management','customer_orders'=>'Customer Sales Orders','stock_movements'=>'Stock Movements','expenses'=>'Expenses','finance'=>'Finance','billing'=>'Billing & Invoices','reports'=>'Reports','analytics'=>'Analytics','supply_chain'=>'Supply Chain','mpesa'=>'M-PESA','staff'=>'Staff','sales_returns'=>'Sales Returns & Refunds','cash_management'=>'Cash Management & Shifts','stocktaking'=>'Stocktaking','audit_logs'=>'Audit Trail','etims'=>'KRA eTIMS','launch_controls'=>'Launch Operations','hr'=>'Human Resources','hr_self_service'=>'Employee HR Self-Service','chart_of_accounts'=>'Chart of Accounts','journals'=>'Journal Entries','general_ledger'=>'General Ledger','trial_balance'=>'Trial Balance','aged_receivables'=>'Aged Receivables','aged_payables'=>'Aged Payables','accounting_mappings'=>'Automatic Posting Mappings','store_operations'=>'Store Operations'];
+$roleRows = $conn->query("SELECT * FROM roles ORDER BY is_system DESC, role_name")->fetchAll(PDO::FETCH_ASSOC);
+$roles = [];
+foreach ($roleRows as $roleRow) {
+    if (is_array($roleRow) && isset($roleRow['id'], $roleRow['role_name'])) {
+        $roles[] = $roleRow;
+    }
+}
+$firstRoleId = isset($roles[0]) && is_array($roles[0]) ? (int) $roles[0]['id'] : 0;
+$selected = isset($_GET['id']) ? (int) $_GET['id'] : $firstRoleId;
+$selectedRole = null;
+$permissions = [];
+if ($selected > 0) {
+    $q = $conn->prepare("SELECT * FROM roles WHERE id = ? LIMIT 1");
+    $q->execute([$selected]);
+    $roleRow = $q->fetch(PDO::FETCH_ASSOC);
+    $selectedRole = is_array($roleRow) ? $roleRow : null;
+    $q = $conn->prepare("SELECT * FROM role_permissions WHERE role_id = ?");
+    $q->execute([$selected]);
+    $permissionRows = $q->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($permissionRows as $permissionRow) {
+        if (!is_array($permissionRow) || !isset($permissionRow['module_key'])) {
+            continue;
+        }
+        $permissions[(string) $permissionRow['module_key']] = $permissionRow;
+    }
+}
+$flash=$_SESSION['role_flash']??null;unset($_SESSION['role_flash']);
+require_once __DIR__.'/../../includes/header.php';require_once __DIR__.'/../../includes/sidebar.php';?>
+<main class="content"><style>
+.role-layout{display:grid;grid-template-columns:270px minmax(0,1fr);gap:18px}.panel{background:#fff;border:1px solid #e5eaf0;border-radius:12px;padding:18px;margin-bottom:16px}.role-list a{display:block;padding:11px 12px;border-radius:8px;text-decoration:none;color:#334155;margin:3px 0}.role-list a.active{background:#eaf2fb;color:#174a7e;font-weight:800}.field{margin:10px 0}.field label{display:block;font-size:12px;font-weight:700;margin-bottom:5px}.field input{width:100%;box-sizing:border-box;padding:10px;border:1px solid #dbe3ec;border-radius:7px}.btn{background:#174a7e;color:#fff;border:0;border-radius:7px;padding:10px 14px;font-weight:700;cursor:pointer}.flash{padding:12px;border-radius:8px;background:#ecfdf5;color:#166534;margin:12px 0}.perm-table{width:100%;border-collapse:collapse}.perm-table th,.perm-table td{padding:10px;border-bottom:1px solid #e5eaf0;text-align:center;font-size:12px}.perm-table th:first-child,.perm-table td:first-child{text-align:left}.perm-table th{background:#f3f6fa;color:#334155}.perm-table input{width:16px;height:16px}@media(max-width:900px){.role-layout{grid-template-columns:1fr}.perm-wrap{overflow:auto}.perm-table{min-width:650px}}
+</style><h1>Roles & Permissions</h1><p>Set module access and control view, create, edit and delete rights for each role.</p>
+<?php if($flash):?><div class="flash"><?=e($flash)?></div><?php endif;?>
+<div class="role-layout"><section class="panel"><h3>Roles</h3><div class="role-list"><?php foreach($roles as $r):?><a class="<?=$selected===(int)$r['id']?'active':''?>" href="index.php?id=<?=$r['id']?>"><?=e($r['role_name'])?><?=!empty($r['is_system'])?' · System':''?></a><?php endforeach;?></div><hr><h3>Create Role</h3><form method="post" action="store.php"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>"><input type="hidden" name="action" value="create"><div class="field"><label>Role Name</label><input name="role_name" required maxlength="100" placeholder="e.g. Inventory Supervisor"></div><div class="field"><label>Description</label><input name="description" maxlength="255"></div><button class="btn">Create Role</button></form></section>
+<section class="panel"><?php if(is_array($selectedRole)):?><h3><?=e((string)($selectedRole['role_name'] ?? 'Selected role'))?> Permissions</h3><p style="color:#64748b;font-size:13px">Permission changes apply on the next request made by assigned users.</p><form method="post" action="store.php"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>"><input type="hidden" name="action" value="save_permissions"><input type="hidden" name="role_id" value="<?= (int)($selectedRole['id'] ?? 0) ?>"><div class="perm-wrap"><table class="perm-table"><thead><tr><th>Module</th><th>View</th><th>Create</th><th>Edit</th><th>Delete</th></tr></thead><tbody><?php foreach($modules as $key=>$label):$p=$permissions[$key]??[];if(!is_array($p))$p=[];?><tr><td><?=e($label)?></td><?php foreach(['view','create','edit','delete'] as $a):?><td><input type="checkbox" name="permissions[<?=e($key)?>][<?=e($a)?>]" value="1" <?=!empty($p['can_'.$a])?'checked':''?>></td><?php endforeach;?></tr><?php endforeach;?></tbody></table></div><p><button class="btn">Save Permissions</button></p></form><?php else:?><p>Create a role to configure permissions.</p><?php endif;?></section></div></main><?php require_once __DIR__.'/../../includes/footer.php';?>
