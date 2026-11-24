@@ -175,19 +175,21 @@ try {
         // Do not sign off a store day while an STK payment for one of its sales
         // is still awaiting Daraja confirmation. Locking the pending transaction
         // also prevents a callback from racing the close calculation.
-        $pendingStkStmt = $conn->prepare("SELECT mt.id
-            FROM mpesa_transactions mt
-            INNER JOIN sales s ON mt.reference_type='sale' AND mt.reference_id=s.id
-            WHERE mt.transaction_type='STK Push'
-              AND mt.direction='Incoming'
-              AND mt.result_status='Pending'
-              AND s.store_id=?
-              AND DATE(s.sale_date)=?
-            FOR UPDATE");
-        $pendingStkStmt->execute([(int)$session['store_id'], $session['business_date']]);
-        $pendingStkRows = $pendingStkStmt->fetchAll(PDO::FETCH_COLUMN);
-        if ($pendingStkRows) {
-            throw new RuntimeException('This store day has ' . count($pendingStkRows) . ' M-PESA STK payment(s) still awaiting confirmation. Wait for the customer payment result, then refresh and reconcile the day.');
+        if ((bool)$conn->query("SHOW TABLES LIKE 'mpesa_transactions'")->fetchColumn()) {
+            $pendingStkStmt = $conn->prepare("SELECT mt.id
+                FROM mpesa_transactions mt
+                INNER JOIN sales s ON mt.reference_type='sale' AND mt.reference_id=s.id
+                WHERE mt.transaction_type='STK Push'
+                  AND mt.direction='Incoming'
+                  AND mt.result_status='Pending'
+                  AND s.store_id=?
+                  AND DATE(s.sale_date)=?
+                FOR UPDATE");
+            $pendingStkStmt->execute([(int)$session['store_id'], $session['business_date']]);
+            $pendingStkRows = $pendingStkStmt->fetchAll(PDO::FETCH_COLUMN);
+            if ($pendingStkRows) {
+                throw new RuntimeException('This store day has ' . count($pendingStkRows) . ' M-PESA STK payment(s) still awaiting confirmation. Wait for the customer payment result, then refresh and reconcile the day.');
+            }
         }
 
         $itemsStmt = $conn->prepare("SELECT di.*,p.product_name,p.buying_price FROM store_daily_items di INNER JOIN products p ON p.id=di.product_id WHERE di.session_id=? FOR UPDATE");
