@@ -59,7 +59,7 @@ try{
          $payAmount=round(min($amount,$openBalance),2);
          $excessAmount=round(max(0,$amount-$payAmount),2);
          if($payAmount>0){
-            $upd=$conn->prepare("UPDATE sales SET paid_amount=LEAST(total_amount,paid_amount+?), balance=GREATEST(0,total_amount-paid_amount-?) WHERE id=?");
+            $upd=$conn->prepare("UPDATE sales SET paid_amount=LEAST(total_amount,paid_amount+?), balance=GREATEST(0,total_amount-LEAST(total_amount,paid_amount+?)) WHERE id=?");
             $upd->execute([$payAmount,$payAmount,$saleId]);
          }
          if(!empty($sale['customer_id'])){
