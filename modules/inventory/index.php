@@ -12,38 +12,44 @@ if (!in_array($stockFilter, ['all', 'low', 'out', 'healthy'], true)) {
     $stockFilter = 'all';
 }
 
+$hasStoreStock = (bool)$conn->query("SHOW TABLES LIKE 'store_stock'")->fetchColumn();
+$storeStockJoin = $hasStoreStock
+    ? " LEFT JOIN (SELECT product_id, SUM(quantity) AS total_quantity FROM store_stock GROUP BY product_id) ss ON ss.product_id = p.id"
+    : "";
+$availableStockSql = $hasStoreStock ? "(p.stock_quantity + COALESCE(ss.total_quantity, 0))" : "p.stock_quantity";
+
 $summary = $conn->query("
     SELECT
         COUNT(*) AS product_count,
-        COUNT(CASE WHEN stock_quantity > 0 THEN 1 END) AS stocked_products,
-        COALESCE(SUM(stock_quantity * buying_price), 0) AS stock_value,
-        SUM(CASE WHEN stock_quantity <= 0 THEN 1 ELSE 0 END) AS out_of_stock,
-        SUM(CASE WHEN stock_quantity > 0 AND stock_quantity <= reorder_level THEN 1 ELSE 0 END) AS low_stock
-    FROM products
-    WHERE status = 'Active'
+        COUNT(CASE WHEN {$availableStockSql} > 0 THEN 1 END) AS stocked_products,
+        COALESCE(SUM({$availableStockSql} * p.buying_price), 0) AS stock_value,
+        SUM(CASE WHEN {$availableStockSql} <= 0 THEN 1 ELSE 0 END) AS out_of_stock,
+        SUM(CASE WHEN {$availableStockSql} > 0 AND {$availableStockSql} <= p.reorder_level THEN 1 ELSE 0 END) AS low_stock
+    FROM products p{$storeStockJoin}
+    WHERE p.status = 'Active'
 ")->fetch(PDO::FETCH_ASSOC);
 
-$where = ["status = 'Active'"];
+$where = ["p.status = 'Active'"];
 $params = [];
 if ($search !== '') {
-    $where[] = "(product_name LIKE ? OR sku LIKE ? OR barcode LIKE ? OR isbn LIKE ?)";
+    $where[] = "(p.product_name LIKE ? OR p.sku LIKE ? OR p.barcode LIKE ? OR p.isbn LIKE ?)";
     $like = '%' . $search . '%';
     array_push($params, $like, $like, $like, $like);
 }
 if ($stockFilter === 'low') {
-    $where[] = "stock_quantity > 0 AND stock_quantity <= reorder_level";
+    $where[] = "{$availableStockSql} > 0 AND {$availableStockSql} <= p.reorder_level";
 } elseif ($stockFilter === 'out') {
-    $where[] = "stock_quantity <= 0";
+    $where[] = "{$availableStockSql} <= 0";
 } elseif ($stockFilter === 'healthy') {
-    $where[] = "stock_quantity > reorder_level";
+    $where[] = "{$availableStockSql} > p.reorder_level";
 }
 
-$sql = "SELECT id, product_name, sku, stock_quantity, reorder_level, unit, buying_price
-        FROM products WHERE " . implode(' AND ', $where) . "
+$sql = "SELECT p.id, p.product_name, p.sku, {$availableStockSql} AS stock_quantity, p.reorder_level, p.unit, p.buying_price
+        FROM products p{$storeStockJoin} WHERE " . implode(' AND ', $where) . "
         ORDER BY
-            CASE WHEN stock_quantity <= 0 THEN 0
-                 WHEN stock_quantity <= reorder_level THEN 1 ELSE 2 END,
-            product_name";
+            CASE WHEN {$availableStockSql} <= 0 THEN 0
+                 WHEN {$availableStockSql} <= p.reorder_level THEN 1 ELSE 2 END,
+            p.product_name";
 $stmt = $conn->prepare($sql);
 $stmt->execute($params);
 $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -138,6 +144,6 @@ require_once __DIR__ . '/../../includes/sidebar.php';
             </table>
         </div>
     </div>
-    <p class="inventory-note">Stock cost values use each product's recorded weighted-average buying cost. Product quantities are shown in their own stock units and are not added together across different units. To receive stock, record a purchase; use a stock adjustment only for counts or corrections.</p>
+    <p class="inventory-note">Stock quantities and cost values include Main Store and all selling stores when Store Operations is installed. Values use each product's recorded weighted-average buying cost. Product quantities are shown in their own stock units and are not added together across different units. To receive stock, record a purchase; use a stock adjustment only for counts or corrections.</p>
 </main>
 <?php require_once __DIR__ . '/../../includes/footer.php'; ?>
