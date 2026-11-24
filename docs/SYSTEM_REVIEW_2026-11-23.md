@@ -242,3 +242,12 @@ Verify locally with a C2B payment matched by invoice reference and confirm the r
 The C2B confirmation endpoint previously rejected a mismatched shortcode but allowed a callback with the `BusinessShortCode` field omitted whenever a shortcode was configured. The callback now requires the field to be present and to match the configured business shortcode exactly. This prevents incomplete callback payloads from being accepted as payments for the configured business.
 
 Verify with a valid C2B callback, a callback with a different shortcode, and a callback with the shortcode omitted. Only the exact configured shortcode should be accepted.
+
+
+### Manual allocation of unmatched C2B receipts — 24 November 2026
+
+The M-PESA Business page now lists successful direct C2B receipts that were not automatically matched to an invoice. An authorized user can select an active customer whose outstanding balance is at least the full receipt amount and allocate the receipt. The existing customer-payment allocator applies it FIFO to that customer's oldest outstanding completed invoices, creates the customer receipt and allocation rows, updates invoice and customer balances, and marks the M-PESA transaction as allocated in the same database transaction. A locked transaction row prevents concurrent/double allocation.
+
+If automatic accounting posted the original unmatched receipt to the unallocated-receipts liability, allocation posts a reclassification journal (debit unallocated receipts, credit accounts receivable). The reclassification is deliberately conditional on the original C2B receipt journal existing and being posted; it does not invent a journal if automatic posting was disabled when the receipt arrived. The cashbook ledger now includes still-unallocated successful C2B receipts and stops listing them there once allocated; after allocation, the customer payment receipt represents the collection instead.
+
+Scope limitation: the first allocation workflow supports full allocation to a registered customer with sufficient outstanding invoice balances. It does not split an overpayment between invoices and a residual customer credit, and does not allocate direct receipts to walk-in sales. Receipts that exceed the customer's outstanding balance remain unallocated and visible for review. Test one full allocation, two-or-more-invoice FIFO allocation, a customer with insufficient balance, concurrent/double submission, and the journal/no-journal cases against a backed-up local database before production use.
