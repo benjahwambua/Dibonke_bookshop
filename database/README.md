@@ -342,3 +342,10 @@ A manual database and uploads backup/restore procedure is documented in `docs/DI
 The existing `dibonke_payment_allocations.sql` migration seeds the customer return mappings against account codes 4050 (Sales Returns and Allowances) and 2060 (Customer Refunds Payable). The follow-up `dibonke_sales_return_accounting.sql` migration is an idempotent compatibility check for installations where those mappings need to be ensured separately; apply it after `dibonke_automatic_accounting_posting.sql` and `dibonke_payment_allocations.sql`. It uses the same account codes and mapping keys, so it does not create duplicate return accounts.
 
 The Posting Mappings screen now exposes both mappings. Confirm that Sales Returns maps to an active Income account and Refund Payable maps to an active Liability account before enabling automatic posting.
+
+
+### Customer credit ledger migration
+
+Apply `dibonke_customer_credit_ledger.sql` after `dibonke_payment_allocations.sql` and the automatic double-entry accounting migrations, before deploying the PHP changes that record M-PESA overpayments. It creates the customer credit ledger and seeds liability account 2070 plus the `customer_credit` posting mapping. Review that mapping in Finance → Posting Mappings before enabling automatic posting.
+
+The ledger records excess receipts separately from invoice allocations. It currently reports available customer credit; applying that credit to future invoices or paying it back requires a separate controlled workflow.
