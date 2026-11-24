@@ -210,7 +210,7 @@ This is a source-level correction. Verify locally after applying the Store Opera
 
 **Code changes made:**
 - Added Sales Returns (Income / contra-revenue) and Refunds Payable (Liability) to the accounting mapping screen, so the existing return journal logic can resolve both accounts and the automatic-posting enable check validates them.
-- Added the idempotent migration `database/dibonke_sales_return_accounting.sql`, which ensures account codes 4010 (Sales Returns) and 2030 (Refunds Payable) exist and seeds the two mapping keys. Apply it after `dibonke_automatic_accounting_posting.sql`.
+- Added the idempotent migration `database/dibonke_sales_return_accounting.sql`, which ensures account codes 4050 (Sales Returns and Allowances) and 2060 (Customer Refunds Payable) exist and seeds the two mapping keys. Apply it after `dibonke_automatic_accounting_posting.sql`.
 
 The existing return posting flow debits Sales Returns and credits the customer receivable reduction and/or Refunds Payable. When a refund is later paid, the settlement journal debits Refunds Payable and credits the selected cash, M-Pesa, bank or other clearing account. Returned stock is restored to Main Store only when the return line is marked for restocking. This is consistent with the current operational policy that customer returns are received into Main Store.
 
