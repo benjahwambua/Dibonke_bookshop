@@ -17,7 +17,7 @@ if($search!==''){$where[]='(c.customer_name LIKE ? OR c.phone LIKE ? OR cp.recei
 if(in_array($method,['Cash','M-Pesa','Bank','Cheque','Other'],true)){$where[]='cp.payment_method=?';$params[]=$method;}
 $recentQ=$conn->prepare("SELECT cp.*,c.customer_name,c.phone,u.full_name FROM customer_payments cp JOIN customers c ON c.id=cp.customer_id LEFT JOIN users u ON u.id=cp.user_id WHERE ".implode(' AND ',$where)." ORDER BY cp.payment_date DESC,cp.id DESC");
 $recentQ->execute($params);$recent=$recentQ->fetchAll(PDO::FETCH_ASSOC);
-$customers=$conn->query("SELECT id,customer_name,phone,balance FROM customers WHERE status='Active' AND balance>0 ORDER BY customer_name")->fetchAll();
+$customers=$conn->query("SELECT id,customer_name,phone,balance FROM customers WHERE status='Active' ORDER BY customer_name")->fetchAll();
 $total=(float)$conn->query("SELECT COALESCE(SUM(balance),0) FROM customers")->fetchColumn();
 $month=(float)$conn->query("SELECT COALESCE(SUM(amount),0) FROM customer_payments WHERE YEAR(payment_date)=YEAR(CURDATE()) AND MONTH(payment_date)=MONTH(CURDATE())")->fetchColumn();
 $periodTotal=0.0;$exportRows=[];foreach($recent as $p){$periodTotal+=(float)$p['amount'];$exportRows[]=[$p['receipt_number'],$p['payment_date'],$p['customer_name'],$p['phone'],$p['amount'],$p['payment_method'],$p['transaction_reference']??'',$p['full_name']??''];}
@@ -29,9 +29,9 @@ require_once __DIR__.'/../../includes/header.php';require_once __DIR__.'/../../i
 <h1>Customer Payments</h1><p>Receive payments against customer credit and keep balances accurate.</p>
 <?php if($flash):?><div class="flash"><?=e($flash)?></div><?php endif;?>
 <div class="stats"><div class="stat"><strong>KES <?=number_format($total,2)?></strong><small>Outstanding Credit</small></div><div class="stat"><strong>KES <?=number_format($month,2)?></strong><small>Payments This Month</small></div><div class="stat"><strong>KES <?=number_format($periodTotal,2)?></strong><small>Filtered Collections</small></div></div>
-<div class="grid"><div class="panel"><h3>Receive Payment</h3><form method="post" action="store.php"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>">
+<div class="grid"><div class="panel"><h3>Receive Customer Payment</h3><form method="post" action="store.php"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>">
 <div class="field"><label>Customer</label><select name="customer_id" required><option value="">Select customer</option><?php foreach($customers as $c):?><option value="<?=$c['id']?>"><?=e($c['customer_name'])?> — KES <?=number_format((float)$c['balance'],2)?></option><?php endforeach;?></select></div>
-<div class="field"><label>Amount</label><input type="number" name="amount" min=".01" step=".01" required></div>
+<div class="field"><label>Amount received (KES)</label><input type="number" name="amount" min=".01" step=".01" required><small>Any amount above the customer's outstanding invoices is retained as customer credit for future use or refund.</small></div>
 <div class="field"><label>Payment Method</label><select name="payment_method" id="cp_method"><option>Cash</option><option>M-Pesa</option><option>Bank</option><option>Cheque</option><option>Other</option></select></div><div class="field" id="cp_phone_box" style="display:none"><label>M-PESA Phone</label><input name="mpesa_phone" placeholder="07XXXXXXXX" maxlength="15"></div>
 <div class="field"><label>Transaction Reference</label><input name="transaction_reference" maxlength="100"></div>
 <div class="field"><label>Notes</label><input name="notes" maxlength="500"></div><button class="btn">Record Payment</button></form></div>
