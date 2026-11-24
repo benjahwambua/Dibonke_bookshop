@@ -46,6 +46,7 @@ try{
    $ins=$conn->prepare("INSERT INTO customer_payments(receipt_number,customer_id,sale_id,user_id,amount,payment_method,transaction_reference,payment_date,notes) VALUES(?,?,?,?,?,?,?,?,?)");
    $ins->execute([$tmp,(int)$sale['customer_id'],$referenceId,(int)$sale['user_id'],$allocated,'M-Pesa',$transId,$transactionDate,'Automatic C2B till payment: '.$matchReason]);
    $paymentId=(int)$conn->lastInsertId();$receipt='CR-'.date('ymd').'-'.str_pad((string)$paymentId,5,'0',STR_PAD_LEFT);$conn->prepare("UPDATE customer_payments SET receipt_number=? WHERE id=?")->execute([$receipt,$paymentId]);
+   $conn->prepare("INSERT INTO customer_payment_allocations(payment_id,sale_id,amount) VALUES(?,?,?)")->execute([$paymentId,$referenceId,$allocated]);
    $conn->prepare("UPDATE customers SET balance=GREATEST(0,balance-?) WHERE id=?")->execute([$allocated,(int)$sale['customer_id']]);
   }
   $description=$matchReason.' for invoice '.$sale['invoice_number'];
