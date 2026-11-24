@@ -40,7 +40,7 @@ try {
         $q=$conn->prepare("SELECT is_super,full_name,status FROM users WHERE id=? FOR UPDATE");
         $conn->beginTransaction();$q->execute([$id]);$target=$q->fetch();
         if(!$target||(int)$target['is_super']===1)throw new RuntimeException('Super User accounts are protected.');
-        $checks=['sales'=>'user_id','expenses'=>'created_by','purchases'=>'created_by','customer_payments'=>'user_id','supplier_payments'=>'user_id','audit_events'=>'user_id','cash_shifts'=>'user_id','staff'=>'user_id'];
+        $checks=['sales'=>'user_id','expenses'=>'user_id','purchases'=>'user_id','customer_payments'=>'user_id','supplier_payments'=>'user_id','audit_events'=>'user_id','activity_logs'=>'user_id','stock_movements'=>'user_id','cash_shifts'=>'user_id','cash_shift_movements'=>'user_id','staff'=>'user_id','purchase_orders'=>'user_id','goods_receipts'=>'user_id','journal_entries'=>'created_by'];
         foreach($checks as $table=>$column){$exists=$conn->query("SHOW TABLES LIKE ".$conn->quote($table))->fetchColumn();if($exists){$col=$conn->prepare("SHOW COLUMNS FROM `{$table}` LIKE ?");$col->execute([$column]);if($col->fetch()){$q=$conn->prepare("SELECT COUNT(*) FROM `{$table}` WHERE `{$column}`=?");$q->execute([$id]);if((int)$q->fetchColumn()>0)throw new RuntimeException('This account has linked business or audit records. Deactivate it instead to preserve history.');}}}
         $conn->prepare("DELETE FROM users WHERE id=?")->execute([$id]);
         $conn->commit();userFlash('success','New user account deleted.');
