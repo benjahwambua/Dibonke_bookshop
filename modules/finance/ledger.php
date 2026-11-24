@@ -8,10 +8,10 @@ $valid='/^\d{4}-\d{2}-\d{2}$/';$from=preg_match($valid,$from)?$from:date('Y-m-01
 $hasReturnPayments=(bool)$conn->query("SHOW TABLES LIKE 'sales_return_payments'")->fetchColumn();
 $sql="SELECT transaction_date,transaction_type,reference,party,payment_method,direction,amount FROM (
  SELECT s.sale_date transaction_date,CONVERT('POS Receipt' USING utf8mb4) COLLATE utf8mb4_unicode_ci transaction_type,CONVERT(s.invoice_number USING utf8mb4) COLLATE utf8mb4_unicode_ci reference,CONVERT(COALESCE(c.customer_name,'Walk-in Customer') USING utf8mb4) COLLATE utf8mb4_unicode_ci party,CONVERT(s.payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci payment_method,CONVERT('IN' USING utf8mb4) COLLATE utf8mb4_unicode_ci direction,s.paid_amount amount
- FROM sales s LEFT JOIN customers c ON c.id=s.customer_id WHERE s.sale_status='Completed' AND s.paid_amount>0 AND DATE(s.sale_date) BETWEEN ? AND ?
+ FROM sales s LEFT JOIN customers c ON c.id=s.customer_id WHERE s.sale_status='Completed' AND s.customer_id IS NULL AND s.paid_amount>0 AND DATE(s.sale_date) BETWEEN ? AND ?
  UNION ALL
  SELECT cp.payment_date,CONVERT('Customer Collection' USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(cp.receipt_number USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(c.customer_name USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(cp.payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT('IN' USING utf8mb4) COLLATE utf8mb4_unicode_ci,cp.amount
- FROM customer_payments cp JOIN customers c ON c.id=cp.customer_id WHERE cp.sale_id IS NULL AND DATE(cp.payment_date) BETWEEN ? AND ?
+ FROM customer_payments cp JOIN customers c ON c.id=cp.customer_id WHERE DATE(cp.payment_date) BETWEEN ? AND ?
  UNION ALL
  SELECT sp.payment_date,CONVERT('Supplier Payment' USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(sp.receipt_number USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(s.supplier_name USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(sp.payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT('OUT' USING utf8mb4) COLLATE utf8mb4_unicode_ci,sp.amount
  FROM supplier_payments sp JOIN suppliers s ON s.id=sp.supplier_id WHERE DATE(sp.payment_date) BETWEEN ? AND ?
