@@ -25,6 +25,7 @@ $definitions = [
  'cost_of_goods_sold'=>['Cost of goods sold','Expense'],
  'input_vat'=>['Input VAT recoverable','Asset'],
  'unallocated_receipts'=>['Unallocated M-Pesa receipts','Liability'],
+ 'customer_credit'=>['Customer credit balances','Liability'],
  'default_expense'=>['Default operating expense','Expense'],
 ];
 
