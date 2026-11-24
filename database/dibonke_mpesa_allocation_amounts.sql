@@ -28,6 +28,16 @@ PREPARE stmt_mpesa_amount_unallocated FROM @ddl_mpesa_amount_unallocated;
 EXECUTE stmt_mpesa_amount_unallocated;
 DEALLOCATE PREPARE stmt_mpesa_amount_unallocated;
 
+-- A successful C2B receipt with no target was wholly unmatched in the old workflow.
+-- This is a safe historical backfill because the old row contains no applied target.
+UPDATE mpesa_transactions
+SET amount_applied=0.00, amount_unallocated=amount
+WHERE transaction_type='C2B'
+  AND direction='Incoming'
+  AND result_status='Success'
+  AND reference_type IS NULL
+  AND amount_unallocated=0.00;
+
 SET @has_mpesa_unallocated_index := (
   SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS
   WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='mpesa_transactions' AND INDEX_NAME='idx_mpesa_unallocated_date'
