@@ -12,15 +12,16 @@ if($from>$to){$swap=$from;$from=$to;$to=$swap;}
 $run=function(string $sql,array $params=[])use($conn){$q=$conn->prepare($sql);$q->execute($params);return $q;};
 
 $sales=$run("SELECT COUNT(*) invoices,COALESCE(SUM(total_amount),0) revenue,COALESCE(SUM(paid_amount),0) paid_at_sale,COALESCE(SUM(balance),0) receivables FROM sales WHERE sale_status='Completed' AND DATE(sale_date) BETWEEN ? AND ?",[$from,$to])->fetch();
-$extraCollections=(float)$run("SELECT COALESCE(SUM(amount),0) FROM customer_payments WHERE sale_id IS NULL AND DATE(payment_date) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
-$collections=(float)$sales['paid_at_sale']+$extraCollections;
+$customerReceipts=(float)$run("SELECT COALESCE(SUM(amount),0) FROM customer_payments WHERE DATE(payment_date) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
+$walkInCollections=(float)$run("SELECT COALESCE(SUM(paid_amount),0) FROM sales WHERE customer_id IS NULL AND sale_status='Completed' AND DATE(sale_date) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
+$collections=$customerReceipts+$walkInCollections;
 $supplierPayments=(float)$run("SELECT COALESCE(SUM(amount),0) FROM supplier_payments WHERE DATE(payment_date) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
 $expenses=(float)$run("SELECT COALESCE(SUM(amount),0) FROM expenses WHERE expense_date BETWEEN ? AND ?",[$from,$to])->fetchColumn();
 $net=$collections-$supplierPayments-$expenses;
 $customerOutstanding=(float)$conn->query("SELECT COALESCE(SUM(balance),0) FROM customers")->fetchColumn();
 $supplierOutstanding=(float)$conn->query("SELECT COALESCE(SUM(balance),0) FROM suppliers")->fetchColumn();
 $expenseRows=$run("SELECT e.expense_number,e.expense_date,e.expense_title,e.amount,e.payment_method,ec.category_name FROM expenses e LEFT JOIN expense_categories ec ON ec.id=e.category_id WHERE e.expense_date BETWEEN ? AND ? ORDER BY e.expense_date DESC,e.id DESC LIMIT 12",[$from,$to])->fetchAll();
-$methodRows=$run("SELECT payment_method,COUNT(*) transactions,COALESCE(SUM(paid_amount),0) amount FROM sales WHERE sale_status='Completed' AND DATE(sale_date) BETWEEN ? AND ? GROUP BY payment_method ORDER BY amount DESC",[$from,$to])->fetchAll();
+$methodRows=$run("SELECT payment_method,COUNT(*) transactions,COALESCE(SUM(amount),0) amount FROM customer_payments WHERE DATE(payment_date) BETWEEN ? AND ? GROUP BY payment_method UNION ALL SELECT payment_method,COUNT(*) transactions,COALESCE(SUM(paid_amount),0) amount FROM sales WHERE customer_id IS NULL AND sale_status='Completed' AND DATE(sale_date) BETWEEN ? AND ? GROUP BY payment_method",[$from,$to,$from,$to])->fetchAll();
 $currency=(string)($conn->query("SELECT setting_value FROM settings WHERE setting_key='currency' LIMIT 1")->fetchColumn()?:'KES');
 require_once __DIR__.'/../../includes/header.php';
 require_once __DIR__.'/../../includes/sidebar.php';
