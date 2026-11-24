@@ -109,3 +109,42 @@ These should be run on a safe test database with sample records before productio
 - “Not verified” means evidence was not established in this review; it does not mean the feature definitely does not exist.
 
 **Recommendation:** Do not add more modules yet. Resolve invoice allocation and financial integrity first, then inventory valuation and permission consistency. Those improvements will make the existing modules behave like one coherent business system rather than a collection of separate screens.
+
+---
+
+## Closure reassessment — 25 November 2026
+
+This reassessment supersedes the original status statements above where later code changes have closed the cited gap. It remains a source review, not a production acceptance test.
+
+### Gaps closed in source since the original assessment
+
+| Area | Current source status | Remaining verification |
+|---|---|---|
+| Customer receipt allocation | FIFO allocation across completed invoices, partial allocation and excess customer-credit ledger entries are implemented for manual receipts and supported M-PESA callbacks. | Test all cases against the live MariaDB schema and reconcile balances. |
+| Supplier payment allocation | Shared FIFO allocator distributes payments across direct purchases and goods receipts; supplier summary is checked against document balances before posting. | Test partial/multiple GRNs, mixed historical payment records and supplier statements. |
+| Aged receivables | Reads invoice-level balances after allocation. | Verify statements, credit notes and allocation ageing. |
+| Aged payables | Reports outstanding direct purchases and goods receipts using payment allocations. | Historical unallocated payments and supplier due dates require reconciliation/policy. |
+| Store locations | Main Store and selling-store stock issue/return, POS attribution and store-level stock ledger support are implemented. | Physical issue/return and daily cash/M-PESA reconciliation tests. |
+| Customer statements | Uses actual payment allocations for receivable credits and displays wallet credit separately. | Verify payment spanning invoices and legacy receipt history. |
+| M-PESA receipt tracking | STK/C2B callbacks store invoice-applied and excess amounts explicitly; unmatched C2B allocation and customer credit are supported. | Apply the new migration, then test real Daraja sandbox callbacks and statement reconciliation. |
+| Finance summaries / cashbook | Separates customer receipts, walk-in POS collections, unmatched C2B and walk-in M-PESA excess to reduce omission and double counting. | Compare each report to Daraja statements, receipt rows and posted journals. |
+| User deletion safety | Correct ownership columns are checked; linked business/audit records prevent deletion and favour deactivation. | Verify with test accounts linked to each record family. |
+
+### Remaining functional / control gaps
+
+1. **Mixed tender at POS is not implemented.** A sale still accepts one payment method; cash + M-PESA/bank combinations are not stored as individual tender lines. Cashier shift and store-day reconciliation therefore cannot calculate mixed tender channels directly.
+2. **Customer wallet credit application / refund is not a general workflow.** Overpayments are recorded as customer credit and shown on the customer account. They are not yet applied to a later invoice through a dedicated credit-application register, and they cannot be refunded directly from the wallet. Approved sales returns can offset an existing receivable and settle a refund payable, but this is not the same as a general wallet workflow.
+3. **M-PESA operational recovery is incomplete.** Callback idempotency, duplicate receipt protection, pending-payment close protection and unmatched C2B allocation exist. Automated status polling, a controlled retry/cancel flow, reversal ingestion and full settlement statement import/reconciliation are not demonstrated.
+4. **Accounting configuration and coverage are not yet fully certified.** Automatic posting is configurable and depends on correct account mappings. A full transaction-by-transaction journal coverage audit, opening balance migration, period lock, and independent trial-balance reconciliation against source records remain outstanding.
+5. **Formal financial statements are incomplete.** The Finance Overview and Financial Control are management/cash summaries, not a fully reconciled statutory Profit & Loss, Balance Sheet and Cash Flow pack.
+6. **Inventory valuation is a moving weighted-average estimate held in the product buying price, not a separately auditable cost-layer ledger.** Purchase receipts update the weighted average; valuation should be reconciled against historical purchase, return and stock adjustment data before it is relied upon for formal accounts.
+7. **Return/refund controls need runtime verification.** Return request, approval, restocking, receivable offset, refund payable and payment settlement exist in source. Store credit, refund location attribution and the full cashier/store settlement effect still need explicit handling and testing.
+8. **eTIMS is not a live KRA integration.** The current module prepares internal invoice snapshots only; it does not submit certified KRA invoices or process KRA responses.
+9. **Backup restoration and deployment recovery have not been exercised.** Documentation exists, but a restore drill on a separate database/server is required.
+10. **The repository does not contain a verified complete fresh-install base schema.** The deployment database and the full ordered migration set must be validated against the actual installed schema.
+
+### Automated source checks
+
+GitHub Actions run 45499377330 completed successfully for commit 2bcc7faaa86d4f7bfbcdb10e7cfce957b53f563f: all PHP files passed syntax lint on PHP 8.0 and PHP 8.2, and the existing product helper tests passed. This does not exercise database transactions, page rendering, printer hardware, M-PESA callbacks or eTIMS.
+
+**Release position:** source-level integration is materially improved, but Dibonke should not be labelled gap-free or production-certified until the remaining functional items are either implemented or explicitly accepted as out of scope, all required migrations are applied, and the end-to-end acceptance suite is passed against a backed-up copy of the actual database.
