@@ -362,3 +362,10 @@ Customer credit receipt behavior: the Customer Payments screen lists all active 
 
 
 Customer account statements use payment-allocation totals as the receivable credit and show any amount held in `customer_credit_ledger` separately. Historical receipts with no allocation or credit-ledger row retain the legacy full-receipt treatment. This keeps overpayments from appearing as negative customer receivables. Credit use against future invoices and credit refunds still require a separate controlled workflow.
+
+
+### M-PESA applied / unallocated amount tracking
+
+Apply `dibonke_mpesa_allocation_amounts.sql` after `supply_chain_mpesa.sql` and before deploying the callback code that writes `mpesa_transactions.amount_applied` and `amount_unallocated`. The migration is additive and rerunnable. New successful STK and C2B callbacks persist the amount applied to an invoice/customer account and any excess separately. Finance Overview, Financial Control and the Cashbook use those recorded amounts so a walk-in overpayment is not hidden and the original payment is not counted twice.
+
+The migration safely backfills neither historical STK nor previously matched C2B invoice excess because the old rows do not reliably preserve how much of each receipt was applied. Historical unmatched C2B receipts are identifiable by their null reference, but old matched overpayments must be reconciled from Daraja statements and source invoices rather than guessed. Test new callbacks after applying the migration.
