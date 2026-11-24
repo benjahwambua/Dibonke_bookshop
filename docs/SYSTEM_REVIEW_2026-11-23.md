@@ -251,3 +251,19 @@ The M-PESA Business page now lists successful direct C2B receipts that were not 
 If automatic accounting posted the original unmatched receipt to the unallocated-receipts liability, allocation posts a reclassification journal (debit unallocated receipts, credit accounts receivable). The reclassification is deliberately conditional on the original C2B receipt journal existing and being posted; it does not invent a journal if automatic posting was disabled when the receipt arrived. The cashbook ledger now includes still-unallocated successful C2B receipts and stops listing them there once allocated; after allocation, the customer payment receipt represents the collection instead.
 
 Scope limitation: the first allocation workflow supports full allocation to a registered customer with sufficient outstanding invoice balances. It does not split an overpayment between invoices and a residual customer credit, and does not allocate direct receipts to walk-in sales. Receipts that exceed the customer's outstanding balance remain unallocated and visible for review. Test one full allocation, two-or-more-invoice FIFO allocation, a customer with insufficient balance, concurrent/double submission, and the journal/no-journal cases against a backed-up local database before production use.
+
+
+## Customer credit and M-PESA overpayment handling
+
+The feature branch now adds a customer credit ledger for receipts that exceed a customer's open completed invoices. Apply `database/dibonke_customer_credit_ledger.sql` after the existing payment-allocation and automatic-accounting migrations, and before deploying the matching PHP changes. Back up the live database first.
+
+- The shared customer receipt allocator now settles completed invoices FIFO and records any remainder as a positive customer credit ledger entry.
+- STK customer-credit collections and customer-linked STK invoice payments preserve the full confirmed M-PESA amount. Invoice settlement and excess customer credit are posted separately.
+- Direct C2B receipts can be assigned to a customer even when the receipt is larger than their outstanding invoices. The open invoice portion reduces receivables; the remainder is posted to the Customer Credit Balances liability.
+- The M-PESA overview displays positive customer credit balances.
+- Manual customer receipts use the same split allocation and accounting treatment.
+- The new `customer_credit` posting mapping must point to an active Liability account. The migration seeds account 2070 and its mapping; review it in Posting Mappings before automatic posting is enabled.
+
+Important scope boundary: this records and reports customer credit, but does not yet automatically consume a customer's credit against future invoices or issue refunds from that credit. Those actions need explicit allocation/refund workflows and matching accounting entries. STK overpayments against walk-in sales without a registered customer remain in the unallocated-receipts liability and require a separate assignment workflow. Do not treat customer credit as revenue or cash available for unrelated customers.
+
+No live Daraja, database, browser, or accounting-posting tests were performed for this change. Verify with test receipts covering exact invoice payment, partial invoice payment, multiple invoices, overpayment, zero outstanding balance, duplicate callbacks, and automatic posting both enabled and disabled.
