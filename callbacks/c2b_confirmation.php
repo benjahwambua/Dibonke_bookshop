@@ -20,7 +20,7 @@ try{
  $sale=null;$allocated=0.0;$matchReason='';
  if($billRef!==''){
   $q=$conn->prepare("SELECT * FROM sales WHERE invoice_number=? AND sale_status='Completed' LIMIT 1 FOR UPDATE");$q->execute([$billRef]);$candidate=$q->fetch();
-  if($candidate&&(float)$candidate['balance']>0&&(float)$candidate['balance']+0.001>=$amount){$sale=$candidate;$matchReason='Matched by invoice reference';}
+  if($candidate&&(float)$candidate['balance']>0&&(!empty($candidate['customer_id'])||(float)$candidate['balance']+0.001>=$amount)){$sale=$candidate;$matchReason='Matched by invoice reference';}
  }
  if(!$sale&&$phone!==''){
   $q=$conn->query("SELECT s.*,c.phone AS customer_phone FROM sales s JOIN customers c ON c.id=s.customer_id WHERE s.sale_status='Completed' AND s.balance>0 ORDER BY s.sale_date DESC LIMIT 500");
@@ -36,18 +36,24 @@ try{
  $referenceType=null;$referenceId=null;$description='Received till/Paybill payment; awaiting invoice allocation.';
  if($sale){
   $lock=$conn->prepare("SELECT * FROM sales WHERE id=? AND sale_status='Completed' FOR UPDATE");$lock->execute([(int)$sale['id']]);$sale=$lock->fetch();
-  if(!$sale||(float)$sale['balance']+0.001<$amount)$sale=null;
+  if(!$sale||(float)$sale['balance']<=0||(empty($sale['customer_id'])&&(float)$sale['balance']+0.001<$amount))$sale=null;
  }
  if($sale){
-  $allocated=$amount;$referenceType='sale';$referenceId=(int)$sale['id'];
-  $upd=$conn->prepare("UPDATE sales SET paid_amount=paid_amount+?,balance=GREATEST(0,balance-?) WHERE id=?");$upd->execute([$allocated,$allocated,$referenceId]);
+  $allocated=round(min($amount,(float)$sale['balance']),2);
+  $customerCredit=round(max(0,$amount-$allocated),2);
+  $referenceId=(int)$sale['id'];
+  $upd=$conn->prepare("UPDATE sales SET paid_amount=LEAST(total_amount,paid_amount+?),balance=GREATEST(0,balance-?) WHERE id=?");$upd->execute([$allocated,$allocated,$referenceId]);
   if(!empty($sale['customer_id'])){
    $tmp='TMP-'.strtoupper(bin2hex(random_bytes(8)));
    $ins=$conn->prepare("INSERT INTO customer_payments(receipt_number,customer_id,sale_id,user_id,amount,payment_method,transaction_reference,payment_date,notes) VALUES(?,?,?,?,?,?,?,?,?)");
-   $ins->execute([$tmp,(int)$sale['customer_id'],$referenceId,(int)$sale['user_id'],$allocated,'M-Pesa',$transId,$transactionDate,'Automatic C2B till payment: '.$matchReason]);
+   $ins->execute([$tmp,(int)$sale['customer_id'],$referenceId,(int)$sale['user_id'],$amount,'M-Pesa',$transId,$transactionDate,'Automatic C2B till payment: '.$matchReason]);
    $paymentId=(int)$conn->lastInsertId();$receipt='CR-'.date('ymd').'-'.str_pad((string)$paymentId,5,'0',STR_PAD_LEFT);$conn->prepare("UPDATE customer_payments SET receipt_number=? WHERE id=?")->execute([$receipt,$paymentId]);
-   $conn->prepare("INSERT INTO customer_payment_allocations(payment_id,sale_id,amount) VALUES(?,?,?)")->execute([$paymentId,$referenceId,$allocated]);
+   if($allocated>0)$conn->prepare("INSERT INTO customer_payment_allocations(payment_id,sale_id,amount) VALUES(?,?,?)")->execute([$paymentId,$referenceId,$allocated]);
+   if($customerCredit>0)$conn->prepare("INSERT INTO customer_credit_ledger(customer_id,payment_id,entry_type,amount,notes,created_by) VALUES(?,?,'Credit',?,'C2B invoice overpayment retained as customer credit',?)")->execute([(int)$sale['customer_id'],$paymentId,$customerCredit,(int)$sale['user_id']]);
    $conn->prepare("UPDATE customers SET balance=GREATEST(0,balance-?) WHERE id=?")->execute([$allocated,(int)$sale['customer_id']]);
+   $referenceType='customer_payment';$referenceId=$paymentId;
+  }else{
+   $referenceType='sale';
   }
   $description=$matchReason.' for invoice '.$sale['invoice_number'];
  }
@@ -55,11 +61,10 @@ try{
  $ins->execute([$phone,$amount,$billRef,$transId,'0',$description,$referenceType,$referenceId,$raw,$transactionDate]);
  if(dibonkeAccountingAutoPostingEnabled($conn)){
   $transactionId=(int)$conn->lastInsertId();
-  if($allocated>0){
-   $journalLines=[dibonkeAccountingLine(dibonkeAccountingAccount($conn,'mpesa_clearing','Asset'),'C2B payment received',$allocated,0),dibonkeAccountingLine(dibonkeAccountingAccount($conn,'accounts_receivable','Asset'),'Invoice receivable settled',0,$allocated)];
-  }else{
-   $journalLines=[dibonkeAccountingLine(dibonkeAccountingAccount($conn,'mpesa_clearing','Asset'),'Unallocated C2B payment received',$amount,0),dibonkeAccountingLine(dibonkeAccountingAccount($conn,'unallocated_receipts','Liability'),'Customer receipt awaiting allocation',0,$amount)];
-  }
+  $journalLines=[dibonkeAccountingLine(dibonkeAccountingAccount($conn,'mpesa_clearing','Asset'),$allocated>0?'C2B payment received':'Unallocated C2B payment received',$amount,0)];
+  if($allocated>0)$journalLines[]=dibonkeAccountingLine(dibonkeAccountingAccount($conn,'accounts_receivable','Asset'),'Invoice receivable settled',0,$allocated);
+  if($customerCredit>0)$journalLines[]=dibonkeAccountingLine(dibonkeAccountingAccount($conn,'customer_credit','Liability'),'C2B invoice overpayment retained as customer credit',0,$customerCredit);
+  if($allocated<=0 && $customerCredit<=0)$journalLines[]=dibonkeAccountingLine(dibonkeAccountingAccount($conn,'unallocated_receipts','Liability'),'Customer receipt awaiting allocation',0,$amount);
   dibonkeAccountingPostJournal($conn,'mpesa_c2b_receipt',$transactionId,date('Y-m-d',strtotime($transactionDate)),'M-Pesa C2B receipt '.$transId,$journalLines,null);
  }
  $conn->commit();
