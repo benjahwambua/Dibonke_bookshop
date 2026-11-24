@@ -38,7 +38,11 @@ try{
  $st=$conn->prepare("INSERT INTO goods_receipts(grn_number,purchase_order_id,supplier_id,user_id,received_date,supplier_invoice,invoice_date,invoice_total,delivery_note,subtotal,total_amount,notes) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)");$st->execute([$grn,$poId,$po['supplier_id'],$_SESSION['user_id'],$receivedDate,$invoice,$invoiceDate,$invoiceTotal,$delivery?:null,$total,$total,$notes?:null]);$grnId=(int)$conn->lastInsertId();$grn='GRN-'.date('ymd').'-'.str_pad((string)$grnId,5,'0',STR_PAD_LEFT);$conn->prepare("UPDATE goods_receipts SET grn_number=? WHERE id=?")->execute([$grn,$grnId]);
  $it=$conn->prepare("INSERT INTO goods_receipt_items(goods_receipt_id,purchase_order_item_id,product_id,quantity_received,unit_cost,line_total) VALUES(?,?,?,?,?,?)");
  $upPoi=$conn->prepare("UPDATE purchase_order_items SET received_quantity=received_quantity+? WHERE id=?");
- $upProd=$conn->prepare("UPDATE products SET buying_price=CASE WHEN stock_quantity+? > 0 THEN ((stock_quantity*buying_price)+(?*?))/(stock_quantity+?) ELSE ? END, stock_quantity=stock_quantity+? WHERE id=?");
+ $hasStoreStockTable=(bool)$conn->query("SHOW TABLES LIKE 'store_stock'")->fetchColumn();
+ $weightedStock=$hasStoreStockTable
+  ? "(stock_quantity + COALESCE((SELECT SUM(ss.quantity) FROM store_stock ss WHERE ss.product_id=products.id),0))"
+  : "stock_quantity";
+ $upProd=$conn->prepare("UPDATE products SET buying_price=CASE WHEN {$weightedStock}+? > 0 THEN (({$weightedStock}*buying_price)+(?*?))/({$weightedStock}+?) ELSE ? END, stock_quantity=stock_quantity+? WHERE id=?");
  $hasMovementStoreId=(bool)$conn->query("SHOW COLUMNS FROM stock_movements LIKE 'store_id'")->fetchColumn();
  $mainStoreId=$hasMovementStoreId?(int)$conn->query("SELECT id FROM stores WHERE store_code='MAIN' LIMIT 1")->fetchColumn():0;
  if($hasMovementStoreId&&$mainStoreId<=0)throw new RuntimeException('Main Store is missing. Complete the Store Operations migration before receiving goods.');
