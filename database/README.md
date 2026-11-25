@@ -218,18 +218,18 @@ The following is a dependency guide for a development database. **Do not re-run 
 3. `dibonke_staff_roles.sql` — creates roles, role_permissions and staff profiles; requires the existing users table.
 4. `dibonke_products_inventory.sql` and `price_lists.sql` — apply after the base products, customers and sales tables exist.
 5. `dibonke_book_metadata.sql` — apply after `dibonke_products_inventory.sql` to add separate author and publisher fields.
-5. `supply_chain_mpesa.sql` — creates PO/GRN and M-Pesa support; requires users, suppliers and settings.
-6. `dibonke_goods_receiving_scanner.sql` — apply after the Supply Chain goods_receipts table and roles/permissions exist.
-7. `dibonke_finance_billing_permissions.sql` — apply after the staff/roles migration.
-8. `dibonke_accounting_hr.sql` — creates the Chart of Accounts and HR leave/attendance tables; requires roles and role_permissions.
-9. `dibonke_double_entry_accounting.sql` — creates journal headers/lines; requires accounts from the previous step and roles/role_permissions.
-10. `dibonke_launch_operations.sql` — creates returns, shifts, stock counts, audit events and eTIMS queue; requires the retail base tables plus roles/role_permissions/settings.
-11. `dibonke_launch_operations_completion.sql` — apply after Launch Operations; adds refund settlement and cash movement support.
-12. `dibonke_cashier_shift_sales_access.sql` — apply after staff roles and Launch Operations.
-13. `dibonke_hr_self_service_receivables.sql` — apply after staff roles, accounting/HR tables, and sales/customers.
-14. `dibonke_short_references_and_cash_tender.sql` — adds cash tender tracking to sales; apply after the base sales table exists.
-15. `dibonke_expense_categories_seed.sql` — creates/seeds standard expense categories. The Expenses page also ensures the standard active categories exist at runtime.
-16. `dibonke_bulk_unit_conversion.sql` — adds bulk purchase/sale unit conversion fields. Apply before using the updated product, purchase and POS screens.\n17. `dibonke_store_operations.sql` — creates Main Store, Store 1 and Store 2, store-level stock balances, daily issue/return transfers and reconciliation records; adds store attribution to POS sales and grants the Store Operations permission to Administrator and Manager roles. Apply after the base products, sales, sale_items, stock_movements, users, roles and role_permissions tables exist.
+6. `supply_chain_mpesa.sql` — creates PO/GRN and M-Pesa support; requires users, suppliers and settings.
+7. `dibonke_goods_receiving_scanner.sql` — apply after the Supply Chain goods_receipts table and roles/permissions exist.
+8. `dibonke_finance_billing_permissions.sql` — apply after the staff/roles migration.
+9. `dibonke_accounting_hr.sql` — creates the Chart of Accounts and HR leave/attendance tables; requires roles and role_permissions.
+10. `dibonke_double_entry_accounting.sql` — creates journal headers/lines; requires accounts from the previous step and roles/role_permissions.
+11. `dibonke_launch_operations.sql` — creates returns, shifts, stock counts, audit events and eTIMS queue; requires the retail base tables plus roles/role_permissions/settings.
+12. `dibonke_launch_operations_completion.sql` — apply after Launch Operations; adds refund settlement and cash movement support.
+13. `dibonke_cashier_shift_sales_access.sql` — apply after staff roles and Launch Operations.
+14. `dibonke_hr_self_service_receivables.sql` — apply after staff roles, accounting/HR tables, and sales/customers.
+15. `dibonke_short_references_and_cash_tender.sql` — adds cash tender tracking to sales; apply after the base sales table exists.
+16. `dibonke_expense_categories_seed.sql` — creates/seeds standard expense categories. The Expenses page also ensures the standard active categories exist at runtime.
+17. `dibonke_bulk_unit_conversion.sql` — adds bulk purchase/sale unit conversion fields. Apply before using the updated product, purchase and POS screens.\n18. `dibonke_store_operations.sql` — creates Main Store, Store 1 and Store 2, store-level stock balances, daily issue/return transfers and reconciliation records; adds store attribution to POS sales and grants the Store Operations permission to Administrator and Manager roles. Apply after the base products, sales, sale_items, stock_movements, users, roles and role_permissions tables exist.
 
 The sequence above is not a substitute for checking the current database. A database that already has some or all of these extensions should not receive them again blindly. The local database is the source of truth for which migrations have already been applied.
 
