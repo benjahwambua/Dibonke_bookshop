@@ -19,6 +19,20 @@ CREATE TABLE IF NOT EXISTS sale_payment_lines (
     KEY idx_sale_payment_mpesa_tx (mpesa_transaction_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Store day reconciliation also tracks expected bank transfers separately.
+SET @has_expected_bank := (
+  SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='store_daily_sessions' AND COLUMN_NAME='expected_bank'
+);
+SET @ddl_expected_bank := IF(
+  @has_expected_bank=0 AND EXISTS(SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='store_daily_sessions'),
+  'ALTER TABLE store_daily_sessions ADD COLUMN expected_bank DECIMAL(14,2) NOT NULL DEFAULT 0.00 AFTER expected_mpesa',
+  'SELECT 1'
+);
+PREPARE stmt_expected_bank FROM @ddl_expected_bank;
+EXECUTE stmt_expected_bank;
+DEALLOCATE PREPARE stmt_expected_bank;
+
 -- Backfill legacy sales as a single tender line using the recorded method and
 -- paid amount. Rows already represented by a payment line are left unchanged.
 INSERT INTO sale_payment_lines(sale_id,payment_method,amount,status,created_at,confirmed_at)
