@@ -356,8 +356,6 @@ function filterProducts(){
 }
 function clearSearch(){document.getElementById('productSearch').value='';filterProducts();document.getElementById('productSearch').focus();}
 function clearCart(){if(!cart.length)return;if(!confirm('Clear all items from this sale?'))return;cart=[];render();setScanFeedback('Basket cleared. Ready for the next items.');focusScanner();}
-function selectPayment(method,button){const select=document.getElementById('payment_method');select.value=method;select.dispatchEvent(new Event('change',{bubbles:true}));}
-
 function money(n){return Number(n).toLocaleString('en-KE',{minimumFractionDigits:2,maximumFractionDigits:2})}function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]||m))}
 document.querySelector('.categories').addEventListener('click',e=>{const button=e.target.closest('.cat');if(button)filterCategory(button.dataset.category,button);});
 document.getElementById('productGrid').addEventListener('click',e=>{const card=e.target.closest('.product');if(!card||card.classList.contains('out'))return;addProduct(Number(card.dataset.id));});
