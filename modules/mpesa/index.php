@@ -44,6 +44,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['mpesa_flash']=$newStatus==='Failed'?'Daraja reports that the STK request failed. The invoice remains outstanding.':'Status query completed. The transaction remains pending until the callback supplies its M-PESA receipt number.';
             header('Location:index.php');exit;
         }
+        if($action==='retry_stk'){
+            requireModulePermission('mpesa','create');
+            $transactionId=(int)($_POST['transaction_id']??0);
+            $failedQuery=$conn->prepare("SELECT * FROM mpesa_transactions WHERE id=? AND transaction_type='STK Push' AND result_status IN('Failed','Cancelled') AND reference_type='sale'");
+            $failedQuery->execute([$transactionId]);$failed=$failedQuery->fetch(PDO::FETCH_ASSOC);
+            if(!$failed||empty($failed['reference_id']))throw new RuntimeException('Only failed STK requests linked to a sale can be retried here.');
+            if(!(bool)$conn->query("SHOW TABLES LIKE 'sale_payment_lines'")->fetchColumn())throw new RuntimeException('Import database/dibonke_sale_payment_lines.sql before retrying POS payments.');
+            $saleQuery=$conn->prepare("SELECT id,invoice_number,balance,sale_status FROM sales WHERE id=?");
+            $saleQuery->execute([(int)$failed['reference_id']]);$sale=$saleQuery->fetch(PDO::FETCH_ASSOC);
+            if(!$sale||$sale['sale_status']!=='Completed'||(float)$sale['balance']<=0.009)throw new RuntimeException('The linked sale has no outstanding balance to collect.');
+            $pendingCheck=$conn->prepare("SELECT COUNT(*) FROM mpesa_transactions WHERE reference_type='sale' AND reference_id=? AND transaction_type='STK Push' AND result_status='Pending'");
+            $pendingCheck->execute([(int)$sale['id']]);if((int)$pendingCheck->fetchColumn()>0)throw new RuntimeException('Another STK request is already pending for this sale.');
+            $retryAmount=round(min((float)$failed['amount'],(float)$sale['balance']),2);
+            $phone=(string)($failed['phone_number']??'');if($phone==='')throw new RuntimeException('The original STK request has no customer phone number.');
+            $response=mpesaStkPush($retryAmount,$phone,(string)$sale['invoice_number'],'Retry '.$sale['invoice_number']);
+            $checkoutId=$response['CheckoutRequestID']??null;
+            $status=!empty($checkoutId)?'Pending':'Failed';
+            $insert=$conn->prepare("INSERT INTO mpesa_transactions(transaction_type,direction,phone_number,amount,account_reference,merchant_request_id,checkout_request_id,result_code,result_description,result_status,reference_type,reference_id,raw_response) VALUES('STK Push','Incoming',?,?,?,?,?,?,?,?,?,?,?)");
+            $insert->execute([$phone,$retryAmount,$sale['invoice_number'],$response['MerchantRequestID']??null,$checkoutId,(string)($response['ResponseCode']??''),(string)($response['ResponseDescription']??''),$status,'sale',(int)$sale['id'],json_encode($response)]);
+            $newTransactionId=(int)$conn->lastInsertId();
+            $conn->prepare("INSERT INTO sale_payment_lines(sale_id,payment_method,amount,status,phone_number,checkout_request_id,mpesa_transaction_id,created_by,created_at) VALUES(?,'M-Pesa',?,?,?,?,?,?,NOW())")->execute([(int)$sale['id'],$retryAmount,$status,$phone,$checkoutId,$newTransactionId,(int)$_SESSION['user_id']]);
+            $conn->prepare("UPDATE mpesa_transactions SET result_description=CONCAT(COALESCE(result_description,''),' | Retry initiated as transaction #',?) WHERE id=?")->execute([$newTransactionId,$transactionId]);
+            recordAuditEvent($conn,'Retry STK','mpesa_transactions','Retried STK payment for invoice '.$sale['invoice_number'],'mpesa_transaction',$newTransactionId,null,['original_transaction_id'=>$transactionId,'sale_id'=>(int)$sale['id'],'amount'=>$retryAmount]);
+            $_SESSION['mpesa_flash']=$status==='Pending'?'A new STK request was sent for '.$sale['invoice_number'].'.':'The retry request was rejected by Daraja; the sale remains outstanding.';
+            header('Location:index.php');exit;
+        }
         if($action!=='save_business')throw new RuntimeException('Invalid M-PESA action.');
         $businessType = strtolower(trim((string)($_POST['mpesa_business_type'] ?? 'paybill')));
         $shortcode = preg_replace('/\D+/', '', (string)($_POST['mpesa_shortcode'] ?? '')) ?? '';
@@ -230,7 +256,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
                             <td><?= e($transaction['transaction_reference'] ?: $transaction['checkout_request_id'] ?: '—') ?></td>
                             <td><?= e($transaction['account_reference'] ?: '—') ?></td>
                             <td><?= $transaction['reference_type'] === 'customer_payment' ? 'Allocated: ' . e($transaction['allocated_customer'] ?: 'Customer') . ' (' . e($transaction['customer_receipt'] ?: 'receipt') . ')' : (!empty($transaction['reference_id']) ? 'Allocated to sale #' . (int)$transaction['reference_id'] : ($transaction['transaction_type'] === 'C2B' ? 'Unallocated' : '—')) ?></td>
-                            <td><?= e($transaction['result_status']) ?><?php if($transaction['result_status']==='Pending'&&!empty($transaction['checkout_request_id'])&&hasModulePermission('mpesa','edit')):?><form method="post" style="margin-top:6px"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>"><input type="hidden" name="action" value="query_status"><input type="hidden" name="transaction_id" value="<?=(int)$transaction['id']?>"><button class="btn secondary" type="submit">Check Daraja status</button></form><?php endif;?></td>
+                            <td><?= e($transaction['result_status']) ?><?php if($transaction['result_status']==='Pending'&&!empty($transaction['checkout_request_id'])&&hasModulePermission('mpesa','edit')):?><form method="post" style="margin-top:6px"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>"><input type="hidden" name="action" value="query_status"><input type="hidden" name="transaction_id" value="<?=(int)$transaction['id']?>"><button class="btn secondary" type="submit">Check status</button></form><?php elseif(in_array($transaction['result_status'],['Failed','Cancelled'],true)&&$transaction['transaction_type']==='STK Push'&&$transaction['reference_type']==='sale'&&hasModulePermission('mpesa','create')):?><form method="post" style="margin-top:6px" onsubmit="return confirm('Send a new STK prompt for the outstanding invoice balance?')"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>"><input type="hidden" name="action" value="retry_stk"><input type="hidden" name="transaction_id" value="<?=(int)$transaction['id']?>"><button class="btn secondary" type="submit">Retry STK</button></form><?php endif;?></td>
                         </tr>
                     <?php endforeach; ?>
                     <?php if (!$transactions): ?>
