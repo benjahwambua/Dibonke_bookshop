@@ -97,7 +97,6 @@ function mpesaStkQuery(string $checkoutRequestId): array
 {
     $checkoutRequestId=trim($checkoutRequestId);
     if($checkoutRequestId==='')throw new RuntimeException('A CheckoutRequestID is required to query an STK payment.');
-    $businessType=mpesaSetting('mpesa_business_type','paybill');
     $shortcode=mpesaEnvironment()==='sandbox'?mpesaSetting('mpesa_sandbox_shortcode','174379'):mpesaSetting('mpesa_shortcode');
     $passkey=mpesaEnvironmentCredential('passkey');
     if($shortcode===''||$passkey==='')throw new RuntimeException('Configure the M-PESA shortcode and passkey before querying STK status.');
