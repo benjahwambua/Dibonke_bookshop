@@ -175,6 +175,7 @@ if ($markerPosition !== false) {
         'sales/my_shift.php' => 'cash_management',
         'hr/my.php' => 'hr_self_service',
         'inventory/index.php' => 'products',
+        'inventory/valuation.php' => 'products',
     ];
 
     $module = $routePermissions[$afterMarker] ?? strtolower((string) strtok($afterMarker, '/'));
