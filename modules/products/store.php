@@ -24,6 +24,11 @@ try {
 
     $productType = normalizeProductType($_POST['product_type'] ?? 'General');
     $isbn = normalizeProductIsbnForType($_POST['isbn'] ?? '', $productType);
+    $author = trim((string)($_POST['author'] ?? ''));
+    $publisher = trim((string)($_POST['publisher'] ?? ''));
+    if (strlen($author) > 160 || strlen($publisher) > 160) {
+        throw new RuntimeException('Author and publisher names must be 160 characters or fewer.');
+    }
 
     $categoryNameInput = trim((string)($_POST['category_name'] ?? ''));
     $brandNameInput = trim((string)($_POST['brand_name'] ?? ''));
@@ -179,14 +184,14 @@ try {
 
     $insert = $conn->prepare(
         "INSERT INTO products (
-            product_name, product_type, isbn, category, category_id,
+            product_name, product_type, isbn, author, publisher, category, category_id,
             brand_id, supplier_id, sku, barcode, unit, purchase_unit, units_per_purchase, buying_price,
             selling_price, wholesale_price, bulk_selling_price, bulk_wholesale_price, stock_quantity, reorder_level,
             icon, image_path, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active')"
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Active')"
     );
     $insert->execute([
-        $name, $productType, $isbn, $categoryName, $categoryId ?: null,
+        $name, $productType, $isbn, $author ?: null, $publisher ?: null, $categoryName, $categoryId ?: null,
         $brandId ?: null, $supplierId ?: null, $sku, $barcode, $unit, $purchaseUnit, $unitsPerPurchase,
         $buy, $sell, $wholesale, $bulkSellingPrice, $bulkWholesalePrice, $stock, $reorder, $icon, $uploadedProductImage
     ]);
