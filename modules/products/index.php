@@ -77,13 +77,13 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <?php if(!$products): ?><tr><td colspan="9" style="text-align:center;padding:45px;color:#64748b">No products found.</td></tr>
 <?php else: foreach($products as $p): $stock=(int)$p['stock_quantity']; ?>
 <tr>
-<td><div class="product-name"><span class="icon"><?=e($p['icon']?:'🍾')?></span><div><strong><?=e($p['product_name'])?></strong><br><small class="muted"><?=e($p['sku']?:'No SKU')?></small></div></div></td>
+<td><div class="product-name"><span class="icon"><?=e($p['icon']?:'📚')?></span><div><strong><?=e($p['product_name'])?></strong><br><small class="muted"><?=e($p['sku']?:'No SKU')?></small></div></div></td>
 <td><?=e($p['category_name']?:$p['category']?:'Uncategorized')?></td>
 <td><?=e($p['brand_name']?:'—')?></td><td><?=e($p['supplier_name']?:'—')?></td>
 <td>KES <?=number_format((float)$p['buying_price'],2)?></td><td>KES <?=number_format((float)$p['selling_price'],2)?></td><td>KES <?=number_format((float)$p['wholesale_price'],2)?></td>
 <td><?php if($stock===0): ?><span class="stock-out">Out of stock</span><?php elseif($stock<=(int)$p['reorder_level']): ?><span class="stock-low">⚠ <?=$stock?></span><?php else:?><span class="stock-ok">✓ <?=$stock?></span><?php endif;?></td>
 <td><?=e($p['status'])?></td>
-<td><div class="actions"><a class="btn btn-edit" href="edit.php?id=<?=$p['id']?>"><i class="fas fa-edit"></i></a><a class="btn btn-danger" href="delete.php?id=<?=$p['id']?>" onclick="return confirm('Delete this product?')"><i class="fas fa-trash"></i></a></div></td>
+<td><div class="actions"><a class="btn btn-edit" href="edit.php?id=<?=$p['id']?>"><i class="fas fa-edit"></i></a><form method="post" action="delete.php" style="display:inline" onsubmit="return confirm('Delete this product?')"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>"><input type="hidden" name="id" value="<?=(int)$p['id']?>"><button type="submit" class="btn btn-danger" style="border:0;cursor:pointer"><i class="fas fa-trash"></i></button></form></div></td>
 </tr>
 <?php endforeach; endif;?>
 </tbody></table></div>
@@ -93,6 +93,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <div class="modal-box">
 <h2>Add Product</h2><button class="modal-close" onclick="document.getElementById('productModal').classList.remove('show')">&times;</button>
 <form method="post" action="store.php">
+<input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>">
 <div class="form-grid">
 <label>Product Name *<input name="product_name" required maxlength="160"></label>
 <label>SKU<input name="sku" maxlength="80"></label>
@@ -106,7 +107,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <label>Opening Stock<input type="number" name="stock_quantity" min="0" value="0"></label>
 <label>Reorder Level<input type="number" name="reorder_level" min="0" value="10"></label>
 <label>Unit<input name="unit" value="Piece" maxlength="30"></label>
-<label>Icon<input name="icon" value="🍾" maxlength="10"></label>
+<label>Icon<input name="icon" value="📚" maxlength="10"></label>
 </div>
 <div class="modal-actions"><button type="button" class="btn btn-light" onclick="document.getElementById('productModal').classList.remove('show')">Cancel</button><button class="btn btn-primary">Save Product</button></div>
 </form></div></div>

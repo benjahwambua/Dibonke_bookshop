@@ -3,7 +3,11 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../includes/auth.php';
 require_once __DIR__ . '/../../config/db.php';
 
-$id=(int)($_GET['id']??0);
+// Deleting is a state-changing action: POST + CSRF token only (never a GET link).
+if($_SERVER['REQUEST_METHOD']!=='POST'){header('Location:index.php');exit;}
+verify_csrf();
+
+$id=(int)($_POST['id']??0);
 if($id>0){
  try{
   $check=$conn->prepare("SELECT COUNT(*) FROM sale_items WHERE product_id=:id");$check->execute([':id'=>$id]);

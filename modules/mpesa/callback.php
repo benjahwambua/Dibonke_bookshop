@@ -24,7 +24,7 @@ try{
       if($customer && $amount>0){
          $payAmount=min($amount,(float)$customer['balance']);
          if($payAmount>0){
-            $prefix=(string)($conn->query("SELECT setting_value FROM settings WHERE setting_key='receipt_prefix' LIMIT 1")->fetchColumn()?:'SS-RCP');
+            $prefix=(string)($conn->query("SELECT setting_value FROM settings WHERE setting_key='receipt_prefix' LIMIT 1")->fetchColumn()?:'DB-RCP');
             $rc=$prefix.'-'.date('YmdHis').'-'.strtoupper(bin2hex(random_bytes(2)));
             $exists=$conn->prepare("SELECT COUNT(*) FROM customer_payments WHERE customer_id=? AND transaction_reference=?");$exists->execute([$customerId,$receipt]);
             if((int)$exists->fetchColumn()===0){
@@ -41,13 +41,17 @@ try{
       $saleQ=$conn->prepare("SELECT * FROM sales WHERE id=? FOR UPDATE");$saleQ->execute([$saleId]);$sale=$saleQ->fetch();
       if($sale && (float)$sale['paid_amount'] < (float)$sale['total_amount']){
          $payAmount=min($amount,(float)$sale['total_amount']-(float)$sale['paid_amount']);
-         $upd=$conn->prepare("UPDATE sales SET paid_amount=paid_amount+?, balance=GREATEST(0,total_amount-paid_amount-?) WHERE id=?");
-         $upd->execute([$payAmount,$payAmount,$saleId]);
+         // Compute in PHP from the locked row: MySQL evaluates SET assignments left to right, so using
+         // paid_amount inside the balance expression would subtract the payment twice.
+         $newPaid=round((float)$sale['paid_amount']+$payAmount,2);
+         $newBalance=max(0.0,round((float)$sale['total_amount']-$newPaid,2));
+         $upd=$conn->prepare("UPDATE sales SET paid_amount=?, balance=? WHERE id=?");
+         $upd->execute([$newPaid,$newBalance,$saleId]);
          if($sale['customer_id'] && $payAmount>0){
             $cp=$conn->prepare("UPDATE customers SET balance=GREATEST(0,balance-?) WHERE id=?");$cp->execute([$payAmount,(int)$sale['customer_id']]);
             $exists=$conn->prepare("SELECT COUNT(*) FROM customer_payments WHERE sale_id=? AND transaction_reference=?");$exists->execute([$saleId,$receipt]); 
             if((int)$exists->fetchColumn()===0){
-               $prefix=(string)($conn->query("SELECT setting_value FROM settings WHERE setting_key='receipt_prefix' LIMIT 1")->fetchColumn()?:'SS-RCP');
+               $prefix=(string)($conn->query("SELECT setting_value FROM settings WHERE setting_key='receipt_prefix' LIMIT 1")->fetchColumn()?:'DB-RCP');
                $rc=$prefix.'-'.date('YmdHis').'-'.strtoupper(bin2hex(random_bytes(2)));
                $ins=$conn->prepare("INSERT INTO customer_payments(receipt_number,customer_id,sale_id,user_id,amount,payment_method,transaction_reference,payment_date,notes) VALUES(?,?,?,?,?,?,?,?,?)");
                $ins->execute([$rc,(int)$sale['customer_id'],$saleId,(int)$sale['user_id'],$payAmount,'M-Pesa',$receipt,date('Y-m-d H:i:s'),'Automatic M-PESA payment for '.$sale['invoice_number']]);
