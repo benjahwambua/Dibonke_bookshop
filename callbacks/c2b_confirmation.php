@@ -62,6 +62,9 @@ try{
  $ins=$conn->prepare("INSERT INTO mpesa_transactions(transaction_type,direction,phone_number,amount,amount_applied,amount_unallocated,account_reference,transaction_reference,result_code,result_description,result_status,reference_type,reference_id,raw_response,transaction_date) VALUES('C2B','Incoming',?,?,?,?,?,?,?,?,'Success',?,?,?,?)");
  $ins->execute([$phone,$amount,$allocated,$unallocatedAmount,$billRef,$transId,'0',$description,$referenceType,$referenceId,$raw,$transactionDate]);
  $transactionId=(int)$conn->lastInsertId();
+ if($sale&&empty($sale['customer_id'])&&(bool)$conn->query("SHOW TABLES LIKE 'sale_payment_lines'")->fetchColumn()){
+  $conn->prepare("INSERT INTO sale_payment_lines(sale_id,payment_method,amount,status,transaction_reference,mpesa_transaction_id,created_by,created_at,confirmed_at) VALUES(?,'M-Pesa',?,'Confirmed',?,?,?, ?,?)")->execute([(int)$sale['id'],$amount,$transId,$transactionId,(int)$sale['user_id'],$transactionDate,$transactionDate]);
+ }
  if(dibonkeAccountingAutoPostingEnabled($conn)){
   $journalLines=[dibonkeAccountingLine(dibonkeAccountingAccount($conn,'mpesa_clearing','Asset'),$allocated>0?'C2B payment received':'Unallocated C2B payment received',$amount,0)];
   if($allocated>0)$journalLines[]=dibonkeAccountingLine(dibonkeAccountingAccount($conn,'accounts_receivable','Asset'),'Invoice receivable settled',0,$allocated);
