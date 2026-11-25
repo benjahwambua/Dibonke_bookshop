@@ -21,7 +21,7 @@ $sql="SELECT transaction_date,transaction_type,reference,party,payment_method,di
  UNION ALL
  SELECT COALESCE(mt.transaction_date,mt.created_at),CONVERT('Unallocated STK Overpayment' USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(s.invoice_number USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT('Walk-in Customer' USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT('M-Pesa' USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT('IN' USING utf8mb4) COLLATE utf8mb4_unicode_ci,mt.amount_unallocated
  FROM mpesa_transactions mt JOIN sales s ON mt.reference_type='sale' AND mt.reference_id=s.id
- WHERE mt.transaction_type='STK Push' AND mt.direction='Incoming' AND mt.result_status='Success' AND s.sale_status='Completed' AND s.customer_id IS NULL AND mt.amount_unallocated>0.009 AND DATE(COALESCE(mt.transaction_date,mt.created_at)) BETWEEN ? AND ?
+ WHERE mt.transaction_type='STK Push' AND mt.direction='Incoming' AND mt.result_status='Success' AND s.sale_status='Completed' AND s.customer_id IS NULL AND mt.amount_unallocated>0.009 ".($hasSalePaymentLines?"AND NOT EXISTS (SELECT 1 FROM sale_payment_lines spl WHERE spl.mpesa_transaction_id=mt.id) ":"")."AND DATE(COALESCE(mt.transaction_date,mt.created_at)) BETWEEN ? AND ?
  UNION ALL
  SELECT COALESCE(mt.transaction_date,mt.created_at),CONVERT('Unallocated C2B Invoice Overpayment' USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(s.invoice_number USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT('Walk-in Customer' USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT('M-Pesa' USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT('IN' USING utf8mb4) COLLATE utf8mb4_unicode_ci,mt.amount_unallocated
  FROM mpesa_transactions mt JOIN sales s ON mt.reference_type='sale' AND mt.reference_id=s.id
