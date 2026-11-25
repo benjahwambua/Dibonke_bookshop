@@ -34,12 +34,14 @@ $expenseOut=(float)$run("SELECT COALESCE(SUM(amount),0) FROM expenses WHERE expe
 $hasReturnPayments=(bool)$conn->query("SHOW TABLES LIKE 'sales_return_payments'")->fetchColumn();
 $returnOut=$hasReturnPayments?(float)$run("SELECT COALESCE(SUM(amount),0) FROM sales_return_payments WHERE DATE(paid_at) BETWEEN ? AND ?",[$from,$to])->fetchColumn():0.0;
 $customerDue=(float)$conn->query("SELECT COALESCE(SUM(balance),0) FROM customers")->fetchColumn();$supplierDue=(float)$conn->query("SELECT COALESCE(SUM(balance),0) FROM suppliers")->fetchColumn();
+$hasSalePaymentLines=(bool)$conn->query("SHOW TABLES LIKE 'sale_payment_lines'")->fetchColumn();
 $methodSql="SELECT method,SUM(received) received,SUM(spent) spent FROM (
  SELECT CONVERT(payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci method,SUM(amount) received,0 spent FROM customer_payments WHERE DATE(payment_date) BETWEEN ? AND ? GROUP BY payment_method
- UNION ALL SELECT CONVERT(payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,SUM(paid_amount),0 FROM sales WHERE customer_id IS NULL AND sale_status='Completed' AND DATE(sale_date) BETWEEN ? AND ? GROUP BY payment_method
+ UNION ALL SELECT CONVERT(s.payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci, SUM(s.paid_amount),0 FROM sales s WHERE s.customer_id IS NULL AND s.sale_status='Completed' AND DATE(s.sale_date) BETWEEN ? AND ? ".($hasSalePaymentLines?"AND NOT EXISTS (SELECT 1 FROM sale_payment_lines spl WHERE spl.sale_id=s.id) ":"")."GROUP BY s.payment_method
+ UNION ALL SELECT CONVERT(spl.payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,SUM(spl.amount),0 FROM sale_payment_lines spl JOIN sales s ON s.id=spl.sale_id WHERE s.customer_id IS NULL AND s.sale_status='Completed' AND spl.status='Confirmed' AND DATE(COALESCE(spl.confirmed_at,spl.created_at)) BETWEEN ? AND ? GROUP BY spl.payment_method
  UNION ALL SELECT CONVERT(payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,0,SUM(amount) FROM supplier_payments WHERE DATE(payment_date) BETWEEN ? AND ? GROUP BY payment_method
  UNION ALL SELECT CONVERT(payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,0,SUM(amount) FROM expenses WHERE expense_date BETWEEN ? AND ? GROUP BY payment_method";
-$methodParams=[$from,$to,$from,$to,$from,$to,$from,$to];
+$methodParams=[$from,$to,$from,$to];if($hasSalePaymentLines){$methodParams[]=$from;$methodParams[]=$to;}$methodParams[]=$from;$methodParams[]=$to;$methodParams[]=$from;$methodParams[]=$to;
 if($hasMpesaTransactions){
  $methodSql.=" UNION ALL SELECT CONVERT('M-Pesa' USING utf8mb4) COLLATE utf8mb4_unicode_ci,COALESCE(SUM(amount_unallocated),0),0 FROM mpesa_transactions WHERE transaction_type='C2B' AND direction='Incoming' AND result_status='Success' AND reference_type IS NULL AND amount_unallocated>0.009 AND DATE(COALESCE(transaction_date,created_at)) BETWEEN ? AND ?";
  $methodParams[]=$from;$methodParams[]=$to;
