@@ -18,6 +18,7 @@ Before a fresh installation can be declared ready, the project still needs to:
 | File | Purpose | Important dependency |
 |---|---|---|
 | `dibonke_products_inventory.sql` | Additive product type and ISBN extension | Requires an existing `products` table |
+| `dibonke_book_metadata.sql` | Adds separate optional author and publisher fields for book catalogue records | Apply after `dibonke_products_inventory.sql`; requires `products` and its ISBN column |
 | `dibonke_product_images.sql` | Adds the optional `products.image_path` column used by product image uploads and POS/catalogue thumbnails | Requires an existing `products` table; idempotent column check |
 | `price_lists.sql` | Standard/wholesale price lists and product price tiers | Requires `products`, `customers` and `sales` |
 | `supply_chain_mpesa.sql` | Purchase orders, goods receipts, supplier payments and M-PESA transaction storage | Requires base `users`, `suppliers` and `settings` tables |\n| `dibonke_goods_receiving_scanner.sql` | Adds supplier invoice date/total fields and grants Manager/Storekeeper receiving permissions | Requires `goods_receipts`, `roles` and `role_permissions` |
@@ -40,7 +41,7 @@ The preflight script performs SELECTs against `information_schema` only. It does
 
 The current product workflow expects these tables and relationships:
 
-- `products`: product name, broad type, optional ISBN, SKU/barcode, unit, category/brand/supplier links, buying/selling/wholesale prices, stock quantity, reorder level and status.
+- `products`: product name, broad type, optional ISBN, author and publisher, SKU/barcode, unit, category/brand/supplier links, buying/selling/wholesale prices, stock quantity, reorder level and status.
 - `categories`: user-managed category names and descriptions. Categories are data-driven; the three product types (Book, Stationery, General) are not a substitute for detailed categories.
 - `brands`: optional publisher/brand lookup.
 - `suppliers`: optional preferred supplier lookup.
@@ -216,6 +217,7 @@ The following is a dependency guide for a development database. **Do not re-run 
 2. `dibonke_products_inventory_preflight.sql` — read-only inspection of product/POS/purchase/stock dependencies. Run before extensions and review its output.
 3. `dibonke_staff_roles.sql` — creates roles, role_permissions and staff profiles; requires the existing users table.
 4. `dibonke_products_inventory.sql` and `price_lists.sql` — apply after the base products, customers and sales tables exist.
+5. `dibonke_book_metadata.sql` — apply after `dibonke_products_inventory.sql` to add separate author and publisher fields.
 5. `supply_chain_mpesa.sql` — creates PO/GRN and M-Pesa support; requires users, suppliers and settings.
 6. `dibonke_goods_receiving_scanner.sql` — apply after the Supply Chain goods_receipts table and roles/permissions exist.
 7. `dibonke_finance_billing_permissions.sql` — apply after the staff/roles migration.
