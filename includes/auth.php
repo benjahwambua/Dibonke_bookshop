@@ -170,6 +170,7 @@ if ($markerPosition !== false) {
         'finance/aged_payables.php' => 'aged_payables',
         'deliveries/fleet.php' => 'fleet',
         'finance/posting_mappings.php' => 'accounting_mappings',
+        'finance/periods.php' => 'finance',
         'sales/my_shift.php' => 'cash_management',
         'hr/my.php' => 'hr_self_service',
         'inventory/index.php' => 'products',
