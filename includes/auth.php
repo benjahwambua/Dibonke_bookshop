@@ -171,6 +171,7 @@ if ($markerPosition !== false) {
         'deliveries/fleet.php' => 'fleet',
         'finance/posting_mappings.php' => 'accounting_mappings',
         'finance/periods.php' => 'finance',
+        'finance/statements.php' => 'finance',
         'sales/my_shift.php' => 'cash_management',
         'hr/my.php' => 'hr_self_service',
         'inventory/index.php' => 'products',
