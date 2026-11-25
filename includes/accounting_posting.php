@@ -68,8 +68,6 @@ function dibonkeAccountingPostJournal(PDO $conn, string $sourceType, int $source
 {
     if (!$conn->inTransaction()) throw new LogicException('Automatic journal posting must share the source transaction.');
     if ($sourceId <= 0 || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $journalDate)) throw new RuntimeException('Invalid accounting source reference or date.');
-    dibonkeAccountingAssertPeriodOpen($conn,$journalDate);
-
     $existing = $conn->prepare("SELECT id,status FROM journal_entries WHERE source_type=? AND source_id=? FOR UPDATE");
     $existing->execute([$sourceType, $sourceId]);
     $prior = $existing->fetch(PDO::FETCH_ASSOC);
@@ -77,6 +75,7 @@ function dibonkeAccountingPostJournal(PDO $conn, string $sourceType, int $source
         if ($prior['status'] === 'Posted') return;
         throw new RuntimeException('An accounting journal already exists for this source and requires administrator review.');
     }
+    dibonkeAccountingAssertPeriodOpen($conn,$journalDate);
 
     $clean = [];
     $debit = 0.0;
