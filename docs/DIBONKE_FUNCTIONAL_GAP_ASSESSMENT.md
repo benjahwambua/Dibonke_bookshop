@@ -145,7 +145,7 @@ This reassessment supersedes the original status statements above where later co
 
 ### Automated source checks
 
-GitHub Actions run 45499542517 completed successfully for the latest reassessment commit 6feb208060f64fc8880bc530db09d93ec266a61a: all PHP files passed syntax lint on PHP 8.0 and PHP 8.2, and the existing product helper tests passed. This does not exercise database transactions, page rendering, printer hardware, M-PESA callbacks or eTIMS.
+GitHub Actions run 45611099798 completed successfully for commit f1b5e7e1b3c782dbd55af4aa6dda031093bc835c: all PHP files passed syntax lint on PHP 8.0 and PHP 8.2, and the existing product helper tests passed. This does not exercise database transactions, page rendering, printer hardware, M-PESA callbacks or eTIMS.
 
 **Release position:** source-level integration is materially improved, but Dibonke should not be labelled gap-free or production-certified until the remaining functional items are either implemented or explicitly accepted as out of scope, all required migrations are applied, and the end-to-end acceptance suite is passed against a backed-up copy of the actual database.
 
@@ -181,3 +181,13 @@ This update supersedes the mixed-tender, customer-wallet, financial-statement an
 ### Updated release position
 
 The previous mixed-tender and customer-wallet gaps are now implemented in source, and basic journal-based financial statements, period locks and valuation snapshots have been added. Dibonke is closer to operational completion, but should not be called gap-free or production-certified until the new migrations are applied and the end-to-end acceptance suite passes against a backed-up copy of the actual database.
+
+### Additional acceptance cases for this closure pass
+
+9. **Mixed tender:** Complete the same sale as cash-only, bank-only, cash+bank, cash+M-PESA and cash+bank+M-PESA. Confirm cash change, invoice paid/balance, customer receipt allocations, receipt tender rows, cash drawer, shift close, store close, Finance Overview, Financial Control and Cashbook all reconcile without duplication.
+10. **Failed STK recovery:** Simulate a failed STK, query Daraja status, retry the failed request, then confirm the retry callback. Confirm the old failed line remains failed, the new line becomes confirmed, the invoice is reduced only once and duplicate callbacks do not create duplicate receipts.
+11. **Customer wallet application:** Apply wallet credit to one invoice and across multiple credit sources; verify invoice balance, customer balance, wallet balance, statement running balance and journal.
+12. **Customer wallet refund:** Refund by cash, bank and M-PESA recording; verify the credit ledger, refund register, cashbook, cashier cash-out and journal.
+13. **Period lock:** Post an automatic transaction and a manual journal before lock; lock the date range; confirm backdated manual and automatic postings are rejected while current-period postings remain available.
+14. **Financial statements:** Compare P&L, Balance Sheet, cash/bank movement and Trial Balance to posted journals and opening balance support.
+15. **Inventory valuation snapshot:** Take a snapshot with stock in Main Store and at least two selling stores; reconcile snapshot quantities and values to inventory reports and a physical count.
