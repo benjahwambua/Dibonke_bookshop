@@ -95,7 +95,7 @@ try{
       throw new RuntimeException('The STK transaction is not linked to a supported sale or customer payment.');
    }
  }
- if($code===0){$saveAmounts=$conn->prepare("UPDATE mpesa_transactions SET amount_applied=?,amount_unallocated=? WHERE checkout_request_id=?");$saveAmounts->execute([$appliedAmount,$unallocatedAmount,$checkout]);$saleTenderUpdate=$conn->prepare("UPDATE sale_payment_lines SET amount=?,status='Confirmed',transaction_reference=?,confirmed_at=NOW() WHERE checkout_request_id=? AND status='Pending'");$saleTenderUpdate->execute([$amount,$receipt,$checkout]);}
+ if($code===0){$saveAmounts=$conn->prepare("UPDATE mpesa_transactions SET amount_applied=?,amount_unallocated=? WHERE checkout_request_id=?");$saveAmounts->execute([$appliedAmount,$unallocatedAmount,$checkout]);$saleTenderUpdate=$conn->prepare("UPDATE sale_payment_lines SET amount=?,status='Confirmed',transaction_reference=?,confirmed_at=NOW() WHERE checkout_request_id=? AND status IN('Pending','Failed')");$saleTenderUpdate->execute([$amount,$receipt,$checkout]);}
  else{$saleTenderUpdate=$conn->prepare("UPDATE sale_payment_lines SET status='Failed' WHERE checkout_request_id=? AND status='Pending'");$saleTenderUpdate->execute([$checkout]);}
  $conn->commit();
  echo json_encode(['ResultCode'=>0,'ResultDesc'=>'Accepted']);
