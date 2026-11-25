@@ -24,7 +24,11 @@ if($hasMpesaTransactions){
 $collections=$customerReceipts+$walkInCollections+$unallocatedC2BReceipts+$unallocatedStkOverpayments+$unallocatedWalkInC2BOverpayments;
 $supplierPayments=(float)$run("SELECT COALESCE(SUM(amount),0) FROM supplier_payments WHERE DATE(payment_date) BETWEEN ? AND ?",[$from,$to])->fetchColumn();
 $expenses=(float)$run("SELECT COALESCE(SUM(amount),0) FROM expenses WHERE expense_date BETWEEN ? AND ?",[$from,$to])->fetchColumn();
-$net=$collections-$supplierPayments-$expenses;
+$hasCustomerCreditRefunds=(bool)$conn->query("SHOW TABLES LIKE 'customer_credit_refunds'")->fetchColumn();
+$customerCreditRefunds=$hasCustomerCreditRefunds?(float)$run("SELECT COALESCE(SUM(amount),0) FROM customer_credit_refunds WHERE DATE(created_at) BETWEEN ? AND ?",[$from,$to])->fetchColumn():0.0;
+$hasReturnPayments=(bool)$conn->query("SHOW TABLES LIKE 'sales_return_payments'")->fetchColumn();
+$salesRefunds=$hasReturnPayments?(float)$run("SELECT COALESCE(SUM(amount),0) FROM sales_return_payments WHERE DATE(paid_at) BETWEEN ? AND ?",[$from,$to])->fetchColumn():0.0;
+$net=$collections-$supplierPayments-$expenses-$customerCreditRefunds-$salesRefunds;
 $customerOutstanding=(float)$conn->query("SELECT COALESCE(SUM(balance),0) FROM customers")->fetchColumn();
 $supplierOutstanding=(float)$conn->query("SELECT COALESCE(SUM(balance),0) FROM suppliers")->fetchColumn();
 $expenseRows=$run("SELECT e.expense_number,e.expense_date,e.expense_title,e.amount,e.payment_method,ec.category_name FROM expenses e LEFT JOIN expense_categories ec ON ec.id=e.category_id WHERE e.expense_date BETWEEN ? AND ? ORDER BY e.expense_date DESC,e.id DESC LIMIT 12",[$from,$to])->fetchAll();
