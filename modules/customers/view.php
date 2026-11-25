@@ -3,8 +3,80 @@ declare(strict_types=1);
 require_once __DIR__.'/../../includes/auth.php';
 require_once __DIR__.'/../../config/db.php';
 require_once __DIR__.'/../../includes/report_tools.php';
+require_once __DIR__.'/../../includes/accounting_posting.php';
+require_once __DIR__.'/../../includes/audit.php';
 requireModuleAccess('customers');
-$id=(int)($_GET['id']??0);
+$id=(int)($_GET['id']??$_POST['customer_id']??0);
+$creditFlash=$_SESSION['customer_credit_flash']??'';unset($_SESSION['customer_credit_flash']);
+if($_SERVER['REQUEST_METHOD']==='POST'){
+    verify_csrf();
+    $action=(string)($_POST['credit_action']??'');
+    try{
+        if(!in_array($action,['apply','refund'],true))throw new RuntimeException('Invalid customer credit action.');
+        requireModulePermission('customer_payments',$action==='apply'?'create':'edit');
+        foreach(['customer_credit_ledger','customer_credit_applications','customer_credit_refunds','customer_payment_allocations'] as $table){
+            if(!(bool)$conn->query("SHOW TABLES LIKE ".$conn->quote($table))->fetchColumn())throw new RuntimeException('Customer credit workflow migration is incomplete. Apply database/dibonke_customer_credit_workflows.sql.');
+        }
+        $conn->beginTransaction();
+        $customerLock=$conn->prepare("SELECT id,customer_name,balance FROM customers WHERE id=? AND status='Active' FOR UPDATE");
+        $customerLock->execute([$id]);$lockedCustomer=$customerLock->fetch(PDO::FETCH_ASSOC);
+        if(!$lockedCustomer)throw new RuntimeException('Customer not found or inactive.');
+        $sources=$conn->prepare("SELECT cr.id,cr.payment_id,cr.amount-COALESCE((SELECT SUM(db.amount) FROM customer_credit_ledger db WHERE db.payment_id=cr.payment_id AND db.customer_id=cr.customer_id AND db.entry_type='Debit'),0) remaining FROM customer_credit_ledger cr WHERE cr.customer_id=? AND cr.entry_type='Credit' ORDER BY cr.created_at,cr.id FOR UPDATE");
+        $sources->execute([$id]);$creditSources=$sources->fetchAll(PDO::FETCH_ASSOC);
+        $availableCredit=0.0;foreach($creditSources as $source)$availableCredit+=max(0,(float)$source['remaining']);
+        $amount=round((float)($_POST['amount']??0),2);
+        if($amount<=0||$amount>$availableCredit+0.009)throw new RuntimeException('Enter an amount within the available customer credit of KES '.number_format($availableCredit,2).'.');
+        $remaining=$amount;$uid=(int)$_SESSION['user_id'];$debitIds=[];$lastRecordId=0;
+        if($action==='apply'){
+            $saleId=(int)($_POST['sale_id']??0);
+            $invoice=$conn->prepare("SELECT id,invoice_number,balance FROM sales WHERE id=? AND customer_id=? AND sale_status='Completed' AND balance>0.009 FOR UPDATE");
+            $invoice->execute([$saleId,$id]);$sale=$invoice->fetch(PDO::FETCH_ASSOC);
+            if(!$sale)throw new RuntimeException('Select an outstanding invoice for this customer.');
+            if($amount>(float)$sale['balance']+0.009)throw new RuntimeException('The credit amount cannot exceed the invoice balance of KES '.number_format((float)$sale['balance'],2).'.');
+            $debitInsert=$conn->prepare("INSERT INTO customer_credit_ledger(customer_id,payment_id,entry_type,amount,notes,created_by) VALUES(?,?,'Debit',?,'Applied to invoice',?)");
+            $appInsert=$conn->prepare("INSERT INTO customer_credit_applications(customer_id,credit_entry_id,debit_entry_id,sale_id,amount,created_by) VALUES(?,?,?,?,?,?)");
+            foreach($creditSources as $source){
+                if($remaining<=0.009)break;$use=round(min($remaining,max(0,(float)$source['remaining'])),2);if($use<=0)continue;
+                $debitInsert->execute([$id,(int)$source['payment_id'],$use,$uid]);$debitId=(int)$conn->lastInsertId();
+                $appInsert->execute([$id,(int)$source['id'],$debitId,$saleId,$use,$uid]);$lastRecordId=(int)$conn->lastInsertId();$debitIds[]=$debitId;$remaining=round($remaining-$use,2);
+            }
+            if($remaining>0.009)throw new RuntimeException('Customer credit could not be fully allocated.');
+            $conn->prepare("UPDATE sales SET paid_amount=LEAST(total_amount,paid_amount+?),balance=GREATEST(0,balance-?) WHERE id=?")->execute([$amount,$amount,$saleId]);
+            $conn->prepare("UPDATE customers SET balance=GREATEST(0,balance-?) WHERE id=?")->execute([$amount,$id]);
+            if(dibonkeAccountingAutoPostingEnabled($conn)){
+                $lines=[dibonkeAccountingLine(dibonkeAccountingAccount($conn,'customer_credit','Liability'),'Customer wallet credit applied', $amount,0),dibonkeAccountingLine(dibonkeAccountingAccount($conn,'accounts_receivable','Asset'),'Customer invoice '.$sale['invoice_number'].' settled from wallet',0,$amount)];
+                dibonkeAccountingPostJournal($conn,'customer_credit_application',$lastRecordId,date('Y-m-d'),'Customer credit applied to '.$sale['invoice_number'],$lines,$uid);
+            }
+            recordAuditEvent($conn,'Apply Credit','customers','Applied KES '.number_format($amount,2).' customer credit to invoice '.$sale['invoice_number'],'customer_credit_application',$lastRecordId,null,['customer_id'=>$id,'sale_id'=>$saleId,'amount'=>$amount,'debit_entries'=>$debitIds]);
+            $creditFlash='KES '.number_format($amount,2).' customer credit applied to invoice '.$sale['invoice_number'].'.';
+        }else{
+            requireModulePermission('customer_payments','edit');
+            $method=(string)($_POST['payment_method']??'');
+            if(!in_array($method,['Cash','Bank','M-Pesa'],true))throw new RuntimeException('Choose Cash, Bank or M-PESA for the refund.');
+            if($method==='Cash'&&hasModulePermission('cash_management','create')&&(bool)$conn->query("SHOW TABLES LIKE 'cash_shift_guard'")->fetchColumn()){
+                $shift=$conn->prepare("SELECT id FROM cash_shifts WHERE user_id=? AND status='Open' LIMIT 1 FOR UPDATE");$shift->execute([$uid]);if(!$shift->fetchColumn())throw new RuntimeException('Open your cashier shift before refunding customer credit in cash.');
+            }
+            $reference=trim((string)($_POST['transaction_reference']??''));
+            $debitInsert=$conn->prepare("INSERT INTO customer_credit_ledger(customer_id,payment_id,entry_type,amount,notes,created_by) VALUES(?,?,'Debit','?','Customer credit refunded',?)");
+            $refundInsert=$conn->prepare("INSERT INTO customer_credit_refunds(customer_id,credit_entry_id,debit_entry_id,amount,payment_method,transaction_reference,created_by) VALUES(?,?,?,?,?,?,?)");
+            foreach($creditSources as $source){
+                if($remaining<=0.009)break;$use=round(min($remaining,max(0,(float)$source['remaining'])),2);if($use<=0)continue;
+                $debitInsert->execute([$id,(int)$source['payment_id'],$use,$uid]);$debitId=(int)$conn->lastInsertId();
+                $refundInsert->execute([$id,(int)$source['id'],$debitId,$use,$method,$reference?:null,$uid]);$lastRecordId=(int)$conn->lastInsertId();$debitIds[]=$debitId;$remaining=round($remaining-$use,2);
+            }
+            if($remaining>0.009)throw new RuntimeException('Customer credit could not be fully refunded.');
+            if(dibonkeAccountingAutoPostingEnabled($conn)){
+                $lines=[dibonkeAccountingLine(dibonkeAccountingAccount($conn,'customer_credit','Liability'),'Customer credit refund', $amount,0),dibonkeAccountingLine(dibonkeAccountingPaymentAccount($conn,$method),'Refund paid to customer',0,$amount)];
+                dibonkeAccountingPostJournal($conn,'customer_credit_refund',$lastRecordId,date('Y-m-d'),'Customer credit refund '.$lockedCustomer['customer_name'],$lines,$uid);
+            }
+            recordAuditEvent($conn,'Refund Credit','customers','Refunded KES '.number_format($amount,2).' customer credit via '.$method,'customer_credit_refund',$lastRecordId,null,['customer_id'=>$id,'amount'=>$amount,'payment_method'=>$method,'reference'=>$reference?:null,'debit_entries'=>$debitIds]);
+            $creditFlash='KES '.number_format($amount,2).' customer credit refunded via '.$method.'.';
+        }
+        $conn->commit();
+    }catch(Throwable $e){if($conn->inTransaction())$conn->rollBack();$creditFlash='Customer credit action failed: '.$e->getMessage();}
+    $_SESSION['customer_credit_flash']=$creditFlash;
+    header('Location: view.php?id='.$id);exit;
+}
 $st=$conn->prepare("SELECT * FROM customers WHERE id=?");$st->execute([$id]);$customer=$st->fetch(PDO::FETCH_ASSOC);
 if(!$customer){http_response_code(404);exit('Customer not found.');}
 $from=(string)($_GET['from']??date('Y-01-01'));$to=(string)($_GET['to']??date('Y-m-d'));$valid='/^\\d{4}-\\d{2}-\\d{2}$/';
