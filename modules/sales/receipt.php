@@ -9,7 +9,7 @@ $s->execute([$id]);$sale=$s->fetch();
 if(!$sale){http_response_code(404);exit('Sale not found.');}
 $i=$conn->prepare("SELECT si.quantity,si.price,si.subtotal,p.product_name,p.sku,p.unit FROM sale_items si JOIN products p ON p.id=si.product_id WHERE si.sale_id=? ORDER BY si.id");$i->execute([$id]);$items=$i->fetchAll();
 $flash=$_SESSION['sale_flash']??null;unset($_SESSION['sale_flash']);
-$company=$conn->query("SELECT setting_value FROM settings WHERE setting_key='company_name' LIMIT 1")->fetchColumn()?:'Stalk & Stable';
+$company=$conn->query("SELECT setting_value FROM settings WHERE setting_key='company_name' LIMIT 1")->fetchColumn()?:'Dibonke Bookshop';
 $currency=$conn->query("SELECT setting_value FROM settings WHERE setting_key='currency' LIMIT 1")->fetchColumn()?:'KES';
 ?>
 <!doctype html><html><head><meta charset="utf-8"><title>Receipt <?=e($sale['invoice_number'])?></title><style>
@@ -18,7 +18,7 @@ body{margin:0;background:#eef2f7;font-family:Arial,sans-serif;color:#111827}.act
 <div class="actions"><button onclick="window.print()"><i>🖨</i> Print Receipt</button><a href="index.php">Back to POS</a></div>
 <div class="receipt">
 <?php if($flash): ?><div class="flash"><?=e($flash)?></div><?php endif; ?>
-<div class="center"><div class="company"><?=e($company)?></div><div class="small">Alcohol Distribution Management System</div></div>
+<div class="center"><div class="company"><?=e($company)?></div><div class="small">Bookshop &amp; General Retail Management System</div></div>
 <div class="line"></div><div class="meta"><strong>Receipt:</strong> <?=e($sale['invoice_number'])?><br><strong>Date:</strong> <?=e($sale['sale_date'])?><br><strong>Cashier:</strong> <?=e($sale['cashier']?:'Staff')?><br><strong>Price List:</strong> <?=e($sale['price_list_name']?:'Standard price')?><br><strong>Customer:</strong> <?=e($sale['customer_name'])?><?php if($sale['phone']): ?> · <?=e($sale['phone'])?><?php endif; ?></div>
 <div class="line"></div>
 <table class="items"><thead><tr><th>Item</th><th class="num">Qty</th><th class="num">Amount</th></tr></thead><tbody><?php foreach($items as $item): ?><tr><td><?=e($item['product_name'])?></td><td class="num"><?=e($item['quantity'])?></td><td class="num"><?=e($currency)?> <?=number_format((float)$item['subtotal'],2)?></td></tr><?php endforeach; ?></tbody></table>

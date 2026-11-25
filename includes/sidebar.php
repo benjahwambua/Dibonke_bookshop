@@ -27,7 +27,7 @@ $role = $_SESSION['role'] ?? 'Staff';
 </style>
 
 <aside class="sidebar">
-    <div class="sidebar-brand">📚 STALK &amp; STABLE</div>
+    <div class="sidebar-brand">📚 DIBONKE BOOKSHOP</div>
     <div class="user-profile">
         <div class="user-avatar"><?= e(strtoupper(substr($fullName,0,1))) ?></div>
         <div class="user-info"><span class="name"><?= e($fullName) ?></span><span class="role"><?= e($role) ?></span></div>

@@ -18,7 +18,7 @@ require_once __DIR__.'/../../includes/sidebar.php';
 </style>
 <a class="btn" href="index.php">Back to Sales</a>
 <div class="invoice">
-<div class="top"><div><h1>Stalk & Stable</h1><p>Alcohol Distribution Management System</p><p><?=e($sale['customer_name'])?><br><?=e($sale['phone']??'')?><br><?=e($sale['address']??'')?></p></div>
+<div class="top"><div><h1>Dibonke Bookshop</h1><p>Bookshop &amp; General Retail Management System</p><p><?=e($sale['customer_name'])?><br><?=e($sale['phone']??'')?><br><?=e($sale['address']??'')?></p></div>
 <div class="right"><h2><?=e($sale['invoice_number'])?></h2><p><?=e($sale['sale_date'])?></p><p>Payment: <?=e($sale['payment_method'])?></p><p>Served by: <?=e($sale['full_name']??'')?></p></div></div>
 <table class="table"><thead><tr><th>Product</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead><tbody>
 <?php foreach($items as $i):?><tr><td><?=e($i['product_name'])?></td><td><?=e($i['quantity'])?></td><td>KES <?=number_format((float)$i['price'],2)?></td><td>KES <?=number_format((float)$i['subtotal'],2)?></td></tr><?php endforeach;?>

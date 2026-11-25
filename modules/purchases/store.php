@@ -62,7 +62,7 @@ try {
     if ($paidAmount > $total) throw new RuntimeException('Paid amount cannot exceed the purchase total.');
     $balance = round($total - $paidAmount, 2);
 
-    $prefix = 'SS-PUR';
+    $prefix = 'DB-PUR';
     $setting = $conn->prepare("SELECT setting_value FROM settings WHERE setting_key='purchase_prefix' LIMIT 1");
     $setting->execute();
     $configuredPrefix = $setting->fetchColumn();

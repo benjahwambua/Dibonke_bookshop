@@ -3,8 +3,8 @@ declare(strict_types=1);
 ?>
 </div>
 <footer class="app-footer">
-    <div class="footer-brand"><span class="footer-badge">STALK &amp; STABLE</span><span>&copy; <?= date('Y') ?> All Rights Reserved</span></div>
-    <div class="footer-right"><span class="support-pill"><i class="fas fa-headset"></i> Distribution Management System</span><span>Powered by <strong>FlexiScript Labs.</strong></span></div>
+    <div class="footer-brand"><span class="footer-badge">DIBONKE BOOKSHOP</span><span>&copy; <?= date('Y') ?> All Rights Reserved</span></div>
+    <div class="footer-right"><span class="support-pill"><i class="fas fa-headset"></i> Bookshop &amp; General Retail Management System</span><span>Powered by <strong>FlexiScript Labs.</strong></span></div>
 </footer>
 <style>
 .app-footer{margin-left:260px;padding:18px 30px;background:#004a99;color:rgba(255,255,255,.82);display:flex;justify-content:space-between;align-items:center;gap:18px;font-family:Inter,Arial,sans-serif;font-size:12px;border-top:1px solid rgba(255,255,255,.1);box-shadow:0 -4px 15px rgba(0,0,0,.08)}

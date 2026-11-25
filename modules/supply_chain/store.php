@@ -12,7 +12,7 @@ try{
  $conn->beginTransaction();
  $s=$conn->prepare("SELECT id FROM suppliers WHERE id=? AND status='Active' FOR UPDATE");$s->execute([$supplierId]);if(!$s->fetch())throw new RuntimeException('Supplier not found or inactive.');
  foreach($clean as $x){$p=$conn->prepare("SELECT id FROM products WHERE id=? AND status='Active' FOR UPDATE");$p->execute([$x['product_id']]);if(!$p->fetch())throw new RuntimeException('A selected product is missing or inactive.');}
- $prefix='SS-PO';$q=$conn->query("SELECT setting_value FROM settings WHERE setting_key='po_prefix' LIMIT 1");$v=$q->fetchColumn();if($v)$prefix=$v;
+ $prefix='DB-PO';$q=$conn->query("SELECT setting_value FROM settings WHERE setting_key='po_prefix' LIMIT 1");$v=$q->fetchColumn();if($v)$prefix=$v;
  $po=$prefix.'-'.date('YmdHis').'-'.random_int(100,999);
  $st=$conn->prepare("INSERT INTO purchase_orders(po_number,supplier_id,user_id,po_date,expected_date,subtotal,total_amount,status,notes) VALUES(?,?,?,?,?,?,?,'Draft',?)");$st->execute([$po,$supplierId,$_SESSION['user_id'],$poDate,$expected?:null,$subtotal,$subtotal,$notes?:null]);$id=(int)$conn->lastInsertId();
  $it=$conn->prepare("INSERT INTO purchase_order_items(purchase_order_id,product_id,ordered_quantity,unit_cost,line_total) VALUES(?,?,?,?,?)");foreach($clean as $x)$it->execute([$id,$x['product_id'],$x['quantity'],$x['unit_cost'],round($x['quantity']*$x['unit_cost'],2)]);
