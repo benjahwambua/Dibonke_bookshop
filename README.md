@@ -23,10 +23,11 @@ The application is being adapted for a general bookshop and retail operation. It
 2. Place this repository in `C:\xampp\htdocs\dibonke_bookshop`.
 3. Create a MySQL database named `dibonke_bookshop_db`.
 4. Review `config/db.php` and update credentials if your local setup differs.
-5. Import the SQL scripts in `database/` after reviewing their dependencies.
-6. Open `http://localhost/dibonke_bookshop/`.
+5. Import the SQL scripts in `database/` in this order: `base_schema.sql`, `price_lists.sql`, `supply_chain_mpesa.sql` (details in `database/README.md`).
+6. Create the first Super User: `php database/create_super_admin.php`.
+7. Open `http://localhost/dibonke_bookshop/`.
 
-> The initial repository copy is an architectural starting point, not a claim that all alcohol-distribution terminology and workflows have already been converted. The next development stage is to adapt and validate each module for bookshop and general retail use.
+> The user-facing pages under `modules/` and `includes/` now use Dibonke Bookshop branding, but this is still an architectural starting point. The legacy `admin/pages/products/` and `public/auth/` folders are unreferenced copies from Stalk & Stable and still contain its branding and old paths; they are not part of the working application. The next development stage is to validate each module on a fresh local database for bookshop and general retail use.
 
 ## Security notes
 
