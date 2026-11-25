@@ -13,6 +13,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
         if(!$ready)throw new RuntimeException('Import database/dibonke_accounting_period_locks.sql first.');
         $start=(string)($_POST['period_start']??'');$end=(string)($_POST['period_end']??'');$reason=trim((string)($_POST['reason']??''));
         if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$start)||!preg_match('/^\d{4}-\d{2}-\d{2}$/',$end)||$start>$end)throw new RuntimeException('Enter a valid period start and end date.');
+        if($end>date('Y-m-d'))throw new RuntimeException('You can only lock a period that has ended or ends today.');
         if($reason===''||strlen($reason)>255)throw new RuntimeException('Enter a reason for closing this period (maximum 255 characters).');
         $conn->beginTransaction();
         $overlap=$conn->prepare("SELECT id FROM accounting_period_locks WHERE period_start<=? AND period_end>=? LIMIT 1 FOR UPDATE");
