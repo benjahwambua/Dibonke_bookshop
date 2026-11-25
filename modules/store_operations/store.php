@@ -262,11 +262,11 @@ try {
         }
 
         $received = round($cash + $mpesa + $bank + $other, 2);
-        $salesStmt = $conn->prepare("SELECT COALESCE(SUM(paid_amount),0) expected_total FROM sales WHERE store_id=? AND sale_status='Completed' AND DATE(sale_date)=?");
-        $salesStmt->execute([(int)$session['store_id'], $session['business_date']]);
-        $expected = round((float)$salesStmt->fetchColumn(), 2);
         $hasSalePaymentLines=(bool)$conn->query("SHOW TABLES LIKE 'sale_payment_lines'")->fetchColumn();
         if($hasSalePaymentLines){
+            $salesStmt=$conn->prepare("SELECT COALESCE(SUM(spl.amount),0) FROM sale_payment_lines spl JOIN sales s ON s.id=spl.sale_id WHERE s.store_id=? AND s.sale_status='Completed' AND spl.status='Confirmed' AND DATE(COALESCE(spl.confirmed_at,spl.created_at))=?");
+            $salesStmt->execute([(int)$session['store_id'],$session['business_date']]);
+            $expected=round((float)$salesStmt->fetchColumn(),2);
             $channels=$conn->prepare("SELECT
                 COALESCE(SUM(CASE WHEN spl.payment_method='Cash' THEN spl.amount ELSE 0 END),0) expected_cash,
                 COALESCE(SUM(CASE WHEN spl.payment_method='M-Pesa' THEN spl.amount ELSE 0 END),0) expected_mpesa,
@@ -280,6 +280,9 @@ try {
             $expectedMpesa=round((float)($channelRow['expected_mpesa']??0),2);
             $expectedBank=round((float)($channelRow['expected_bank']??0),2);
         }else{
+            $salesStmt=$conn->prepare("SELECT COALESCE(SUM(paid_amount),0) FROM sales WHERE store_id=? AND sale_status='Completed' AND DATE(sale_date)=?");
+            $salesStmt->execute([(int)$session['store_id'],$session['business_date']]);
+            $expected=round((float)$salesStmt->fetchColumn(),2);
             $legacy=$conn->prepare("SELECT
                 COALESCE(SUM(CASE WHEN payment_method='Cash' THEN paid_amount ELSE 0 END),0) expected_cash,
                 COALESCE(SUM(CASE WHEN payment_method='M-Pesa' THEN paid_amount ELSE 0 END),0) expected_mpesa,
