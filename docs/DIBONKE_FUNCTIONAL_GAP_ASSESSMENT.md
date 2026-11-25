@@ -148,3 +148,36 @@ This reassessment supersedes the original status statements above where later co
 GitHub Actions run 45499542517 completed successfully for the latest reassessment commit 6feb208060f64fc8880bc530db09d93ec266a61a: all PHP files passed syntax lint on PHP 8.0 and PHP 8.2, and the existing product helper tests passed. This does not exercise database transactions, page rendering, printer hardware, M-PESA callbacks or eTIMS.
 
 **Release position:** source-level integration is materially improved, but Dibonke should not be labelled gap-free or production-certified until the remaining functional items are either implemented or explicitly accepted as out of scope, all required migrations are applied, and the end-to-end acceptance suite is passed against a backed-up copy of the actual database.
+
+---
+
+## Coordinated closure implementation update — 25 November 2026
+
+This update supersedes the mixed-tender, customer-wallet, financial-statement and period-control gaps listed in the earlier reassessment. The changes are committed to `feature/dibonke-product-catalog`; they are not yet a production acceptance certificate.
+
+### Implemented in source
+
+| Area | New implementation | Required migration / verification |
+|---|---|---|
+| Mixed POS tender | POS accepts cash received, bank/transfer and an M-PESA STK amount in one sale. Cash change is calculated after other tender channels. Confirmed tender lines are stored separately; STK remains pending until callback. | Apply `dibonke_sale_payment_lines.sql`; test cash-only, bank-only, mixed cash/bank, cash/STK and failed STK. |
+| Receipt and cash controls | Receipt shows tender breakdown and pending/failed STK state. Cash drawer logic uses confirmed cash tender. Cashier shift, Finance, Cashbook and Store Operations read confirmed tender lines. | Verify receipt print and cash drawer on the actual printer; reconcile a full cashier shift. |
+| Customer wallet | Customer Account supports applying credit to an outstanding invoice and recording refunds through Cash, Bank or M-PESA. Debit entries consume the original receipt credit; application/refund registers, audit events and accounting journals are created. | Apply `dibonke_customer_credit_workflows.sql`; test partial/full application, split credit sources, cash refund and bank/M-PESA refund. |
+| M-PESA status recovery | Added Daraja STK status query action for pending requests. Failed query results mark the pending tender failed; a success response remains pending until the callback provides the actual receipt number. | Test only with Daraja sandbox. Status query cannot itself replace the receipt callback or reconcile a bank statement. |
+| Financial statements | Added journal-based Profit & Loss and Balance Sheet reports, plus a cash/bank movement view using mapped cash accounts. | Review account mappings and opening balances; reconcile the Balance Sheet difference and report totals against source registers. |
+| Accounting period control | Added period lock register. Automatic and manual journal posting now reject dates inside a locked period. | Apply `dibonke_accounting_period_locks.sql`; test backdated and current-period posting before/after locking. |
+| Inventory valuation | Added dated valuation snapshots by Main Store and selling store, using current weighted-average buying price. Snapshot history and detail can be reviewed/exported. | Apply `dibonke_inventory_valuation_snapshots.sql`; reconcile snapshot quantities and value to a physical count. |
+
+### Remaining gaps and external verification
+
+1. **Inventory costing is not yet a full cost-layer ledger.** Snapshots preserve the weighted-average cost at a point in time, but do not reconstruct FIFO/LIFO layers or historical unit costs for every movement. A cost-ledger project would still be needed for a fully auditable inventory cost history.
+2. **M-PESA recovery is partial.** STK query is available, but controlled re-initiation, reversal callback ingestion, automated settlement statement import and full reconciliation against Daraja statements are not implemented.
+3. **Cash flow is a management cash movement view.** Profit & Loss and Balance Sheet are journal-based, but the cash movement view is not a fully classified indirect cash-flow statement. Account classifications and opening balances still need accountant review.
+4. **Opening balances are entered through balanced journals, not a dedicated migration wizard.** Validate the opening trial balance before locking the first period.
+5. **Sales return/refund store attribution and the complete impact on a selling-store day remain a runtime control test.** Wallet refunds now feed cashbook and cashier cash-out summaries.
+6. **eTIMS remains non-live.** No certified KRA transmission, response processing or production certification is implemented.
+7. **Backup restoration and fresh-install deployment remain unverified.** The repository still lacks a verified complete fresh-install base schema; use the actual installed database and ordered migration set.
+8. **Runtime acceptance is still required.** Local MariaDB, browser, scanner, receipt printer, QZ Tray and Daraja sandbox tests have not been run by this source-only pass.
+
+### Updated release position
+
+The previous mixed-tender and customer-wallet gaps are now implemented in source, and basic journal-based financial statements, period locks and valuation snapshots have been added. Dibonke is closer to operational completion, but should not be called gap-free or production-certified until the new migrations are applied and the end-to-end acceptance suite passes against a backed-up copy of the actual database.
