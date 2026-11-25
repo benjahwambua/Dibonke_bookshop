@@ -4,8 +4,8 @@ require_once __DIR__.'/../../includes/auth.php';require_once __DIR__.'/../../con
 if($_SERVER['REQUEST_METHOD']!=='POST'){header('Location:index.php');exit;}verify_csrf();
 requireModulePermission('supplier_payments','create');
 try{$sid=(int)($_POST['supplier_id']??0);$amount=(float)($_POST['amount']??0);$method=(string)($_POST['payment_method']??'Cash');$ref=trim((string)($_POST['transaction_reference']??''));$notes=trim((string)($_POST['notes']??''));
-if(!in_array($method,['Cash','M-Pesa','Bank','Cheque','Other'],true))throw new RuntimeException('Invalid payment method.');
-if($method==='M-Pesa'&&$ref==='')throw new RuntimeException('Enter the M-PESA transaction reference after making the payment.');
+if(!in_array($method,['Cash','Bank','Cheque','Other'],true))throw new RuntimeException('Invalid payment method.');
+
 $conn->beginTransaction();
 $s=$conn->prepare("SELECT * FROM suppliers WHERE id=? AND status='Active' FOR UPDATE");$s->execute([$sid]);$sup=$s->fetch();if(!$sup)throw new RuntimeException('Supplier not found or inactive.');if($amount<=0||$amount>(float)$sup['balance']+.001)throw new RuntimeException('Payment exceeds supplier payable balance.');
 $receipt='TMP-'.strtoupper(bin2hex(random_bytes(8)));
