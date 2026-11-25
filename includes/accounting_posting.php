@@ -54,10 +54,21 @@ function dibonkeAccountingPaymentAccount(PDO $conn, string $method): int
     return dibonkeAccountingAccount($conn, $key, 'Asset');
 }
 
+function dibonkeAccountingAssertPeriodOpen(PDO $conn, string $journalDate): void
+{
+    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $journalDate)) throw new RuntimeException('Invalid accounting date.');
+    if (!(bool)$conn->query("SHOW TABLES LIKE 'accounting_period_locks'")->fetchColumn()) return;
+    $q=$conn->prepare("SELECT id,period_start,period_end FROM accounting_period_locks WHERE ? BETWEEN period_start AND period_end LIMIT 1".($conn->inTransaction()?' FOR UPDATE':''));
+    $q->execute([$journalDate]);
+    $locked=$q->fetch(PDO::FETCH_ASSOC);
+    if($locked)throw new RuntimeException('Accounting period '.$locked['period_start'].' to '.$locked['period_end'].' is locked. The transaction cannot be posted into a closed period.');
+}
+
 function dibonkeAccountingPostJournal(PDO $conn, string $sourceType, int $sourceId, string $journalDate, string $description, array $lines, ?int $userId): void
 {
     if (!$conn->inTransaction()) throw new LogicException('Automatic journal posting must share the source transaction.');
     if ($sourceId <= 0 || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $journalDate)) throw new RuntimeException('Invalid accounting source reference or date.');
+    dibonkeAccountingAssertPeriodOpen($conn,$journalDate);
 
     $existing = $conn->prepare("SELECT id,status FROM journal_entries WHERE source_type=? AND source_id=? FOR UPDATE");
     $existing->execute([$sourceType, $sourceId]);
