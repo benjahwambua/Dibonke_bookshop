@@ -7,6 +7,7 @@ $from=$_GET['from']??date('Y-m-01');$to=$_GET['to']??date('Y-m-d');
 $valid='/^\d{4}-\d{2}-\d{2}$/';$from=preg_match($valid,$from)?$from:date('Y-m-01');$to=preg_match($valid,$to)?$to:date('Y-m-d');if($from>$to){[$from,$to]=[$to,$from];}
 $hasReturnPayments=(bool)$conn->query("SHOW TABLES LIKE 'sales_return_payments'")->fetchColumn();
 $hasSalePaymentLines=(bool)$conn->query("SHOW TABLES LIKE 'sale_payment_lines'")->fetchColumn();
+$hasCustomerCreditRefunds=(bool)$conn->query("SHOW TABLES LIKE 'customer_credit_refunds'")->fetchColumn();
 $sql="SELECT transaction_date,transaction_type,reference,party,payment_method,direction,amount FROM (
  SELECT s.sale_date transaction_date,CONVERT('POS Receipt' USING utf8mb4) COLLATE utf8mb4_unicode_ci transaction_type,CONVERT(s.invoice_number USING utf8mb4) COLLATE utf8mb4_unicode_ci reference,CONVERT(COALESCE(c.customer_name,'Walk-in Customer') USING utf8mb4) COLLATE utf8mb4_unicode_ci party,CONVERT(s.payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci payment_method,CONVERT('IN' USING utf8mb4) COLLATE utf8mb4_unicode_ci direction,s.paid_amount amount
  FROM sales s LEFT JOIN customers c ON c.id=s.customer_id WHERE s.sale_status='Completed' AND s.customer_id IS NULL AND s.paid_amount>0 AND DATE(s.sale_date) BETWEEN ? AND ? ".($hasSalePaymentLines?"AND NOT EXISTS (SELECT 1 FROM sale_payment_lines spl WHERE spl.sale_id=s.id) ":"")."
@@ -34,8 +35,11 @@ $sql="SELECT transaction_date,transaction_type,reference,party,payment_method,di
 if($hasReturnPayments){$sql.=" UNION ALL
  SELECT rp.paid_at,CONVERT('Sales Return Refund' USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(sr.return_number USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT('Customer Refund' USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(rp.payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT('OUT' USING utf8mb4) COLLATE utf8mb4_unicode_ci,rp.amount
  FROM sales_return_payments rp JOIN sales_returns sr ON sr.id=rp.return_id WHERE DATE(rp.paid_at) BETWEEN ? AND ?";}
+if($hasCustomerCreditRefunds){$sql.=" UNION ALL
+ SELECT ccr.created_at,CONVERT('Customer Credit Refund' USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(CONCAT('CCR-',ccr.id) USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(c.customer_name USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT(ccr.payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,CONVERT('OUT' USING utf8mb4) COLLATE utf8mb4_unicode_ci,ccr.amount
+ FROM customer_credit_refunds ccr JOIN customers c ON c.id=ccr.customer_id WHERE DATE(ccr.created_at) BETWEEN ? AND ?";}
 $sql.=") ledger_rows ORDER BY transaction_date ASC,reference ASC";
-$params=[$from,$to];if($hasSalePaymentLines){$params[]=$from;$params[]=$to;}$params=array_merge($params,[$from,$to,$from,$to,$from,$to,$from,$to,$from,$to,$from,$to]);if($hasReturnPayments){$params[]=$from;$params[]=$to;}
+$params=[$from,$to];if($hasSalePaymentLines){$params[]=$from;$params[]=$to;}$params=array_merge($params,[$from,$to,$from,$to,$from,$to,$from,$to,$from,$to,$from,$to]);if($hasReturnPayments){$params[]=$from;$params[]=$to;}if($hasCustomerCreditRefunds){$params[]=$from;$params[]=$to;}
 $q=$conn->prepare($sql);$q->execute($params);$rows=$q->fetchAll();
 $currency=(string)($conn->query("SELECT setting_value FROM settings WHERE setting_key='currency' LIMIT 1")->fetchColumn()?:'KES');
 $in=0.0;$out=0.0;$balance=0.0;foreach($rows as &$row){$amount=(float)$row['amount'];if($row['direction']==='IN'){$in+=$amount;$balance+=$amount;}else{$out+=$amount;$balance-=$amount;}$row['running']=$balance;}unset($row);
