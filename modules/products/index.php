@@ -26,12 +26,16 @@ if ($search !== '') {
         OR p.sku LIKE :sku_q
         OR p.barcode LIKE :barcode_q
         OR p.isbn LIKE :isbn_q
+        OR p.author LIKE :author_q
+        OR p.publisher LIKE :publisher_q
         OR b.brand_name LIKE :brand_q
     )";
     $params[':name_q'] = "%{$search}%";
     $params[':sku_q'] = "%{$search}%";
     $params[':barcode_q'] = "%{$search}%";
     $params[':isbn_q'] = "%{$isbnSearch}%";
+    $params[':author_q'] = "%{$search}%";
+    $params[':publisher_q'] = "%{$search}%";
     $params[':brand_q'] = "%{$search}%";
 }
 if($category>0){ $sql.=" AND p.category_id=:category"; $params[':category']=$category; }
@@ -91,13 +95,13 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <p class="table-scroll-hint">Scroll horizontally to view all product columns, including Edit and Delete.</p>
 <div class="products-table-wrap" role="region" aria-label="Products inventory table" tabindex="0">
 <table class="table products-table">
-<thead><tr><th>Product</th><th>Type / ISBN</th><th>Category</th><th>Brand</th><th>Supplier</th><th>Buy Price</th><th>Normal Price</th><th>Wholesale Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead>
+<thead><tr><th>Product</th><th>Type / ISBN</th><th>Author</th><th>Publisher</th><th>Category</th><th>Brand</th><th>Supplier</th><th>Buy Price</th><th>Normal Price</th><th>Wholesale Price</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead>
 <tbody>
-<?php if(!$products): ?><tr><td colspan="11" style="text-align:center;padding:45px;color:#64748b">No products found.</td></tr>
+<?php if(!$products): ?><tr><td colspan="13" style="text-align:center;padding:45px;color:#64748b">No products found.</td></tr>
 <?php else: foreach($products as $p): $stock=(int)$p['stock_quantity']; ?>
 <tr>
 <td><div class="product-name"><?php if(!empty($p['image_path'])): ?><img src="<?=BASE_URL.'/'.e($p['image_path'])?>" alt="" style="width:38px;height:38px;object-fit:cover;border-radius:6px"><?php else: ?><span class="icon"><?=e($p['icon']?:'📦')?></span><?php endif; ?><div><strong><?=e($p['product_name'])?></strong><br><small class="muted"><?=e($p['sku']?:'No SKU')?></small></div></div></td>
-<td><?=e($p['product_type']??'General')?><?php if(!empty($p['isbn'])):?><br><small class="muted">ISBN: <?=e($p['isbn'])?></small><?php endif;?></td>
+<td><?=e($p['product_type']??'General')?><?php if(!empty($p['isbn'])):?><br><small class="muted">ISBN: <?=e($p['isbn'])?></small><?php endif;?></td><td><?=e($p['author']??'—')?></td><td><?=e($p['publisher']??'—')?></td>
 <td><?=e($p['category_name']?:$p['category']?:'Uncategorized')?></td>
 <td><?=e($p['brand_name']?:'—')?></td><td><?=e($p['supplier_name']?:'—')?></td>
 <td>KES <?=number_format((float)$p['buying_price'],2)?></td><td>KES <?=number_format((float)$p['selling_price'],2)?></td><td>KES <?=number_format((float)$p['wholesale_price'],2)?></td>
@@ -119,6 +123,8 @@ require_once __DIR__ . '/../../includes/sidebar.php';
 <label>Product Name *<input name="product_name" required maxlength="160"></label>
 <label>Item Type<select id="newProductType" name="product_type"><option value="Book">Book</option><option value="Stationery">Stationery</option><option value="General" selected>General</option></select></label>
 <label id="newProductIsbnField">ISBN (optional for books)<input id="newProductIsbn" name="isbn" maxlength="20" placeholder="ISBN-10 or ISBN-13"></label>
+<label>Author<input name="author" maxlength="160" placeholder="Book author"></label>
+<label>Publisher<input name="publisher" maxlength="160" placeholder="Publishing company"></label>
 <label>SKU<input name="sku" maxlength="80" placeholder="Generated automatically if left blank"><small>Leave blank and the system will create a unique SKU when you save.</small></label>
 <label>Category<input name="category_name" list="productCategoryOptions" maxlength="120" placeholder="Type or choose a category" autocomplete="off"><datalist id="productCategoryOptions"><?php foreach($categories as $c):?><option value="<?=e($c['category_name'])?>"><?php endforeach;?></datalist><small>Choose an existing category or type a new one.</small></label>
 <label>Brand / Publisher<input name="brand_name" list="productBrandOptions" maxlength="120" placeholder="Type or choose a brand / publisher" autocomplete="off"><datalist id="productBrandOptions"><?php foreach($brands as $b):?><option value="<?=e($b['brand_name'])?>"><?php endforeach;?></datalist><small>Choose an existing brand or type a new one.</small></label>
