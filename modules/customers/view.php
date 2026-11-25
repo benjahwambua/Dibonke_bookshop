@@ -83,6 +83,7 @@ $from=(string)($_GET['from']??date('Y-01-01'));$to=(string)($_GET['to']??date('Y
 if(!preg_match($valid,$from))$from=date('Y-01-01');if(!preg_match($valid,$to))$to=date('Y-m-d');if($from>$to){[$from,$to]=[$to,$from];}
 $hasPaymentAllocations=(bool)$conn->query("SHOW TABLES LIKE 'customer_payment_allocations'")->fetchColumn();
 $hasCustomerCreditLedger=(bool)$conn->query("SHOW TABLES LIKE 'customer_credit_ledger'")->fetchColumn();
+$hasCustomerCreditApplications=(bool)$conn->query("SHOW TABLES LIKE 'customer_credit_applications'")->fetchColumn();
 $hasCustomerCreditWorkflows=(bool)$conn->query("SHOW TABLES LIKE 'customer_credit_applications'")->fetchColumn()&&(bool)$conn->query("SHOW TABLES LIKE 'customer_credit_refunds'")->fetchColumn();
 $paymentJoins='';
 if($hasPaymentAllocations)$paymentJoins.=" LEFT JOIN (SELECT payment_id,SUM(amount) applied_amount FROM customer_payment_allocations GROUP BY payment_id) pa ON pa.payment_id=cp.id";
@@ -94,16 +95,18 @@ if($hasPaymentAllocations){
 }else{
     $paymentApplied="cp.amount";
 }
-$openingQ=$conn->prepare("SELECT COALESCE((SELECT SUM(total_amount) FROM sales WHERE customer_id=? AND sale_status='Completed' AND DATE(sale_date)<?),0)-COALESCE((SELECT SUM({$paymentApplied}) FROM customer_payments cp {$paymentJoins} WHERE cp.customer_id=? AND DATE(cp.payment_date)<?),0)");
-$openingQ->execute([$id,$from,$id,$from]);$opening=(float)$openingQ->fetchColumn();
+$openingSql="SELECT COALESCE((SELECT SUM(total_amount) FROM sales WHERE customer_id=? AND sale_status='Completed' AND DATE(sale_date)<?),0)-COALESCE((SELECT SUM({$paymentApplied}) FROM customer_payments cp {$paymentJoins} WHERE cp.customer_id=? AND DATE(cp.payment_date)<?),0)".($hasCustomerCreditApplications?"-COALESCE((SELECT SUM(amount) FROM customer_credit_applications WHERE customer_id=? AND DATE(created_at)<?),0)":"");
+$openingQ=$conn->prepare($openingSql);$openingParams=[$id,$from,$id,$from];if($hasCustomerCreditApplications){$openingParams[]=$id;$openingParams[]=$from;}$openingQ->execute($openingParams);$opening=(float)$openingQ->fetchColumn();
 $statementSql="SELECT * FROM (
  SELECT s.sale_date transaction_date,'Invoice' transaction_type,s.invoice_number reference,CONCAT('Sale invoice ',s.invoice_number) description,s.total_amount debit,0 credit,s.id sale_id,0 receipt_amount,0 customer_credit_amount
  FROM sales s WHERE s.customer_id=? AND s.sale_status='Completed' AND DATE(s.sale_date) BETWEEN ? AND ?
  UNION ALL
  SELECT cp.payment_date,'Payment',cp.receipt_number,CONCAT('Customer payment ',COALESCE(cp.transaction_reference,''),' ',COALESCE(cp.notes,'')),0,{$paymentApplied},cp.sale_id,cp.amount,GREATEST(0,cp.amount-({$paymentApplied}))
  FROM customer_payments cp {$paymentJoins} WHERE cp.customer_id=? AND DATE(cp.payment_date) BETWEEN ? AND ?
+".($hasCustomerCreditApplications?" UNION ALL SELECT cca.created_at,'Credit Applied',CONCAT('WALLET-',cca.id),CONCAT('Customer credit applied to invoice ',s.invoice_number),0,cca.amount,cca.sale_id,0,0 FROM customer_credit_applications cca JOIN sales s ON s.id=cca.sale_id WHERE cca.customer_id=? AND DATE(cca.created_at) BETWEEN ? AND ?":"")."
 ) statement_rows ORDER BY transaction_date ASC,transaction_type ASC,reference ASC";
-$q=$conn->prepare($statementSql);$q->execute([$id,$from,$to,$id,$from,$to]);$rows=$q->fetchAll(PDO::FETCH_ASSOC);
+$statementParams=[$id,$from,$to,$id,$from,$to];if($hasCustomerCreditApplications){$statementParams[]=$id;$statementParams[]=$from;$statementParams[]=$to;}
+$q=$conn->prepare($statementSql);$q->execute($statementParams);$rows=$q->fetchAll(PDO::FETCH_ASSOC);
 $customerCreditBalance=0.0;
 if($hasCustomerCreditLedger){
     $creditQ=$conn->prepare("SELECT COALESCE(SUM(CASE WHEN entry_type='Credit' THEN amount ELSE -amount END),0) FROM customer_credit_ledger WHERE customer_id=?");
