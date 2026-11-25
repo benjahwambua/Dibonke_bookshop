@@ -78,6 +78,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
         <div><small>Expected cash (POS)</small><strong>KES <?=number_format((float)$session['expected_cash'],2)?></strong></div>
         <div><small>Cash physically received</small><strong>KES <?=number_format((float)$session['cash_received'],2)?></strong><small>Difference: KES <?=number_format((float)$session['cash_received']-(float)$session['expected_cash'],2)?></small></div>
         <div><small>Expected M-Pesa (POS)</small><strong>KES <?=number_format((float)$session['expected_mpesa'],2)?></strong></div>
+        <?php if(array_key_exists('expected_bank',$session)):?><div><small>Expected bank (POS)</small><strong>KES <?=number_format((float)$session['expected_bank'],2)?></strong></div><?php endif;?>
         <div><small>M-Pesa actually received</small><strong>KES <?=number_format((float)$session['mpesa_received'],2)?></strong><small>Difference: KES <?=number_format((float)$session['mpesa_received']-(float)$session['expected_mpesa'],2)?></small></div>
         <div><small>Bank received</small><strong>KES <?=number_format((float)$session['bank_received'],2)?></strong></div>
         <div><small>Other received</small><strong>KES <?=number_format((float)$session['other_received'],2)?></strong></div>
