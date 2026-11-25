@@ -6,7 +6,7 @@ requireModuleAccess('sales');
 $uid=(int)($_SESSION['user_id']??0);
 $canOpen=hasModulePermission('cash_management','create');
 $canClose=hasModulePermission('cash_management','edit');
-$required=['cash_shifts','cash_shift_guard','cash_shift_movements','audit_events','sales_return_payments'];
+$required=['cash_shifts','cash_shift_guard','cash_shift_movements','audit_events','sales_return_payments','sale_payment_lines'];
 $tables=array_flip($conn->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN));
 $missing=array_values(array_filter($required,static fn($t)=>!isset($tables[$t])));
 if(isset($tables['expenses'])){$expenseShiftColumn=$conn->query("SHOW COLUMNS FROM expenses LIKE 'cash_shift_id'")->fetch();if(!$expenseShiftColumn)$missing[]='expenses.cash_shift_id';}
@@ -21,7 +21,7 @@ function myShiftAudit(PDO $db,string $action,string $description,?int $id=null):
 function myShiftSummary(PDO $db,array $shift):array{
  $uid=(int)$shift['user_id'];$id=(int)$shift['id'];$start=(string)$shift['opened_at'];$end=date('Y-m-d H:i:s');
  $sum=static function(string $sql,array $params)use($db):float{$q=$db->prepare($sql);$q->execute($params);return (float)$q->fetchColumn();};
- $sales=$sum("SELECT COALESCE(SUM(paid_amount),0) FROM sales WHERE user_id=? AND customer_id IS NULL AND payment_method='Cash' AND sale_status='Completed' AND sale_date BETWEEN ? AND ?",[$uid,$start,$end]);
+ $sales=$sum("SELECT COALESCE(SUM(spl.amount),0) FROM sale_payment_lines spl JOIN sales s ON s.id=spl.sale_id WHERE s.user_id=? AND s.customer_id IS NULL AND s.sale_status='Completed' AND spl.payment_method='Cash' AND spl.status='Confirmed' AND spl.created_at BETWEEN ? AND ?",[$uid,$start,$end]);
  $collections=$sum("SELECT COALESCE(SUM(amount),0) FROM customer_payments WHERE user_id=? AND payment_method='Cash' AND payment_date BETWEEN ? AND ?",[$uid,$start,$end]);
  $supplier=$sum("SELECT COALESCE(SUM(amount),0) FROM supplier_payments WHERE cash_shift_id=? AND payment_method='Cash'",[$id]);
  $expenses=$sum("SELECT COALESCE(SUM(amount),0) FROM expenses WHERE cash_shift_id=? AND payment_method='Cash'",[$id]);
