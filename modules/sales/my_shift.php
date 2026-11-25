@@ -6,7 +6,7 @@ requireModuleAccess('sales');
 $uid=(int)($_SESSION['user_id']??0);
 $canOpen=hasModulePermission('cash_management','create');
 $canClose=hasModulePermission('cash_management','edit');
-$required=['cash_shifts','cash_shift_guard','cash_shift_movements','audit_events','sales_return_payments','sale_payment_lines'];
+$required=['cash_shifts','cash_shift_guard','cash_shift_movements','audit_events','sales_return_payments','sale_payment_lines','customer_credit_refunds'];
 $tables=array_flip($conn->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN));
 $missing=array_values(array_filter($required,static fn($t)=>!isset($tables[$t])));
 if(isset($tables['expenses'])){$expenseShiftColumn=$conn->query("SHOW COLUMNS FROM expenses LIKE 'cash_shift_id'")->fetch();if(!$expenseShiftColumn)$missing[]='expenses.cash_shift_id';}
@@ -25,7 +25,7 @@ function myShiftSummary(PDO $db,array $shift):array{
  $collections=$sum("SELECT COALESCE(SUM(amount),0) FROM customer_payments WHERE user_id=? AND payment_method='Cash' AND payment_date BETWEEN ? AND ?",[$uid,$start,$end]);
  $supplier=$sum("SELECT COALESCE(SUM(amount),0) FROM supplier_payments WHERE cash_shift_id=? AND payment_method='Cash'",[$id]);
  $expenses=$sum("SELECT COALESCE(SUM(amount),0) FROM expenses WHERE cash_shift_id=? AND payment_method='Cash'",[$id]);
- $refunds=$sum("SELECT COALESCE(SUM(amount),0) FROM sales_return_payments WHERE paid_by=? AND payment_method='Cash' AND paid_at BETWEEN ? AND ?",[$uid,$start,$end]);
+ $refunds=$sum("SELECT COALESCE(SUM(amount),0) FROM sales_return_payments WHERE paid_by=? AND payment_method='Cash' AND paid_at BETWEEN ? AND ?",[$uid,$start,$end])+$sum("SELECT COALESCE(SUM(amount),0) FROM customer_credit_refunds WHERE created_by=? AND payment_method='Cash' AND created_at BETWEEN ? AND ?",[$uid,$start,$end]);
  $manual=$sum("SELECT COALESCE(SUM(CASE WHEN movement_type='Cash In' THEN amount ELSE -amount END),0) FROM cash_shift_movements WHERE shift_id=?",[$id]);
  return ['cash_sales'=>$sales,'cash_collections'=>$collections,'supplier_payments'=>$supplier,'cash_expenses'=>$expenses,'cash_refunds'=>$refunds,'manual_net'=>$manual,'expected'=>round((float)$shift['opening_float']+$sales+$collections-$supplier-$expenses-$refunds+$manual,2)];
 }
