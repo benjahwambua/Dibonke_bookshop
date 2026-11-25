@@ -2,6 +2,7 @@
 declare(strict_types=1);
 require_once __DIR__.'/../../includes/auth.php';
 require_once __DIR__.'/../../config/db.php';require_once __DIR__.'/../../includes/report_tools.php';
+require_once __DIR__.'/../../includes/accounting_posting.php';
 requireModuleAccess('journals');
 $tables=array_flip($conn->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN));
 $ready=isset($tables['accounts'],$tables['journal_entries'],$tables['journal_lines']);
