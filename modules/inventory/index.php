@@ -92,6 +92,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
         </div>
         <div class="inventory-actions">
             <a class="inventory-btn light" href="<?= BASE_URL ?>/modules/products/index.php"><i class="fas fa-book"></i> Catalogue</a>
+            <a class="inventory-btn light" href="<?= BASE_URL ?>/modules/inventory/valuation.php"><i class="fas fa-chart-line"></i> Valuation Snapshots</a>
             <?php if (canAccessModule('stock_movements')): ?>
                 <a class="inventory-btn primary" href="<?= BASE_URL ?>/modules/stock_movements/index.php"><i class="fas fa-exchange-alt"></i> Stock Movements</a>
             <?php endif; ?>
