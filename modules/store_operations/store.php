@@ -262,20 +262,45 @@ try {
         }
 
         $received = round($cash + $mpesa + $bank + $other, 2);
-        $salesStmt = $conn->prepare("SELECT
-                COALESCE(SUM(paid_amount),0) expected_total,
-                COALESCE(SUM(CASE WHEN payment_method='Cash' THEN paid_amount ELSE 0 END),0) expected_cash,
-                COALESCE(SUM(CASE WHEN payment_method='M-Pesa' THEN paid_amount ELSE 0 END),0) expected_mpesa
-            FROM sales WHERE store_id=? AND sale_status='Completed' AND DATE(sale_date)=?");
+        $salesStmt = $conn->prepare("SELECT COALESCE(SUM(paid_amount),0) expected_total FROM sales WHERE store_id=? AND sale_status='Completed' AND DATE(sale_date)=?");
         $salesStmt->execute([(int)$session['store_id'], $session['business_date']]);
-        $expectedRow = $salesStmt->fetch(PDO::FETCH_ASSOC) ?: [];
-        $expected = round((float)($expectedRow['expected_total'] ?? 0), 2);
-        $expectedCash = round((float)($expectedRow['expected_cash'] ?? 0), 2);
-        $expectedMpesa = round((float)($expectedRow['expected_mpesa'] ?? 0), 2);
+        $expected = round((float)$salesStmt->fetchColumn(), 2);
+        $hasSalePaymentLines=(bool)$conn->query("SHOW TABLES LIKE 'sale_payment_lines'")->fetchColumn();
+        if($hasSalePaymentLines){
+            $channels=$conn->prepare("SELECT
+                COALESCE(SUM(CASE WHEN spl.payment_method='Cash' THEN spl.amount ELSE 0 END),0) expected_cash,
+                COALESCE(SUM(CASE WHEN spl.payment_method='M-Pesa' THEN spl.amount ELSE 0 END),0) expected_mpesa,
+                COALESCE(SUM(CASE WHEN spl.payment_method='Bank' THEN spl.amount ELSE 0 END),0) expected_bank
+                FROM sale_payment_lines spl JOIN sales s ON s.id=spl.sale_id
+                WHERE s.store_id=? AND s.sale_status='Completed' AND spl.status='Confirmed'
+                AND DATE(COALESCE(spl.confirmed_at,spl.created_at))=?");
+            $channels->execute([(int)$session['store_id'],$session['business_date']]);
+            $channelRow=$channels->fetch(PDO::FETCH_ASSOC)?:[];
+            $expectedCash=round((float)($channelRow['expected_cash']??0),2);
+            $expectedMpesa=round((float)($channelRow['expected_mpesa']??0),2);
+            $expectedBank=round((float)($channelRow['expected_bank']??0),2);
+        }else{
+            $legacy=$conn->prepare("SELECT
+                COALESCE(SUM(CASE WHEN payment_method='Cash' THEN paid_amount ELSE 0 END),0) expected_cash,
+                COALESCE(SUM(CASE WHEN payment_method='M-Pesa' THEN paid_amount ELSE 0 END),0) expected_mpesa,
+                COALESCE(SUM(CASE WHEN payment_method='Bank' THEN paid_amount ELSE 0 END),0) expected_bank
+                FROM sales WHERE store_id=? AND sale_status='Completed' AND DATE(sale_date)=?");
+            $legacy->execute([(int)$session['store_id'],$session['business_date']]);
+            $channelRow=$legacy->fetch(PDO::FETCH_ASSOC)?:[];
+            $expectedCash=round((float)($channelRow['expected_cash']??0),2);
+            $expectedMpesa=round((float)($channelRow['expected_mpesa']??0),2);
+            $expectedBank=round((float)($channelRow['expected_bank']??0),2);
+        }
         $variance = round($received - $expected, 2);
 
-        $update = $conn->prepare("UPDATE store_daily_sessions SET status='Reconciled',return_transfer_id=?,expected_sales=?,expected_cash=?,expected_mpesa=?,cash_received=?,mpesa_received=?,bank_received=?,other_received=?,total_received=?,money_variance=?,notes=?,reconciled_by=?,reconciled_at=NOW() WHERE id=?");
-        $update->execute([$returnTransferId, $expected, $expectedCash, $expectedMpesa, $cash, $mpesa, $bank, $other, $received, $variance, $notes ?: null, (int)$_SESSION['user_id'], $sessionId]);
+        $hasExpectedBank=(bool)$conn->query("SHOW COLUMNS FROM store_daily_sessions LIKE 'expected_bank'")->fetchColumn();
+        if($hasExpectedBank){
+            $update = $conn->prepare("UPDATE store_daily_sessions SET status='Reconciled',return_transfer_id=?,expected_sales=?,expected_cash=?,expected_mpesa=?,expected_bank=?,cash_received=?,mpesa_received=?,bank_received=?,other_received=?,total_received=?,money_variance=?,notes=?,reconciled_by=?,reconciled_at=NOW() WHERE id=?");
+            $update->execute([$returnTransferId,$expected,$expectedCash,$expectedMpesa,$expectedBank,$cash,$mpesa,$bank,$other,$received,$variance,$notes?:null,(int)$_SESSION['user_id'],$sessionId]);
+        }else{
+            $update = $conn->prepare("UPDATE store_daily_sessions SET status='Reconciled',return_transfer_id=?,expected_sales=?,expected_cash=?,expected_mpesa=?,cash_received=?,mpesa_received=?,bank_received=?,other_received=?,total_received=?,money_variance=?,notes=?,reconciled_by=?,reconciled_at=NOW() WHERE id=?");
+            $update->execute([$returnTransferId,$expected,$expectedCash,$expectedMpesa,$cash,$mpesa,$bank,$other,$received,$variance,$notes?:null,(int)$_SESSION['user_id'],$sessionId]);
+        }
 
         recordAuditEvent($conn, 'Reconcile', 'store_operations', 'Reconciled ' . $session['store_name'] . ' for ' . $session['business_date'], 'store_daily_session', $sessionId);
         $conn->commit();
