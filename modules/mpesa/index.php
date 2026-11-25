@@ -22,6 +22,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     requireModulePermission('mpesa', 'edit');
 
     try {
+        $action=(string)($_POST['action']??'save_business');
+        if($action==='query_status'){
+            requireModulePermission('mpesa','edit');
+            $transactionId=(int)($_POST['transaction_id']??0);
+            $pendingQuery=$conn->prepare("SELECT id,checkout_request_id FROM mpesa_transactions WHERE id=? AND transaction_type='STK Push' AND result_status='Pending' AND checkout_request_id IS NOT NULL");
+            $pendingQuery->execute([$transactionId]);$pending=$pendingQuery->fetch(PDO::FETCH_ASSOC);
+            if(!$pending)throw new RuntimeException('The selected STK transaction is no longer pending or has no CheckoutRequestID.');
+            $response=mpesaStkQuery((string)$pending['checkout_request_id']);
+            $resultCode=array_key_exists('ResultCode',$response)?(string)$response['ResultCode']:null;
+            $description=(string)($response['ResultDesc']??$response['ResponseDescription']??'STK status query completed.');
+            $newStatus=($resultCode!==null&&$resultCode!=='0')?'Failed':'Pending';
+            if($resultCode==='0')$description.=' Query indicates success; Dibonke is still waiting for the callback containing the M-PESA receipt number.';
+            $conn->beginTransaction();
+            $conn->prepare("UPDATE mpesa_transactions SET result_code=?,result_description=?,raw_response=? WHERE id=? AND result_status='Pending'")->execute([$resultCode,$description,json_encode($response),$transactionId]);
+            if($newStatus==='Failed'){
+                $conn->prepare("UPDATE mpesa_transactions SET result_status='Failed' WHERE id=? AND result_status='Pending'")->execute([$transactionId]);
+                if((bool)$conn->query("SHOW TABLES LIKE 'sale_payment_lines'")->fetchColumn())$conn->prepare("UPDATE sale_payment_lines SET status='Failed' WHERE mpesa_transaction_id=? AND status='Pending'")->execute([$transactionId]);
+            }
+            $conn->commit();
+            $_SESSION['mpesa_flash']=$newStatus==='Failed'?'Daraja reports that the STK request failed. The invoice remains outstanding.':'Status query completed. The transaction remains pending until the callback supplies its M-PESA receipt number.';
+            header('Location:index.php');exit;
+        }
+        if($action!=='save_business')throw new RuntimeException('Invalid M-PESA action.');
         $businessType = strtolower(trim((string)($_POST['mpesa_business_type'] ?? 'paybill')));
         $shortcode = preg_replace('/\D+/', '', (string)($_POST['mpesa_shortcode'] ?? '')) ?? '';
         $accountReference = trim((string)($_POST['mpesa_account_reference'] ?? ''));
@@ -207,7 +230,7 @@ require_once __DIR__ . '/../../includes/sidebar.php';
                             <td><?= e($transaction['transaction_reference'] ?: $transaction['checkout_request_id'] ?: '—') ?></td>
                             <td><?= e($transaction['account_reference'] ?: '—') ?></td>
                             <td><?= $transaction['reference_type'] === 'customer_payment' ? 'Allocated: ' . e($transaction['allocated_customer'] ?: 'Customer') . ' (' . e($transaction['customer_receipt'] ?: 'receipt') . ')' : (!empty($transaction['reference_id']) ? 'Allocated to sale #' . (int)$transaction['reference_id'] : ($transaction['transaction_type'] === 'C2B' ? 'Unallocated' : '—')) ?></td>
-                            <td><?= e($transaction['result_status']) ?></td>
+                            <td><?= e($transaction['result_status']) ?><?php if($transaction['result_status']==='Pending'&&!empty($transaction['checkout_request_id'])&&hasModulePermission('mpesa','edit')):?><form method="post" style="margin-top:6px"><input type="hidden" name="csrf_token" value="<?=e(csrf_token())?>"><input type="hidden" name="action" value="query_status"><input type="hidden" name="transaction_id" value="<?=(int)$transaction['id']?>"><button class="btn secondary" type="submit">Check Daraja status</button></form><?php endif;?></td>
                         </tr>
                     <?php endforeach; ?>
                     <?php if (!$transactions): ?>
