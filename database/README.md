@@ -308,7 +308,7 @@ Workflow:
 4. Confirming an order rechecks stock and the customer's available credit, creates one completed credit invoice, updates the customer balance, deducts stock in base units, records stock movements and posts accounting entries when automatic posting is enabled.
 5. Print the confirmed customer invoice from the order.
 
-POS is intended for walk-in counter sales and no longer offers customer credit or mixed-payment sales. Existing POS invoice history remains in the sales register.
+POS supports walk-in and registered-customer sales, including split tenders across Cash, Bank and M-PESA. Cash and Bank are recorded as confirmed tenders; an STK amount remains pending until Daraja confirms it. Existing POS invoice history remains in the sales register.
 
 ## Product packaging units and retail/wholesale price matrix
 
@@ -348,7 +348,7 @@ The Posting Mappings screen now exposes both mappings. Confirm that Sales Return
 
 Apply `dibonke_customer_credit_ledger.sql` after `dibonke_payment_allocations.sql` and the automatic double-entry accounting migrations, before deploying the PHP changes that record M-PESA overpayments. It creates the customer credit ledger and seeds liability account 2070 plus the `customer_credit` posting mapping. Review that mapping in Finance → Posting Mappings before enabling automatic posting.
 
-The ledger records excess receipts separately from invoice allocations. It currently reports available customer credit; applying that credit to future invoices or paying it back requires a separate controlled workflow.
+The ledger records excess receipts separately from invoice allocations. The Customer Account page now supports applying available credit to an outstanding invoice and refunding wallet credit through Cash, Bank or M-PESA settlement recording. Each application/refund creates debit ledger entries linked to the original receipt, an application/refund register row, an audit event and an accounting journal when automatic posting is enabled.
 
 Customer credit receipt behavior: the Customer Payments screen lists all active customers, including customers with zero outstanding invoices, and accepts the full amount received. The shared allocator applies funds to open completed invoices FIFO and records any remainder in `customer_credit_ledger`. Confirmed STK payments against invoices also preserve excess amounts, including when the invoice is already settled by the time the callback arrives.
 
@@ -361,7 +361,7 @@ Customer credit receipt behavior: the Customer Payments screen lists all active 
 - These controls do not replace sandbox callback testing. Confirm the customer-credit migration is applied before processing customer-linked STK/C2B overpayments.
 
 
-Customer account statements use payment-allocation totals as the receivable credit and show any amount held in `customer_credit_ledger` separately. Historical receipts with no allocation or credit-ledger row retain the legacy full-receipt treatment. This keeps overpayments from appearing as negative customer receivables. Credit use against future invoices and credit refunds still require a separate controlled workflow.
+Customer account statements use payment-allocation totals as the receivable credit, show wallet credit separately and include wallet credit applications as statement credits. Historical receipts with no allocation or credit-ledger row retain the legacy full-receipt treatment. This keeps overpayments from appearing as negative customer receivables.
 
 
 ### M-PESA applied / unallocated amount tracking
@@ -369,3 +369,24 @@ Customer account statements use payment-allocation totals as the receivable cred
 Apply `dibonke_mpesa_allocation_amounts.sql` after `supply_chain_mpesa.sql` and before deploying the callback code that writes `mpesa_transactions.amount_applied` and `amount_unallocated`. The migration is additive and rerunnable. New successful STK and C2B callbacks persist the amount applied to an invoice/customer account and any excess separately. Finance Overview, Financial Control and the Cashbook use those recorded amounts so a walk-in overpayment is not hidden and the original payment is not counted twice.
 
 The migration safely backfills historical successful unmatched C2B receipts as wholly unallocated because those rows have no target reference. It does not guess historical STK or previously matched C2B invoice excess because the old rows do not reliably preserve how much of each receipt was applied. Those matched transactions must be reconciled from Daraja statements and source invoices rather than guessed. Test new callbacks after applying the migration.
+
+
+### POS split tender and cashier/store reconciliation
+
+Apply `dibonke_sale_payment_lines.sql` after the base sales schema, `supply_chain_mpesa.sql` and `dibonke_store_operations.sql`, before deploying the split-tender POS code. It creates a per-sale tender register, safely backfills existing completed sales using their recorded payment method and paid amount, and adds an expected-bank field to store daily sessions where that table exists.
+
+The POS now accepts cash received, bank/transfer received and an M-PESA STK amount in the same sale. Cash change is calculated after the bank and M-PESA amounts. Cash and bank tenders are confirmed at sale completion; the M-PESA portion remains pending until the callback confirms the receipt. A failed STK leaves that amount outstanding. Receipts show the tender breakdown. Finance channel reports, cashbook, cashier shift and Store Operations use confirmed tender lines. For registered customers, confirmed cash/bank tender rows also create customer payment receipts and invoice allocations.
+
+### Customer credit application and refund workflows
+
+Apply `dibonke_customer_credit_workflows.sql` after `dibonke_customer_credit_ledger.sql`, `dibonke_payment_allocations.sql` and the automatic accounting migrations. It creates the customer credit application and refund registers. On a customer account, available wallet credit can be applied to an open invoice or refunded via Cash, Bank or M-PESA. Cash refunds require an open cashier shift when cash management is enabled. These actions are journalled and audited when automatic posting is enabled. Reconcile wallet balances and the payment account before issuing a real refund.
+
+### Accounting period locks and financial statements
+
+Apply `dibonke_accounting_period_locks.sql` after the double-entry accounting migration. Finance → Period Controls can lock a date range. Automatic and manual journals dated inside a locked period are rejected. Lock periods only after completing reconciliations and reviewing the trial balance.
+
+Finance → Financial Statements provides posted-journal Profit and Loss and Balance Sheet reports, plus a cash/bank movement view based on mapped cash accounts. The cash movement view is a management summary, not a certified indirect cash-flow statement. Configure account mappings and opening balances, then reconcile the reports to the source registers before relying on them.
+
+### Inventory valuation snapshots
+
+Apply `dibonke_inventory_valuation_snapshots.sql` after the products inventory and store operations migrations. Inventory → Valuation Snapshots saves dated Main Store and selling-store quantities at the current weighted-average buying price. Snapshots preserve the valuation used on that date for review and export. This is an auditable point-in-time snapshot, not a FIFO/LIFO cost-layer ledger; historical unit cost is still based on the product's weighted-average buying price.
