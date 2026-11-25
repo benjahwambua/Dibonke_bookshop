@@ -63,6 +63,7 @@ require_once __DIR__.'/../../includes/sidebar.php';
 <a class="active" href="<?=BASE_URL?>/modules/finance/index.php">Overview</a>
 <a href="<?=BASE_URL?>/modules/finance/ledger.php">Ledger</a>
 <a href="<?=BASE_URL?>/modules/finance/control.php">Financial Control</a>
+<a href="<?=BASE_URL?>/modules/finance/statements.php">Financial Statements</a>
 <a href="<?=BASE_URL?>/modules/finance/chart_of_accounts.php">Chart of Accounts</a>
 <a href="<?=BASE_URL?>/modules/finance/journals.php">Journals</a>
 <a href="<?=BASE_URL?>/modules/finance/general_ledger.php">General Ledger</a>
