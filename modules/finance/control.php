@@ -33,6 +33,9 @@ $supplierOut=(float)$run("SELECT COALESCE(SUM(amount),0) FROM supplier_payments 
 $expenseOut=(float)$run("SELECT COALESCE(SUM(amount),0) FROM expenses WHERE expense_date BETWEEN ? AND ?",[$from,$to])->fetchColumn();
 $hasReturnPayments=(bool)$conn->query("SHOW TABLES LIKE 'sales_return_payments'")->fetchColumn();
 $returnOut=$hasReturnPayments?(float)$run("SELECT COALESCE(SUM(amount),0) FROM sales_return_payments WHERE DATE(paid_at) BETWEEN ? AND ?",[$from,$to])->fetchColumn():0.0;
+$hasCustomerCreditRefunds=(bool)$conn->query("SHOW TABLES LIKE 'customer_credit_refunds'")->fetchColumn();
+$creditRefundOut=$hasCustomerCreditRefunds?(float)$run("SELECT COALESCE(SUM(amount),0) FROM customer_credit_refunds WHERE DATE(created_at) BETWEEN ? AND ?",[$from,$to])->fetchColumn():0.0;
+$returnOut+=$creditRefundOut;
 $customerDue=(float)$conn->query("SELECT COALESCE(SUM(balance),0) FROM customers")->fetchColumn();$supplierDue=(float)$conn->query("SELECT COALESCE(SUM(balance),0) FROM suppliers")->fetchColumn();
 $hasSalePaymentLines=(bool)$conn->query("SHOW TABLES LIKE 'sale_payment_lines'")->fetchColumn();
 $methodSql="SELECT method,SUM(received) received,SUM(spent) spent FROM (
@@ -50,6 +53,7 @@ if($hasMpesaTransactions){
  $methodParams[]=$from;$methodParams[]=$to;
 }
 if($hasReturnPayments){$methodSql.=" UNION ALL SELECT CONVERT(payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,0,SUM(amount) FROM sales_return_payments WHERE DATE(paid_at) BETWEEN ? AND ? GROUP BY payment_method";$methodParams[]=$from;$methodParams[]=$to;}
+if($hasCustomerCreditRefunds){$methodSql.=" UNION ALL SELECT CONVERT(payment_method USING utf8mb4) COLLATE utf8mb4_unicode_ci,0,SUM(amount) FROM customer_credit_refunds WHERE DATE(created_at) BETWEEN ? AND ? GROUP BY payment_method";$methodParams[]=$from;$methodParams[]=$to;}
 $methodSql.=") x GROUP BY method ORDER BY method";
 $methods=$run($methodSql,$methodParams)->fetchAll();
 $exceptions=[];
