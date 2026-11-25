@@ -13,6 +13,7 @@ if($ready&&$_SERVER['REQUEST_METHOD']==='POST'){
    requireModulePermission('journals','create');
    $date=(string)($_POST['journal_date']??date('Y-m-d'));$description=trim((string)($_POST['description']??''));$reference=trim((string)($_POST['reference']??''));
    if(!preg_match('/^\d{4}-\d{2}-\d{2}$/',$date)||$description==='')throw new RuntimeException('Enter a valid journal date and description.');
+   dibonkeAccountingAssertPeriodOpen($conn,$date);
    $ids=$_POST['account_id']??[];$debits=$_POST['debit']??[];$credits=$_POST['credit']??[];$notes=$_POST['line_description']??[];
    if(!is_array($ids)||!is_array($debits)||!is_array($credits))throw new RuntimeException('Invalid journal lines.');
    $lines=[];$totalD=0.0;$totalC=0.0;
@@ -36,6 +37,7 @@ if($ready&&$_SERVER['REQUEST_METHOD']==='POST'){
    requireModulePermission('journals','edit');$id=(int)($_POST['id']??0);$conn->beginTransaction();
    $q=$conn->prepare("SELECT * FROM journal_entries WHERE id=? FOR UPDATE");$q->execute([$id]);$entry=$q->fetch(PDO::FETCH_ASSOC);
    if(!$entry||$entry['status']!=='Draft')throw new RuntimeException('Only draft journals can be posted.');
+   dibonkeAccountingAssertPeriodOpen($conn,(string)$entry['journal_date']);
    $q=$conn->prepare("SELECT COUNT(*) lines,COALESCE(SUM(debit),0) debit,COALESCE(SUM(credit),0) credit FROM journal_lines WHERE journal_entry_id=?");$q->execute([$id]);$tot=$q->fetch(PDO::FETCH_ASSOC);
    if((int)$tot['lines']<2||abs((float)$tot['debit']-(float)$tot['credit'])>0.009||(float)$tot['debit']<=0)throw new RuntimeException('Journal failed the balance check and cannot be posted.');
    $conn->prepare("UPDATE journal_entries SET status='Posted',total_debit=?,total_credit=?,posted_by=?,posted_at=NOW() WHERE id=? AND status='Draft'")->execute([$tot['debit'],$tot['credit'],(int)$_SESSION['user_id'],$id]);
