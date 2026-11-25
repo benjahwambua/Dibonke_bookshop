@@ -92,6 +92,30 @@ function mpesaNormalizePhone(string $phone): string
     return $phone;
 }
 
+
+function mpesaStkQuery(string $checkoutRequestId): array
+{
+    $checkoutRequestId=trim($checkoutRequestId);
+    if($checkoutRequestId==='')throw new RuntimeException('A CheckoutRequestID is required to query an STK payment.');
+    $businessType=mpesaSetting('mpesa_business_type','paybill');
+    $shortcode=mpesaEnvironment()==='sandbox'?mpesaSetting('mpesa_sandbox_shortcode','174379'):mpesaSetting('mpesa_shortcode');
+    $passkey=mpesaEnvironmentCredential('passkey');
+    if($shortcode===''||$passkey==='')throw new RuntimeException('Configure the M-PESA shortcode and passkey before querying STK status.');
+    $timestamp=date('YmdHis');
+    $password=base64_encode($shortcode.$passkey.$timestamp);
+    $payload=['BusinessShortCode'=>$shortcode,'Password'=>$password,'Timestamp'=>$timestamp,'CheckoutRequestID'=>$checkoutRequestId];
+    $ch=curl_init(mpesaBaseUrl().'/mpesa/stkpushquery/v1/query');
+    curl_setopt_array($ch,[
+        CURLOPT_HTTPHEADER=>['Authorization: Bearer '.mpesaAccessToken(),'Content-Type: application/json'],
+        CURLOPT_POST=>true,CURLOPT_POSTFIELDS=>json_encode($payload),CURLOPT_RETURNTRANSFER=>true,CURLOPT_TIMEOUT=>30,
+    ]);
+    $body=curl_exec($ch);$httpCode=curl_getinfo($ch,CURLINFO_HTTP_CODE);$error=curl_error($ch);curl_close($ch);
+    if($body===false||$httpCode>=400)throw new RuntimeException('M-PESA STK status query failed: '.($error?: (string)$body));
+    $data=json_decode((string)$body,true);
+    if(!is_array($data))throw new RuntimeException('M-PESA returned an invalid STK status response.');
+    return $data;
+}
+
 function mpesaStkPush(
     float $amount,
     string $phone,
