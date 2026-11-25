@@ -2,11 +2,20 @@
 declare(strict_types=1);
 require_once __DIR__ . '/../../config/app.php';
 require_once __DIR__ . '/../../config/db.php';
+require_once __DIR__ . '/../../config/mpesa.php';
 require_once __DIR__ . '/../../includes/audit.php';
 require_once __DIR__ . '/../../includes/accounting_posting.php';
 require_once __DIR__ . '/../../includes/payment_allocation.php';
 
 header('Content-Type: application/json');
+
+$expectedCallbackToken = mpesaSetting('mpesa_callback_token');
+$providedCallbackToken = (string)($_GET['token'] ?? '');
+if ($expectedCallbackToken === '' || $providedCallbackToken === '' || !hash_equals($expectedCallbackToken, $providedCallbackToken)) {
+    http_response_code(403);
+    echo json_encode(['ResultCode' => 1, 'ResultDesc' => 'Callback authentication failed.']);
+    exit;
+}
 $raw=file_get_contents('php://input')?:'';
 $data=json_decode($raw,true);
 try{
