@@ -57,7 +57,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
                 $shift=$conn->prepare("SELECT id FROM cash_shifts WHERE user_id=? AND status='Open' LIMIT 1 FOR UPDATE");$shift->execute([$uid]);if(!$shift->fetchColumn())throw new RuntimeException('Open your cashier shift before refunding customer credit in cash.');
             }
             $reference=trim((string)($_POST['transaction_reference']??''));
-            $debitInsert=$conn->prepare("INSERT INTO customer_credit_ledger(customer_id,payment_id,entry_type,amount,notes,created_by) VALUES(?,?,'Debit','?','Customer credit refunded',?)");
+            $debitInsert=$conn->prepare("INSERT INTO customer_credit_ledger(customer_id,payment_id,entry_type,amount,notes,created_by) VALUES(?,?,'Debit',?,'Customer credit refunded',?)");
             $refundInsert=$conn->prepare("INSERT INTO customer_credit_refunds(customer_id,credit_entry_id,debit_entry_id,amount,payment_method,transaction_reference,created_by) VALUES(?,?,?,?,?,?,?)");
             foreach($creditSources as $source){
                 if($remaining<=0.009)break;$use=round(min($remaining,max(0,(float)$source['remaining'])),2);if($use<=0)continue;
