@@ -13,6 +13,46 @@ function mpesaSetting(string $key, string $default = ''): string
     return $value === false ? $default : (string)$value;
 }
 
+
+/**
+ * Add a high-entropy shared secret to the STK callback URL. Daraja callbacks
+ * do not carry a cryptographic signature, so the unguessable URL token is an
+ * additional request-authentication control. The token is stored in settings
+ * and reused for subsequent STK requests.
+ */
+function mpesaSecureCallbackUrl(string $callback): string
+{
+    global $conn;
+    $token = mpesaSetting('mpesa_callback_token');
+    if ($token === '') {
+        $token = bin2hex(random_bytes(32));
+        $save = $conn->prepare(
+            'INSERT INTO settings(setting_key, setting_value) VALUES(?, ?)
+             ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)'
+        );
+        $save->execute(['mpesa_callback_token', $token]);
+    }
+
+    $parts = parse_url($callback);
+    if (!$parts || empty($parts['scheme']) || empty($parts['host'])) {
+        throw new RuntimeException('The M-PESA callback URL is invalid.');
+    }
+    $query = [];
+    parse_str((string)($parts['query'] ?? ''), $query);
+    $query['token'] = $token;
+
+    $url = $parts['scheme'] . '://' . $parts['host'];
+    if (isset($parts['port'])) {
+        $url .= ':' . $parts['port'];
+    }
+    $url .= $parts['path'] ?? '';
+    $url .= '?' . http_build_query($query);
+    if (isset($parts['fragment'])) {
+        $url .= '#' . $parts['fragment'];
+    }
+    return $url;
+}
+
 function mpesaEnvironment(): string
 {
     return mpesaSetting('mpesa_environment', 'sandbox') === 'live' ? 'live' : 'sandbox';
@@ -140,6 +180,7 @@ function mpesaStkPush(
     if (!filter_var($callback, FILTER_VALIDATE_URL) || parse_url($callback, PHP_URL_SCHEME) !== 'https') {
         throw new RuntimeException('The M-PESA STK callback URL must be a valid public HTTPS URL.');
     }
+    $callback = mpesaSecureCallbackUrl($callback);
     if (!in_array($businessType, ['paybill', 'till'], true)) {
         $businessType = 'paybill';
     }
