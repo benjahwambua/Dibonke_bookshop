@@ -69,14 +69,22 @@ try {
     $purchaseUnit = trim((string)($_POST['purchase_unit'] ?? ''));
     $allowedUnits = ['Piece','Pack','Box','Carton','Dozen','Ream','Set','Pair','Bottle','Roll','Bundle','Packet','Kilogram','Gram','Litre','Millilitre','Metre','Centimetre','Unit'];
     if (!in_array($unit, $allowedUnits, true) || ($purchaseUnit !== '' && !in_array($purchaseUnit, $allowedUnits, true))) throw new RuntimeException('Choose a sale and purchase unit from the available unit list.');
-    $unitsPerPurchase = (int)($_POST['units_per_purchase'] ?? 1);
+    $unitsPerPurchaseRaw = trim((string)($_POST['units_per_purchase'] ?? ''));
+    $unitsPerPurchase = $unitsPerPurchaseRaw === '' ? 1 : (preg_match('/^\\d+$/', $unitsPerPurchaseRaw) ? (int)$unitsPerPurchaseRaw : 0);
     $bulkPriceRaw = trim((string)($_POST['bulk_selling_price'] ?? ''));
     $bulkSellingPrice = $bulkPriceRaw === '' ? null : (float)$bulkPriceRaw;
     $bulkWholesaleRaw = trim((string)($_POST['bulk_wholesale_price'] ?? ''));
     $bulkWholesalePrice = $bulkWholesaleRaw === '' ? null : (float)$bulkWholesaleRaw;
-    if ($unitsPerPurchase < 1 || ($purchaseUnit === '' && $unitsPerPurchase !== 1)) throw new RuntimeException('Enter a purchase unit and a valid units-per-purchase quantity.');
+    if ($purchaseUnit === '') {
+            // No separate supplier pack was selected: the sale unit is also
+            // the purchase unit, so one purchase unit equals one stock unit.
+            $purchaseUnit = $unit;
+            $unitsPerPurchase = 1;
+        } elseif ($unitsPerPurchase < 1) {
+            throw new RuntimeException('Enter a valid whole-number quantity for the selected purchase unit.');
+        }
     if (($bulkSellingPrice !== null && $bulkSellingPrice < 0) || ($bulkWholesalePrice !== null && $bulkWholesalePrice < 0)) throw new RuntimeException('Bulk selling prices cannot be negative.');
-    if ($purchaseUnit === '') { $purchaseUnit = $unit; $unitsPerPurchase = 1; }
+    
     $icon = trim((string)($_POST['icon'] ?? '📦')) ?: '📦';
     $uploadedProductImage = uploadProductImage();
 
