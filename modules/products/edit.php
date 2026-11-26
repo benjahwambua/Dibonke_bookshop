@@ -82,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $allowedUnits = ['Piece','Pack','Box','Carton','Dozen','Ream','Set','Pair','Bottle','Roll','Bundle','Packet','Kilogram','Gram','Litre','Millilitre','Metre','Centimetre','Unit'];
         if (!in_array($unit, $allowedUnits, true) || ($purchaseUnit !== '' && !in_array($purchaseUnit, $allowedUnits, true))) throw new RuntimeException('Choose a sale and purchase unit from the available unit list.');
         $unitsPerPurchaseRaw = trim((string)($_POST['units_per_purchase'] ?? ''));
-    $unitsPerPurchase = $unitsPerPurchaseRaw === '' ? 1 : (preg_match('/^\\d+$/', $unitsPerPurchaseRaw) ? (int)$unitsPerPurchaseRaw : 0);
+    $unitsPerPurchase = $unitsPerPurchaseRaw === '' ? 1 : (preg_match('/^\d+$/', $unitsPerPurchaseRaw) ? (int)$unitsPerPurchaseRaw : 0);
         $bulkPriceRaw = trim((string)($_POST['bulk_selling_price'] ?? ''));
         $bulkSellingPrice = $bulkPriceRaw === '' ? null : (float)$bulkPriceRaw;
         $bulkWholesaleRaw = trim((string)($_POST['bulk_wholesale_price'] ?? ''));
